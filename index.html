@@ -717,6 +717,15 @@
       color: #1a7f2a;
     }
 
+    /* ── CONFIRM MODAL PREMIUM STYLING ── */
+    .modal-confirm-body { padding: 0 24px 24px; text-align: center; }
+    .confirm-icon { font-size: 52px; margin-bottom: 16px; display: block; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1)); }
+    .confirm-title { font-size: 21px; font-weight: 800; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.8px; }
+    .confirm-msg { font-size: 14px; color: var(--ink-muted); line-height: 1.6; margin-bottom: 30px; word-break: keep-all; padding: 0 10px; }
+    .confirm-btns { display: flex; gap: 12px; }
+    .confirm-btns .btn { flex: 1; padding: 14px; border-radius: 16px; font-weight: 700; font-size: 15px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .confirm-btns .btn:active { transform: scale(0.96); }
+
     /* ── TABLE ── */
     .tbl-wrap {
       overflow-x: auto;
@@ -2677,14 +2686,17 @@
 </div>
 
 <div class="modal-overlay" id="modal-confirm">
-  <div class="modal" style="max-width:340px;text-align:center;padding:24px">
-    <div style="font-size:40px;margin-bottom:16px">⚠️</div>
-    <div class="modal-title" id="confirm-title" style="margin-bottom:8px;font-size:18px">확인</div>
-    <p id="confirm-msg" style="font-size:14px;color:var(--ink-muted);line-height:1.5;margin-bottom:24px">이 작업을 수행하시겠습니까?
-    </p>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modal-confirm')">취소</button>
-      <button class="btn btn-danger" style="flex:1" id="confirm-ok-btn">확인</button>
+  <div class="modal" style="max-width:340px; border-radius: 24px; overflow: hidden;">
+    <div class="modal-confirm-body">
+      <div style="padding-top: 32px;">
+        <span class="confirm-icon" id="confirm-icon">⚠️</span>
+        <div class="confirm-title" id="confirm-title">확인</div>
+        <p class="confirm-msg" id="confirm-msg">이 작업을 수행하시겠습니까?</p>
+      </div>
+      <div class="confirm-btns">
+        <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">취소</button>
+        <button class="btn btn-primary" id="confirm-ok-btn">확인</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2929,16 +2941,16 @@ CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() =
 
   function showRLSGuide() {
     const sql = `ALTER TABLE settings DISABLE ROW LEVEL SECURITY;`;
-    if (confirm(
-      `⚠ Supabase RLS 권한 문제\n\n` +
-      `Supabase 대시보드 → SQL Editor에서\n아래 SQL을 실행하세요:\n\n` +
-      `${sql}\n\n` +
-      `실행 후 ☁ 동기화 버튼을 다시 눌러주세요.\n\n` +
-      `[확인] 클릭 시 SQL이 클립보드에 복사됩니다.`
-    )) {
-      navigator.clipboard?.writeText(sql).catch(() => {});
-      showToast('SQL이 클립보드에 복사됨 — Supabase SQL Editor에 붙여넣기 하세요', 'info');
-    }
+    customConfirm({
+      title: 'RLS 권한 설정',
+      msg: 'Supabase 대시보드 SQL Editor에서 아래 SQL을 실행해야 합니다. 확인을 누르면 SQL이 복사됩니다.\n\n' + sql,
+      icon: '🔐',
+      okText: '복사 및 확인',
+      onOk: () => {
+        navigator.clipboard?.writeText(sql).catch(() => {});
+        showToast('SQL이 클립보드에 복사되었습니다 ✓', 'info');
+      }
+    });
   }
 
   async function loadSupplierInfoFromCloud() {
@@ -2995,7 +3007,7 @@ CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() =
       await ensureTables();
       await loadAll();
       document.getElementById('db-dot').style.background = 'var(--green)';
-      document.getElementById('db-label').textContent = 'DB 연결됨';
+      document.getElementById('db-label').textContent = '데이터 연결됨';
       showToast('데이터 동기화 완료 ✓', 'success');
     } catch (e) {
       document.getElementById('db-dot').style.background = 'var(--red)';
@@ -3333,13 +3345,26 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   }
   function closeModal(id) { 
     const el = document.getElementById(id);
-    if (el.classList.contains('open')) {
+    if (el && el.classList.contains('open')) {
       el.classList.remove('open'); 
-      // If we closed manually, pop the state to keep history clean
       if (history.state && history.state.modal === id) {
         history.back();
       }
     }
+  }
+
+  function customConfirm({ title, msg, icon, okText, okClass, onOk }) {
+    document.getElementById('confirm-title').textContent = title || '확인';
+    document.getElementById('confirm-msg').textContent = msg || '';
+    document.getElementById('confirm-icon').textContent = icon || '⚠️';
+    const okBtn = document.getElementById('confirm-ok-btn');
+    okBtn.textContent = okText || '확인';
+    okBtn.className = 'btn ' + (okClass || 'btn-primary');
+    okBtn.onclick = () => {
+      closeModal('modal-confirm');
+      if (onOk) onOk();
+    };
+    openModal('modal-confirm');
   }
   document.querySelectorAll('.modal-overlay').forEach(o => {
     o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
@@ -4117,25 +4142,25 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   }
 
   function deleteOrder(id) {
-    const okBtn = document.getElementById('confirm-ok-btn');
-    document.getElementById('confirm-title').textContent = '주문 삭제';
-    document.getElementById('confirm-msg').textContent = '이 주문을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.';
-
-    okBtn.onclick = async () => {
-      closeModal('modal-confirm');
-      showLoading(true);
-      try {
-        await supa('DELETE', 'orders', null, `?id=eq.${id}`);
-        DB.orders = DB.orders.filter(o => o.id != id);
-        showToast('주문 삭제 완료');
-        renderAll();
-      } catch (e) {
-        showToast('삭제 실패 (오프라인)', 'error');
+    customConfirm({
+      title: '주문 삭제',
+      msg: '이 주문을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+      icon: '🗑️',
+      okText: '삭제하기',
+      okClass: 'btn-danger',
+      onOk: async () => {
+        showLoading(true);
+        try {
+          await supa('DELETE', 'orders', null, `?id=eq.${id}`);
+          DB.orders = DB.orders.filter(o => o.id != id);
+          showToast('주문 삭제 완료');
+          renderAll();
+        } catch (e) {
+          showToast('삭제 실패 (오프라인)', 'error');
+        }
+        showLoading(false);
       }
-      showLoading(false);
-    };
-
-    openModal('modal-confirm');
+    });
   }
 
   function addOItem() {
@@ -5136,18 +5161,23 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   }
 
   async function doLogout() {
-    if (!confirm('로그아웃 하시겠습니까?')) return;
-    logAction('login', 'system', null, '로그아웃');
-    try { await _supa.auth.signOut(); } catch(e) { /* ignore */ }
-    // reset user state
-    UI.currentUser = null;
-    UI.privacyMode = false;
-    // clear form
-    const lu = document.getElementById('l-user'); if (lu) lu.value = '';
-    const lp = document.getElementById('l-pass'); if (lp) lp.value = '';
-    const le = document.getElementById('login-err'); if (le) le.style.display = 'none';
-    // show login mượt — không reload
-    showLoginOverlay();
+    customConfirm({
+      title: '로그아웃',
+      msg: '로그아웃 하시겠습니까?',
+      icon: '🚪',
+      okText: '로그아웃',
+      okClass: 'btn-danger',
+      onOk: async () => {
+        logAction('login', 'system', null, '로그아웃');
+        try { await _supa.auth.signOut(); } catch(e) { /* ignore */ }
+        UI.currentUser = null;
+        UI.privacyMode = false;
+        const lu = document.getElementById('l-user'); if (lu) lu.value = '';
+        const lp = document.getElementById('l-pass'); if (lp) lp.value = '';
+        const le = document.getElementById('login-err'); if (le) le.style.display = 'none';
+        showLoginOverlay();
+      }
+    });
   }
 
   function toggleLoginPass() {
