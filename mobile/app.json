@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "주문관리",
+    "slug": "order-manager-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.orderapp.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "송장 촬영 및 바코드 스캔을 위해 카메라 권한이 필요합니다."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "송장 이미지를 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
+          "savePhotosPermission": "송장 사진을 갤러리에 저장하기 위한 권한입니다."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "order-manager-mobile"
+      }
+    }
+  }
+}
