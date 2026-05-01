@@ -47,6 +47,8 @@ function ItemRow({ item, checked, onToggle, isShipped, isAdmin }) {
 function OrderSection({ order, checkedMap, onToggle, isAdmin }) {
   const st    = STATUS[order.status] || STATUS.new;
   const total = orderTotal(order);
+  const isShipped = order.status === 'shipped';
+  const isPaid    = !!order.paid;
 
   return (
     <View style={styles.orderCard}>
@@ -57,6 +59,14 @@ function OrderSection({ order, checkedMap, onToggle, isAdmin }) {
           <View style={[styles.statusChip, { backgroundColor: st.bg }]}>
             <Text style={[styles.statusChipText, { color: st.color }]}>{st.label}</Text>
           </View>
+          {/* Payment badge — only on shipped orders */}
+          {isShipped && (
+            <View style={[styles.payChip, isPaid ? styles.payChipPaid : styles.payChipUnpaid]}>
+              <Text style={[styles.payChipText, { color: isPaid ? '#15803d' : '#c0392b' }]}>
+                {isPaid ? '결제완료' : '미결제'}
+              </Text>
+            </View>
+          )}
         </View>
         <Text style={styles.orderTotal}>{isAdmin ? fmt(total)+'원' : '••••원'}</Text>
       </View>
@@ -300,6 +310,12 @@ const styles = StyleSheet.create({
   statusChip:  { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
   statusChipText: { fontSize: 11, fontWeight: '700' },
   orderTotal:  { fontSize: 14, fontWeight: '700', color: C.blue },
+
+  // Payment badge
+  payChip:       { borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1 },
+  payChipPaid:   { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' },
+  payChipUnpaid: { backgroundColor: '#fff1f0', borderColor: '#fecaca' },
+  payChipText:   { fontSize: 10, fontWeight: '700' },
 
   // ── Item row
   itemRow: {
