@@ -8,6 +8,7 @@ import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as SMS from 'expo-sms';
 import { supabase, fmt, BUCKETS, uploadFile, C } from '../lib/supabase';
 
 // ── Compress image before upload ──────────────────────
@@ -235,33 +236,31 @@ export default function MessageScreen({ route, navigation }) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  // SMS — copies text to clipboard, then opens share sheet with photo (MMS) or SMS app (text only)
+  // SMS — Use expo-sms to open the message app directly for the given number
   const sendSMS = async () => {
-    // Always copy text first so user can paste it in the message app
+    const phone = (customer.tel || '').replace(/[^0-9]/g, '');
+    
+    // Always copy text to clipboard as fallback
     await Clipboard.setStringAsync(message);
     setSent(true);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      if (photoUri) {
-        // Android: open native share sheet with the photo → user picks "Messages" → MMS with photo
-        // User can then paste the text (already in clipboard)
-        const ok = await Sharing.isAvailableAsync();
-        if (ok) {
-          Alert.alert(
-            '📎 사진 + 문자 전송',
-            '메시지 텍스트가 클립보드에 복사됨\n앱을 선택하여 사진을 전송하고\n텍스트를 붙여넣기 하세요',
-            [
-              { text: '공유 열기', onPress: () => Sharing.shareAsync(photoUri, { dialogTitle: '문자 앱 선택', mimeType: 'image/jpeg' }) },
-              { text: '닫기', style: 'cancel' },
-            ]
-          );
-        } else {
-          Alert.alert('알림', '메시지가 클립보드에 복사되었습니다.');
+      const isAvailable = await SMS.isAvailableAsync();
+      if (isAvailable && phone) {
+        const attachments = [];
+        if (photoUri) {
+          attachments.push({
+            uri: photoUri,
+            mimeType: 'image/jpeg',
+            filename: 'shipping_photo.jpg',
+          });
         }
+        
+        // This opens the default SMS app directly for the number, bypassing the share sheet
+        await SMS.sendSMSAsync([phone], message, { attachments });
       } else {
-        // No photo: open SMS app with phone + pre-filled text
-        const phone = (customer.tel || '').replace(/[^0-9]/g, '');
+        // Fallback: open SMS via URL scheme (no photo support)
         const url = `sms:${phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
         await Linking.openURL(url);
       }
