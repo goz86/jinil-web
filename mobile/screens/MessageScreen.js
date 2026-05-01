@@ -51,9 +51,13 @@ function buildMessage({ customer, items, trackingNo, pdfUrl, shipDate }) {
     .map((i, n) => `           ${n + 1}. ${i.name}${i.spec ? ` (${i.spec})` : ''} × ${i.qty}개`)
     .join('\n');
 
-  return `[출고 알림] ${customer.name} 고객님
-${carrier}
-📦 송장번호: ${trackingNo || '(없음)'}
+  return `[출고 알림]
+안녕하세요, ${customer.name} 고객님.
+주문하신 상품이 금일(${shipDate}) 출고되었습니다.
+
+🚚 택배 정보
+택배사: ${carrier}
+📦 송장번호: ${trackingNo || '(확인 중)'}
 
  품목명 :
 ${itemLines}
