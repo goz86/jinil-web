@@ -242,52 +242,20 @@ export default function MessageScreen({ route, navigation }) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  // SMS — Try direct SMS first, fallback to URL scheme if needed
+  // SMS — Open message app directly with number + text (Text only for maximum reliability)
   const sendSMS = async () => {
     const phone = (customer.tel || '').replace(/[^0-9]/g, '');
     
-    // Always copy to clipboard as safety
+    // Always copy to clipboard
     await Clipboard.setStringAsync(message);
     setSent(true);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      // 1. Try expo-sms (supports attachments)
-      const isAvailable = await SMS.isAvailableAsync();
-      if (isAvailable && phone) {
-        try {
-          const attachments = [];
-          if (photoUri) {
-            // Android: Standard paths often fail. Try saving to public gallery first for better access.
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-            if (status === 'granted') {
-              const asset = await MediaLibrary.createAssetAsync(photoUri);
-              attachments.push({
-                uri: asset.uri,
-                mimeType: 'image/jpeg',
-                filename: 'invoice.jpg',
-              });
-            } else {
-              // Fallback to cache path if gallery permission denied
-              const cachePath = FileSystem.cacheDirectory + 'send_img.jpg';
-              await FileSystem.copyAsync({ from: photoUri, to: cachePath });
-              const uri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(cachePath) : cachePath;
-              attachments.push({ uri, mimeType: 'image/jpeg', filename: 'invoice.jpg' });
-            }
-          }
-
-          const { result } = await SMS.sendSMSAsync([phone], message, { attachments });
-          if (result !== 'cancelled') return;
-        } catch (err) {
-          console.warn('SMS.sendSMSAsync error:', err);
-        }
-      }
-      
-      // 2. Fallback to Linking (Reliable for opening the app)
+      // Use URL scheme for direct opening (Pre-fills number and text on most devices)
       const sep = Platform.OS === 'ios' ? '&' : '?';
       const url = `sms:${phone}${sep}body=${encodeURIComponent(message)}`;
       await Linking.openURL(url);
-      
     } catch (e) {
       Alert.alert('알림', '메시지가 클립보드에 복사되었습니다. SMS 앱을 열어 붙여넣기 하세요.');
     }
