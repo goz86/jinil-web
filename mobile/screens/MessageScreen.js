@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as SMS from 'expo-sms';
+import * as FileSystem from 'expo-file-system';
 import { supabase, fmt, BUCKETS, uploadFile, C } from '../lib/supabase';
 
 // ── Compress image before upload ──────────────────────
@@ -250,13 +251,18 @@ export default function MessageScreen({ route, navigation }) {
       const isAvailable = await SMS.isAvailableAsync();
       if (isAvailable && phone) {
         try {
-          const { result } = await SMS.sendSMSAsync([phone], message, {
-            attachments: photoUri ? [{
-              uri: photoUri,
+          const attachments = [];
+          if (photoUri) {
+            // Android: Convert to content:// URI for better sharing compatibility
+            const uri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(photoUri) : photoUri;
+            attachments.push({
+              uri: uri,
               mimeType: 'image/jpeg',
               filename: 'shipping_photo.jpg',
-            }] : []
-          });
+            });
+          }
+
+          const { result } = await SMS.sendSMSAsync([phone], message, { attachments });
           if (result !== 'cancelled') return;
         } catch (err) {
           console.warn('SMS.sendSMSAsync error:', err);
