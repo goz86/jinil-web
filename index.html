@@ -5450,12 +5450,22 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 <\/script>
 </body></html>`;
 
-    const win = window.open('', '_blank', 'width=900,height=750');
-    if (!win) { showToast('팝업 차단됨 — 팝업 허용 후 다시 시도하세요', 'error'); return; }
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print-iframe';
+      iframe.style.position = 'fixed'; iframe.style.right = '0'; iframe.style.bottom = '0';
+      iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    const win = iframe.contentWindow;
+    win.document.open();
     win.document.write(html);
     win.document.close();
+    
     closeModal('modal-report');
-    showToast('📄 리포트 창 열림 — PDF로 저장하세요', 'success');
+    showToast('📄 PDF 리포트 생성됨 ✓', 'success');
   }
 
   /* ── Init ──────────────────────────────────── */
