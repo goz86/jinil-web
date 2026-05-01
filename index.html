@@ -1834,6 +1834,49 @@
     /* ── Amount privacy (staff role) ── */
     .amount-blur { filter:blur(4px); user-select:none; pointer-events:none; transition:filter .2s; }
     .privacy-label { display:inline-block; background:var(--parchment); border-radius:4px; padding:0 6px; font-size:12px; color:var(--ink-muted); letter-spacing:2px; }
+    /* ── MOBILE RESPONSIVE ── */
+    .mobile-menu-btn { display: none; background: transparent; border: none; font-size: 24px; cursor: pointer; padding: 4px 10px; margin-left: -10px; color: var(--ink); }
+    
+    @media (max-width: 768px) {
+      .mobile-menu-btn { display: block; }
+      .sidebar {
+        position: fixed; top: 0; left: -240px; bottom: 0; z-index: 1000;
+        width: 240px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+      }
+      body.sidebar-active .sidebar { transform: translateX(240px); }
+      .sidebar-overlay { 
+        position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; 
+        display: none; backdrop-filter: blur(4px);
+      }
+      body.sidebar-active .sidebar-overlay { display: block; }
+      
+      .main { width: 100%; }
+      .topbar { padding: 0 16px; height: 56px; }
+      .topbar-right { display: none; } /* Hide secondary buttons to save space */
+      .content { padding: 16px; }
+      
+      .db-grid, .db-bottom-row, .stats-row, .db-stats-grid, .grid-2, .grid-3 { grid-template-columns: 1fr ! from; }
+      .stat-card-new { padding: 16px; }
+      .stat-value-new { font-size: 22px; }
+      
+      /* Login Responsive */
+      #login-overlay { flex-direction: column; overflow-y: auto; }
+      .login-left { padding: 30px 24px; order: 2; width: 100%; }
+      .login-right { 
+        min-height: 240px; order: 1; width: 100%; 
+        padding: 40px 24px; border-radius: 0 0 40px 40px;
+      }
+      .login-title { font-size: 28px; margin-bottom: 24px; }
+      .login-right-art { opacity: 0.3; }
+      
+      /* Table Optimization */
+      .tbl-wrap table { min-width: 600px; }
+      th, td { padding: 10px 8px; font-size: 12px; }
+      
+      /* Modal Responsive */
+      .modal { width: 95% !important; margin: 10px auto; max-height: 90vh; }
+    }
   </style>
 </head>
 <div class="loading-overlay" id="loading">
@@ -1987,6 +2030,7 @@
 
 <div id="invoice-print-area"></div>
 
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 <div class="shell">
 
   <!-- ── SIDEBAR ── -->
@@ -2034,6 +2078,7 @@
   <!-- ── MAIN ── -->
   <div class="main">
     <div class="topbar">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()" title="Menu">☰</button>
       <div class="page-title" id="page-title">대시보드</div>
       <div class="topbar-right">
         <!-- Global Search -->
@@ -3223,6 +3268,13 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     if (id === 'customers') renderCustomers();
     if (id === 'invoice') initInvoicePage();
     if (id === 'history') renderHistory();
+
+    // Hide sidebar on mobile after selection
+    document.body.classList.remove('sidebar-active');
+  }
+
+  function toggleSidebar() {
+    document.body.classList.toggle('sidebar-active');
   }
 
   /* ════════════════════════════════════════════
