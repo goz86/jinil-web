@@ -5415,10 +5415,10 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="stat-val">${allOrds.length}건</div><div class="stat-lbl">총 주문</div></div>
-    <div class="stat"><div class="stat-val green">${shipped.length}건</div><div class="stat-lbl">출고 완료</div></div>
-    <div class="stat"><div class="stat-val amber">${pending.length}건</div><div class="stat-lbl">미출고</div></div>
-    <div class="stat"><div class="stat-val">${custSet.size}곳</div><div class="stat-lbl">거래처 수</div></div>
+    <div class="stat"><div class="stat-val">${allOrds.length}</div><div class="stat-lbl">총 주문</div></div>
+    <div class="stat"><div class="stat-val green">${shipped.length}</div><div class="stat-lbl">출고 완료</div></div>
+    <div class="stat"><div class="stat-val amber">${pending.length}</div><div class="stat-lbl">미출고</div></div>
+    <div class="stat"><div class="stat-val">${custSet.size}</div><div class="stat-lbl">거래처 수</div></div>
   </div>
 
   <div class="section-title">📊 거래처별 집계 <span style="font-size:8pt;font-weight:400;color:#64748b">(출고 완료 기준)</span></div>
@@ -5430,14 +5430,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 
   <div class="section-title">📋 전체 주문 현황 <span style="font-size:8pt;font-weight:400;color:#64748b">(신규·출고대기·완료 포함)</span></div>
   <table>
-    <thead><tr><th style="width:72px">주문일</th><th style="width:78px">거래처</th><th style="width:68px;white-space:nowrap">상태</th><th>주문 품목</th><th style="width:72px;text-align:right;white-space:nowrap">금액</th></tr></thead>
+    <thead><tr><th style="width:75px">주문일</th><th style="width:85px">거래처</th><th style="width:70px;white-space:nowrap">상태</th><th>주문 품목</th><th style="width:90px;text-align:right;white-space:nowrap">금액</th></tr></thead>
     <tbody>${allOrderRows}</tbody>
     <tr class="total-row"><td colspan="4">총 주문 금액</td><td class="money">${fmt(allTotal)}원</td></tr>
   </table>
 
   <div class="section-title">✅ 출고 완료 상세</div>
   <table>
-    <thead><tr><th style="width:130px">출고일시</th><th style="width:80px">거래처</th><th>출고 품목</th><th style="width:80px;text-align:right">금액</th></tr></thead>
+    <thead><tr><th style="width:130px">출고일시</th><th style="width:90px">거래처</th><th>출고 품목</th><th style="width:90px;text-align:right">금액</th></tr></thead>
     <tbody>${shippedRows}</tbody>
     <tr class="total-row"><td colspan="3">출고 합계</td><td class="money">${fmt(shippedTotal)}원</td></tr>
   </table>
