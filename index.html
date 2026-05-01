@@ -3290,9 +3290,13 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   const PAGE_TITLES = { dashboard: '대시보드', calendar: '캘린더', orders: '주문 목록', customers: '거래처 관리', invoice: '거래명세서', history: '출고 이력' };
   const PAGE_ORDER = ['dashboard', 'calendar', 'orders', 'customers', 'invoice', 'history'];
 
-  function showPage(id, skipPush = false) {
+  function showPage(id, skipPush = false, replace = false) {
     if (!skipPush) {
-      history.pushState({ page: id }, "");
+      if (replace) {
+        history.replaceState({ page: id }, "");
+      } else {
+        history.pushState({ page: id }, "");
+      }
     }
     localStorage.setItem('lastPage', id);
     document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
@@ -3305,7 +3309,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     if (id === 'calendar') renderCalendar();
     if (id === 'orders') renderOrders();
     if (id === 'customers') renderCustomers();
-    if (id === 'invoice') initInvoicePage();
+    if (id === 'invoice') {
+      initInvoicePage();
+      // Ensure building preview after render
+      setTimeout(buildInvoicePreview, 50);
+    }
     if (id === 'history') renderHistory();
 
     // Hide sidebar on mobile after selection
@@ -4282,7 +4290,10 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   }
 
   function makeInvoiceFromOrder() {
-    closeModal('modal-detail');
+    // Manually close the modal UI without triggering history.back()
+    const detailModal = document.getElementById('modal-detail');
+    if (detailModal) detailModal.classList.remove('open');
+
     const o = getOrder(UI.currentOrderId); if (!o) return;
     const c = getCust(o.customer_id);
     refreshCustSelects();
@@ -4297,8 +4308,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     const tb = document.getElementById('inv-items-tb'); tb.innerHTML = '';
     (o.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price));
     calcInvTotal();
-    showPage('invoice');
-    setTimeout(buildInvoicePreview, 100);
+    
+    // Navigate to invoice page by REPLACING the modal state in history
+    showPage('invoice', false, true); 
   }
 
   /* ════════════════════════════════════════════
