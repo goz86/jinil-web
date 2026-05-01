@@ -6,7 +6,13 @@
       "Bash(npx --version)",
       "Bash(npm install *)",
       "Bash(node -e ' *)",
-      "Bash(powershell -command \"\\(Get-Content 'C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\order_manager.html'\\).Count\")"
+      "Bash(powershell -command \"\\(Get-Content 'C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\order_manager.html'\\).Count\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\lib\\\\auth.js\")",
+      "Bash(Select-Object -First 5)",
+      "Bash(Write-Host \"---\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\screens\\\\LoginScreen.js\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\App.js\")",
+      "Bash(Select-Object -First 20)"
     ]
   }
 }

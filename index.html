@@ -2720,6 +2720,10 @@
 
   _supa.auth.onAuthStateChange((event, session) => {
     _jwtToken = session?.access_token || null;
+    // Sau khi đăng nhập xong, JWT mới có → reload supplier info từ cloud
+    if (event === 'SIGNED_IN' && _jwtToken) {
+      loadSupplierInfoFromCloud().catch(() => {});
+    }
   });
 
   function getHeaders(extra = {}) {
@@ -2869,10 +2873,9 @@
     }
   }
 
-  // Fix RLS on settings table (legacy fallback — RLS is now managed via Supabase dashboard)
+  // Fix RLS on settings table — settings là dữ liệu công ty chung, không cần RLS
   async function fixSettingsRLS() {
-    const rlsSql = `ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() = 'authenticated');`;
+    const rlsSql = `ALTER TABLE settings DISABLE ROW LEVEL SECURITY;`;
     try {
       const r = await fetch(`${SUPA_URL}/rest/v1/rpc/exec_sql`, {
         method: 'POST', headers: getHeaders(),
@@ -2953,9 +2956,10 @@ CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() =
     });
   }
 
-  async function loadSupplierInfoFromCloud() {
+  async function loadSupplierInfoFromCloud(retried = false) {
     try {
       const res = await fetch(`${SUPA_URL}/rest/v1/settings?key=eq.supplier&select=value`, { headers: getHeaders() });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const rows = await res.json();
       if (rows && rows[0]?.value) {
         const d = rows[0].value;
@@ -2964,9 +2968,19 @@ CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() =
           if (el && d[id] !== undefined) el.value = d[id];
         });
         localStorage.setItem('supplierInfo', JSON.stringify(d));
+        // Cập nhật preview nếu đang ở tab invoice
+        const invPreview = document.getElementById('inv-preview');
+        if (invPreview && invPreview.closest('.page')?.classList.contains('active')) {
+          buildInvoicePreview();
+        }
         return true;
       }
-    } catch (e) { }
+    } catch (e) {
+      // Nếu chưa có JWT (chưa login xong), thử lại sau 1.5s (1 lần duy nhất)
+      if (!retried && !_jwtToken) {
+        setTimeout(() => loadSupplierInfoFromCloud(true).catch(() => {}), 1500);
+      }
+    }
     return false;
   }
 
@@ -3132,6 +3146,7 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value JSONB DEFAULT '{}'
 );
+ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS activity_logs (
   id BIGSERIAL PRIMARY KEY,
   user_name TEXT DEFAULT '',
@@ -3449,7 +3464,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
           <div style="font-size:10px;color:var(--ink-muted);margin-top:2px">${o.order_date}</div>
         </div>
         <div class="order-mini-right">
-          <div class="order-mini-amount">${fmt(orderTotal(o))}원</div>
+          <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o))+'원'}</div>
           <div style="margin-top:4px">${statusBadge(o.status)}</div>
         </div>
       </div>`;
@@ -3464,6 +3479,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     const btn = document.getElementById('privacy-btn');
     if (btn) { btn.classList.toggle('active', UI.privacyMode); btn.innerHTML = UI.privacyMode ? '🙈' : '🐵'; }
     renderDashboard();
+    renderOrders();
+    renderCustomers();  // 거래처 관리 금액도 갱신
   }
 
   /* ════════════════════════════════════════════
@@ -3940,7 +3957,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
             ${o.tracking ? `<div style="font-size:10px;color:var(--ink-muted);font-family:var(--mono)">송장 ${o.tracking}</div>` : ''}
           </div>
           <div class="order-mini-right">
-            <div class="order-mini-amount">${fmt(orderTotal(o))}원</div>
+            <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o))+'원'}</div>
             <div style="margin-top:4px">${statusBadge(o.status)}</div>
           </div>
         </div>`;
@@ -4430,7 +4447,7 @@ ${pdfLink}
         <div class="cust-tel">${c.tel}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:12px;color:var(--blue);font-weight:700">${fmt(total)}원</div>
+        <div style="font-size:12px;color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total)+'원'}</div>
         <div style="font-size:10px;color:var(--ink-muted)">${ords.length}건</div>
       </div>
     </div>`;
@@ -4455,7 +4472,7 @@ ${pdfLink}
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">대표자</div>${c.rep || '—'}</div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">담당자</div>${c.contact || '—'}</div>
       <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주소</div>${c.addr || '—'}</div>
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">총 매출</div><span style="color:var(--blue);font-weight:700">${fmt(total)}원</span></div>
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">총 매출</div><span style="color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total)+'원'}</span></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주문 건수</div>${ords.length}건</div>
     </div>
     <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">최근 주문</div>
@@ -4466,7 +4483,7 @@ ${pdfLink}
           <div class="order-mini-goods">${(o.items || []).map(i => i.name).join(', ')}</div>
         </div>
         <div class="order-mini-right">
-          <div class="order-mini-amount">${fmt(orderTotal(o))}원</div>
+          <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o))+'원'}</div>
           <div style="margin-top:4px">${statusBadge(o.status)}</div>
         </div>
       </div>`).join('') || '<div class="empty" style="padding:14px"><div class="empty-text">주문 없음</div></div>'}`;

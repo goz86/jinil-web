@@ -4,6 +4,7 @@ import {
   StyleSheet, Alert,
 } from 'react-native';
 import { fmt, orderTotal, C, supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 
 const STATUS = {
   new:     { label: '신규',     color: C.blue,    bg: C.blueLight  },
@@ -12,7 +13,7 @@ const STATUS = {
 };
 
 // ── Checkbox item row ─────────────────────────────────
-function ItemRow({ item, checked, onToggle, isShipped }) {
+function ItemRow({ item, checked, onToggle, isShipped, isAdmin }) {
   const isDone = checked || isShipped;
   return (
     <TouchableOpacity
@@ -34,16 +35,16 @@ function ItemRow({ item, checked, onToggle, isShipped }) {
 
       <View style={styles.itemRight}>
         <Text style={[styles.itemSubtotal, isDone && { color: C.blue }]}>
-          {fmt(item.qty * item.price)}원
+          {isAdmin ? fmt(item.qty * item.price)+'원' : '••••원'}
         </Text>
-        <Text style={styles.itemQtyPrice}>× {item.qty}개 · {fmt(item.price)}원</Text>
+        <Text style={styles.itemQtyPrice}>× {item.qty}개{isAdmin ? ` · ${fmt(item.price)}원` : ''}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
 // ── Order group ───────────────────────────────────────
-function OrderSection({ order, checkedMap, onToggle }) {
+function OrderSection({ order, checkedMap, onToggle, isAdmin }) {
   const st    = STATUS[order.status] || STATUS.new;
   const total = orderTotal(order);
 
@@ -57,7 +58,7 @@ function OrderSection({ order, checkedMap, onToggle }) {
             <Text style={[styles.statusChipText, { color: st.color }]}>{st.label}</Text>
           </View>
         </View>
-        <Text style={styles.orderTotal}>{fmt(total)}원</Text>
+        <Text style={styles.orderTotal}>{isAdmin ? fmt(total)+'원' : '••••원'}</Text>
       </View>
 
       {/* Items */}
@@ -68,6 +69,7 @@ function OrderSection({ order, checkedMap, onToggle }) {
           checked={checkedMap[`${order.id}_${idx}`] || false}
           onToggle={() => onToggle(order.id, idx)}
           isShipped={order.status === 'shipped'}
+          isAdmin={isAdmin}
         />
       ))}
     </View>
@@ -76,6 +78,7 @@ function OrderSection({ order, checkedMap, onToggle }) {
 
 // ── Main ──────────────────────────────────────────────
 export default function OrderScreen({ route, navigation }) {
+  const { isAdmin } = useAuth();
   const { customer, orders } = route.params;
 
   const [localOrders, setLocalOrders] = useState(orders);
@@ -201,7 +204,7 @@ export default function OrderScreen({ route, navigation }) {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>⏳ 출고 대기</Text>
             {pending.map(o => (
-              <OrderSection key={o.id} order={o} checkedMap={checkedMap} onToggle={toggle} />
+              <OrderSection key={o.id} order={o} checkedMap={checkedMap} onToggle={toggle} isAdmin={isAdmin} />
             ))}
           </View>
         )}
@@ -210,7 +213,7 @@ export default function OrderScreen({ route, navigation }) {
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: C.inkMuted }]}>✅ 출고 완료</Text>
             {shipped.map(o => (
-              <OrderSection key={o.id} order={o} checkedMap={checkedMap} onToggle={toggle} />
+              <OrderSection key={o.id} order={o} checkedMap={checkedMap} onToggle={toggle} isAdmin={isAdmin} />
             ))}
           </View>
         )}
@@ -225,7 +228,7 @@ export default function OrderScreen({ route, navigation }) {
           </Text>
           {checkedCount > 0 && (
             <Text style={styles.footerTotal}>
-              {fmt(getCheckedItems().reduce((s, i) => s + (i.qty||0)*(i.price||0), 0))}원
+              {isAdmin ? fmt(getCheckedItems().reduce((s,i)=>s+(i.qty||0)*(i.price||0),0))+'원' : '••••원'}
             </Text>
           )}
         </View>

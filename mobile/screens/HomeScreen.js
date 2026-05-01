@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase, fmt, orderTotal, C } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 
 const AVATAR_COLORS = [
   '#0066cc','#28cd41','#ff9500','#0d9488',
@@ -14,7 +15,7 @@ const avatarColor = (name = '?') =>
   AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
 // ── Customer card ─────────────────────────────────────
-function CustomerCard({ customer, orders, onPress }) {
+function CustomerCard({ customer, orders, onPress, isAdmin }) {
   const color   = customer.color || avatarColor(customer.name);
   const pending = orders.filter(o => o.status === 'pending').length;
   const total   = orders.reduce((s, o) => s + orderTotal(o), 0);
@@ -36,7 +37,7 @@ function CustomerCard({ customer, orders, onPress }) {
 
       {/* Right */}
       <View style={styles.cardRight}>
-        <Text style={styles.cardTotal}>{fmt(total)}원</Text>
+        <Text style={styles.cardTotal}>{isAdmin ? fmt(total)+'원' : '••••원'}</Text>
         <Text style={styles.cardOrderCount}>{orders.length}건</Text>
         {pending > 0 && (
           <View style={styles.pendingBadge}>
@@ -63,6 +64,7 @@ function StatPill({ value, label, color }) {
 
 // ── Main ──────────────────────────────────────────────
 export default function HomeScreen({ navigation }) {
+  const { isAdmin } = useAuth();
   const [customers,  setCustomers]  = useState([]);
   const [orders,     setOrders]     = useState([]);
   const [query,      setQuery]      = useState('');
@@ -232,6 +234,7 @@ export default function HomeScreen({ navigation }) {
                   customer: item,
                   orders: custOrders,
                 })}
+                isAdmin={isAdmin}
               />
             </View>
           );
