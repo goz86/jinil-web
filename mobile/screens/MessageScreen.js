@@ -257,12 +257,15 @@ export default function MessageScreen({ route, navigation }) {
         try {
           const attachments = [];
           if (photoUri) {
-            // Android: Convert to content:// URI for better sharing compatibility
-            const uri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(photoUri) : photoUri;
+            // Simplified path to avoid issues with some SMS apps
+            const cachePath = FileSystem.cacheDirectory + 'send_img.jpg';
+            await FileSystem.copyAsync({ from: photoUri, to: cachePath });
+            const uri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(cachePath) : cachePath;
+            
             attachments.push({
               uri: uri,
               mimeType: 'image/jpeg',
-              filename: 'shipping_photo.jpg',
+              filename: 'invoice.jpg',
             });
           }
 
