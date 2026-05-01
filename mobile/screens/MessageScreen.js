@@ -10,6 +10,7 @@ import * as Print from 'expo-print';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as SMS from 'expo-sms';
 import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { supabase, fmt, BUCKETS, uploadFile, C } from '../lib/supabase';
 
 // ── Compress image before upload ──────────────────────
@@ -257,16 +258,22 @@ export default function MessageScreen({ route, navigation }) {
         try {
           const attachments = [];
           if (photoUri) {
-            // Simplified path to avoid issues with some SMS apps
-            const cachePath = FileSystem.cacheDirectory + 'send_img.jpg';
-            await FileSystem.copyAsync({ from: photoUri, to: cachePath });
-            const uri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(cachePath) : cachePath;
-            
-            attachments.push({
-              uri: uri,
-              mimeType: 'image/jpeg',
-              filename: 'invoice.jpg',
-            });
+            // Android: Standard paths often fail. Try saving to public gallery first for better access.
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status === 'granted') {
+              const asset = await MediaLibrary.createAssetAsync(photoUri);
+              attachments.push({
+                uri: asset.uri,
+                mimeType: 'image/jpeg',
+                filename: 'invoice.jpg',
+              });
+            } else {
+              // Fallback to cache path if gallery permission denied
+              const cachePath = FileSystem.cacheDirectory + 'send_img.jpg';
+              await FileSystem.copyAsync({ from: photoUri, to: cachePath });
+              const uri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(cachePath) : cachePath;
+              attachments.push({ uri, mimeType: 'image/jpeg', filename: 'invoice.jpg' });
+            }
           }
 
           const { result } = await SMS.sendSMSAsync([phone], message, { attachments });
