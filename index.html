@@ -3044,6 +3044,9 @@ CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() =
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='pdf_url') THEN
               ALTER TABLE orders ADD COLUMN pdf_url TEXT DEFAULT '';
             END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='courier') THEN
+              ALTER TABLE orders ADD COLUMN courier TEXT DEFAULT '';
+            END IF;
           END $$;` })
       }).catch(e => console.warn('Migration failed:', e));
     } catch (e) {
@@ -3122,6 +3125,7 @@ CREATE TABLE IF NOT EXISTS orders (
   memo TEXT DEFAULT '',
   img_url TEXT DEFAULT '',
   pdf_url TEXT DEFAULT '',
+  courier TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS settings (
@@ -4276,9 +4280,28 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
       </div>`).join('')}
     <div style="text-align:right;margin-top:10px;font-weight:700;font-size:15px;color:var(--blue)">합계: ${fmt(orderTotal(o))}원</div>
     ${o.img_url ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><img src="${o.img_url}" style="max-width:100%;border-radius:var(--r-md);max-height:150px;object-fit:cover"></div>` : ''}
+    
+    ${o.status === 'shipped' ? `
+      <div style="margin-top:20px; padding: 12px; background: var(--blue-tint); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size:13px; color: var(--blue); font-weight: 600;">🚚 출고 알림 메시지 준비됨</div>
+        <button class="btn btn-sm" style="background: var(--blue); color: #fff;" onclick="copyShippingMessage(${o.id})">📋 복사하기</button>
+      </div>
+    ` : ''}
+
     ${o.status !== 'shipped' ? `
       <hr class="div">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>택배사</label>
+          <select id="detail-courier" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border);">
+            <option value="롯데택배">롯데택배</option>
+            <option value="CJ대한통운">CJ대한통운</option>
+            <option value="한진택배">한진택배</option>
+            <option value="우체국택배">우체국택배</option>
+            <option value="로젠택배">로젠택배</option>
+            <option value="직접배송">직접배송</option>
+          </select>
+        </div>
         <div class="form-group"><label>송장번호</label><input type="text" id="detail-track" value="${o.tracking || ''}" placeholder="송장번호"></div>
         <div class="form-group"><label>출고일</label><input type="date" id="detail-ship-dt" value="${today()}"></div>
       </div>`: ''}`;
@@ -4289,22 +4312,32 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   async function doShip() {
     const o = getOrder(UI.currentOrderId); if (!o) return;
     const track = document.getElementById('detail-track')?.value || '';
+    const courier = document.getElementById('detail-courier')?.value || '롯데택배';
     const dt = document.getElementById('detail-ship-dt')?.value || today();
     const now = new Date();
     const timeStr = ` ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const finalDt = dt.includes(':') ? dt : dt + timeStr;
-    o.tracking = track; o.shipped_date = finalDt; o.status = 'shipped';
+    
+    o.tracking = track; 
+    o.courier = courier;
+    o.shipped_date = finalDt; 
+    o.status = 'shipped';
 
-    const c    = getCust(o.customer_id);
+    const c = getCust(o.customer_id);
     const itms = (o.items||[]).map(i => `${i.name} ×${i.qty}`).join(', ');
 
     showLoading(true);
     try {
-      await supa('PATCH', 'orders', { tracking: track, shipped_date: finalDt, status: 'shipped' }, `?id=eq.${o.id}`);
+      await supa('PATCH', 'orders', { tracking: track, courier: courier, shipped_date: finalDt, status: 'shipped' }, `?id=eq.${o.id}`);
       showToast('출고 처리 완료 ✓');
-      // Push notification
-      sendNotification('🚚 출고 완료', `${c?.name||'—'} · ${itms}`, `ship-${o.id}`);
-      // Activity log
+      
+      const msg = getShippingMessage(o);
+      sendNotification('🚚 출고 완료', `안녕하세요, ${c?.name||'—'} 고객님. 금일 주문 상품이 출고되었습니다.`, `ship-${o.id}`);
+      
+      // Auto-copy for convenience (optional, maybe just show toast)
+      navigator.clipboard?.writeText(msg).catch(() => {});
+      showToast('📦 출고 안내 메시지가 클립보드에 복사되었습니다', 'info');
+
       logAction('ship', 'order', o.id, `출고 완료 — ${c?.name||'—'} (${itms})`);
     } catch (e) {
       showToast('저장됨 (오프라인)', 'info');
@@ -4313,6 +4346,41 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     showLoading(false);
     closeModal('modal-detail'); renderAll();
   }
+
+  function getShippingMessage(o) {
+    const c = getCust(o.customer_id);
+    const itemsList = (o.items || []).map(i => `${i.name}${i.spec ? ` (${i.spec})` : ''} × ${i.qty}개`).join('\n');
+    const pdfLink = o.pdf_url || '(거래명세서 링크 미생성)';
+    const dt = (o.shipped_date || o.order_date || '').slice(0, 10);
+    
+    return `[출고 알림]
+안녕하세요, ${c?.name || '—'} 고객님.
+주문하신 상품이 금일(${dt}) 출고되었습니다.
+
+🚚 택배 정보
+택배사: ${o.courier || '롯데택배'}
+송장번호: ${o.tracking || '확인 중'}
+
+📦 주문 내역
+${itemsList}
+
+📑 거래명세서
+${pdfLink}
+
+감사합니다.`;
+  }
+
+  function copyShippingMessage(id) {
+    const o = getOrder(id);
+    if (!o) return;
+    const msg = getShippingMessage(o);
+    navigator.clipboard?.writeText(msg).then(() => {
+      showToast('메시지가 복사되었습니다 ✓', 'success');
+    }).catch(() => {
+      showToast('복사 실패', 'error');
+    });
+  }
+
 
   function makeInvoiceFromOrder() {
     // Manually close the modal UI without triggering history.back()
