@@ -2996,7 +2996,7 @@ CREATE POLICY IF NOT EXISTS "auth_only" ON settings FOR ALL USING (auth.role() =
       await loadAll();
       document.getElementById('db-dot').style.background = 'var(--green)';
       document.getElementById('db-label').textContent = 'DB 연결됨';
-      showToast('Supabase 연결 완료 ✓', 'success');
+      showToast('데이터 동기화 완료 ✓', 'success');
     } catch (e) {
       document.getElementById('db-dot').style.background = 'var(--red)';
       document.getElementById('db-label').textContent = 'DB 오류';
@@ -3255,13 +3255,45 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
+  // ── Browser History & Back Button Support ──
+  window.addEventListener('popstate', (e) => {
+    // 1. Close open modals first
+    const openModalEl = document.querySelector('.modal-overlay.open');
+    if (openModalEl) {
+      openModalEl.classList.remove('open');
+      return;
+    }
+
+    // 2. Handle page navigation
+    const state = e.state;
+    if (state && state.page) {
+      showPage(state.page, true);
+    } else {
+      showPage('dashboard', true);
+    }
+  });
+
+  // Prevent accidental exit
+  window.addEventListener('beforeunload', (e) => {
+    // Only prompt if user is in a critical page or modal is open
+    const isCritical = document.querySelector('.modal-overlay.open') || 
+                       document.getElementById('page-invoice').style.display !== 'none';
+    if (isCritical) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
   /* ════════════════════════════════════════════
      NAVIGATION
      ════════════════════════════════════════════ */
   const PAGE_TITLES = { dashboard: '대시보드', calendar: '캘린더', orders: '주문 목록', customers: '거래처 관리', invoice: '거래명세서', history: '출고 이력' };
   const PAGE_ORDER = ['dashboard', 'calendar', 'orders', 'customers', 'invoice', 'history'];
 
-  function showPage(id) {
+  function showPage(id, skipPush = false) {
+    if (!skipPush) {
+      history.pushState({ page: id }, "");
+    }
     localStorage.setItem('lastPage', id);
     document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
     const pg = document.getElementById('page-' + id);
@@ -3287,8 +3319,20 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   /* ════════════════════════════════════════════
      MODAL
      ════════════════════════════════════════════ */
-  function openModal(id) { document.getElementById(id).classList.add('open'); }
-  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function openModal(id) { 
+    document.getElementById(id).classList.add('open'); 
+    history.pushState({ modal: id }, "");
+  }
+  function closeModal(id) { 
+    const el = document.getElementById(id);
+    if (el.classList.contains('open')) {
+      el.classList.remove('open'); 
+      // If we closed manually, pop the state to keep history clean
+      if (history.state && history.state.modal === id) {
+        history.back();
+      }
+    }
+  }
   document.querySelectorAll('.modal-overlay').forEach(o => {
     o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
   });
