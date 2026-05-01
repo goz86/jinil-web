@@ -236,34 +236,38 @@ export default function MessageScreen({ route, navigation }) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  // SMS — Use expo-sms to open the message app directly for the given number
+  // SMS — Try direct SMS first, fallback to URL scheme if needed
   const sendSMS = async () => {
     const phone = (customer.tel || '').replace(/[^0-9]/g, '');
     
-    // Always copy text to clipboard as fallback
+    // Always copy to clipboard as safety
     await Clipboard.setStringAsync(message);
     setSent(true);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
+      // 1. Try expo-sms (supports attachments)
       const isAvailable = await SMS.isAvailableAsync();
       if (isAvailable && phone) {
-        const attachments = [];
-        if (photoUri) {
-          attachments.push({
-            uri: photoUri,
-            mimeType: 'image/jpeg',
-            filename: 'shipping_photo.jpg',
+        try {
+          const { result } = await SMS.sendSMSAsync([phone], message, {
+            attachments: photoUri ? [{
+              uri: photoUri,
+              mimeType: 'image/jpeg',
+              filename: 'shipping_photo.jpg',
+            }] : []
           });
+          if (result !== 'cancelled') return;
+        } catch (err) {
+          console.warn('SMS.sendSMSAsync error:', err);
         }
-        
-        // This opens the default SMS app directly for the number, bypassing the share sheet
-        await SMS.sendSMSAsync([phone], message, { attachments });
-      } else {
-        // Fallback: open SMS via URL scheme (no photo support)
-        const url = `sms:${phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
-        await Linking.openURL(url);
       }
+      
+      // 2. Fallback to Linking (Reliable for opening the app)
+      const sep = Platform.OS === 'ios' ? '&' : '?';
+      const url = `sms:${phone}${sep}body=${encodeURIComponent(message)}`;
+      await Linking.openURL(url);
+      
     } catch (e) {
       Alert.alert('알림', '메시지가 클립보드에 복사되었습니다. SMS 앱을 열어 붙여넣기 하세요.');
     }
