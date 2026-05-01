@@ -4656,10 +4656,21 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     const inv = getInvoiceData();
     if (!inv.items.length) { showToast('품목을 입력하세요', 'error'); return; }
 
-    // Open isolated popup window — completely isolated from main page CSS/media queries
-    const win = window.open('', '_blank', 'width=1300,height=860');
-    if (!win) { showToast('팝업 차단됨 — 주소창 우측 팝업 허용 후 다시 시도하세요', 'error'); return; }
+    // Use a hidden iframe instead of window.open to bypass popup blockers
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+    }
 
+    const win = iframe.contentWindow;
     const css = `
       @page { size: A4 landscape; margin: 8mm; }
       * { box-sizing: border-box; margin:0; padding:0; }
@@ -4667,9 +4678,6 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
       .wrap { display:grid; grid-template-columns:1fr 1fr; border:1.5px solid #1a6b3a; width:100%; min-width:270mm; }
       .inv-copy { padding:6px 8px; border-right:1.5px solid #1a6b3a; position:relative; min-width:0; display:flex; flex-direction:column; }
       .inv-copy:last-child { border-right:none; }
-      .inv-title-block { position:absolute; right:0; top:0; bottom:0; width:26px; border-left:1.5px solid #1a6b3a; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff; }
-      .inv-title-main { writing-mode:vertical-rl; font-size:14pt; font-weight:700; color:#1a6b3a; letter-spacing:4px; line-height:1; }
-      .inv-copy-label { writing-mode:vertical-rl; font-size:7pt; color:#555; margin-top:8px; }
       .inv-party-title { background:#e8f5e8; color:#1a6b3a; font-weight:700; text-align:center; font-size:8pt; padding:2px 0; border-bottom:1px solid #1a6b3a; letter-spacing:2px; }
       .inv-party-label { padding:2px 4px; border-right:1px solid #ccc; border-bottom:1px solid #eee; color:#555; white-space:nowrap; font-size:7pt; background:#f9fdf9; }
       .inv-party-val { padding:2px 5px; border-bottom:1px solid #eee; font-size:7.5pt; }
@@ -4681,27 +4689,15 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
       .td-left { text-align:left; } .td-right { text-align:right; }
       .inv-page-no { position:absolute; top:4px; left:4px; font-size:7pt; color:#555; }
       .inv-date-issued { font-size:7pt; color:#555; text-align:right; margin-right:28px; margin-bottom:2px; }
-      @media screen {
-        body { padding:16px; }
-        .print-bar { margin-bottom:16px; display:flex; gap:10px; align-items:center; }
-        .btn { padding:8px 20px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; }
-        .btn-primary { background:#0066cc; color:#fff; }
-        .btn-secondary { background:#f0f0f0; color:#333; }
-      }
-      @media print { .print-bar { display:none; } }
     `;
 
     const body = buildInvoiceHTML(inv, '공급받는자용') + buildInvoiceHTML(inv, '공급자용');
 
+    win.document.open();
     win.document.write(`<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>거래명세서</title>
 <style>${css}</style></head>
-<body>
-  <div class="print-bar">
-    <button class="btn btn-primary" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
-    <button class="btn btn-secondary" onclick="window.close()">닫기</button>
-    <span style="line-height:36px;font-size:12px;color:#666">저장: 인쇄 대화상자 → 대상: PDF로 저장</span>
-  </div>
+<body onload="window.print()">
   <div class="wrap">${body}</div>
 </body></html>`);
     win.document.close();
