@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, RefreshControl, ActivityIndicator, useWindowDimensions,
+  Modal, ScrollView as RNScrollView
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase, fmt, orderTotal, C } from '../lib/supabase';
@@ -55,6 +56,80 @@ function CustomerCard({ customer, orders, onPress, isAdmin }) {
   );
 }
 
+// ── Address Select Modal ────────────────────────────────
+function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
+  if (!customer) return null;
+
+  // Collect unique addresses from customer profile and historical orders
+  const addrMap = new Map();
+  
+  // 1. Add default address from customer profile
+  if (customer.address || customer.tel) {
+    const key = `${customer.address || ''}|${customer.tel || ''}`;
+    addrMap.set(key, { 
+      addr: customer.address || '', 
+      tel: customer.tel || '', 
+      label: '기본 주소' 
+    });
+  }
+
+  // 2. Add historical addresses from orders
+  orders.forEach(o => {
+    if (o.addr || o.tel) {
+      const key = `${o.addr || ''}|${o.tel || ''}`;
+      if (!addrMap.has(key)) {
+        addrMap.set(key, { 
+          addr: o.addr || '', 
+          tel: o.tel || '', 
+          label: '이전 배송지' 
+        });
+      }
+    }
+  });
+
+  const uniqueAddrs = Array.from(addrMap.values());
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{customer.name}</Text>
+            <Text style={styles.modalSub}>배송지/연락처를 lựa chọn</Text>
+          </View>
+          
+          <RNScrollView style={styles.modalScroll} bounces={false}>
+            {uniqueAddrs.map((item, idx) => (
+              <TouchableOpacity 
+                key={idx} 
+                style={styles.addrItem} 
+                onPress={() => onSelect(item.addr, item.tel)}
+              >
+                <View style={styles.addrLabelWrap}>
+                  <Text style={styles.addrLabel}>{item.label}</Text>
+                </View>
+                <Text style={styles.addrText}>{item.addr || '(주소 없음)'}</Text>
+                <Text style={styles.addrTel}>{item.tel || '(연락처 없음)'}</Text>
+              </TouchableOpacity>
+            ))}
+            
+            <TouchableOpacity 
+              style={[styles.addrItem, { borderBottomWidth: 0 }]} 
+              onPress={() => onSelect('', '')}
+            >
+              <Text style={[styles.addrText, { color: C.blue, fontWeight: '700' }]}>+ 새로운 주소로 진행</Text>
+            </TouchableOpacity>
+          </RNScrollView>
+
+          <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
+            <Text style={styles.modalCloseText}>닫기</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 // ── Stats pill ────────────────────────────────────────
 function StatPill({ value, label, color }) {
   return (
@@ -73,6 +148,7 @@ export default function HomeScreen({ navigation }) {
   const [query,      setQuery]      = useState('');
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selCust,    setSelCust]    = useState(null); // For address modal
 
   const loadData = useCallback(async () => {
     try {
@@ -155,6 +231,20 @@ export default function HomeScreen({ navigation }) {
 
   const { width } = useWindowDimensions();
   const numColumns = width >= 600 ? 2 : 1;
+
+  const handleCustPress = (cust) => {
+    const custOrders = orders.filter(o => o.customer_id == cust.id);
+    setSelCust({ cust, orders: custOrders });
+  };
+
+  const handleAddrSelect = (addr, tel) => {
+    const { cust, orders: custOrders } = selCust;
+    setSelCust(null);
+    navigation.navigate('Order', {
+      customer: { ...cust, address: addr, tel: tel }, // Pass selected address
+      orders: custOrders,
+    });
+  };
 
   if (loading) {
     return (
@@ -239,15 +329,20 @@ export default function HomeScreen({ navigation }) {
               <CustomerCard
                 customer={item}
                 orders={custOrders}
-                onPress={() => navigation.navigate('Order', {
-                  customer: item,
-                  orders: custOrders,
-                })}
+                onPress={() => handleCustPress(item)}
                 isAdmin={isAdmin}
               />
             </View>
           );
         }}
+      />
+
+      <AddressSelectModal 
+        visible={!!selCust}
+        customer={selCust?.cust}
+        orders={selCust?.orders}
+        onSelect={handleAddrSelect}
+        onClose={() => setSelCust(null)}
       />
     </View>
   );
@@ -334,8 +429,37 @@ const styles = StyleSheet.create({
   pendingBadgeText: { color: '#b36a00', fontSize: 10, fontWeight: '700' },
 
   // ── Empty
-  empty:      { alignItems: 'center', paddingTop: 72, gap: 8 },
-  emptyEmoji: { fontSize: 40 },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: C.ink },
   emptySub:   { fontSize: 13, color: C.inkMuted, textAlign: 'center' },
+
+  // ── Modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center', padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#fff', borderRadius: 24,
+    maxHeight: '80%', overflow: 'hidden',
+  },
+  modalHeader: {
+    padding: 20, borderBottomWidth: 1, borderBottomColor: C.hairline,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: C.ink },
+  modalSub:   { fontSize: 13, color: C.inkMuted, marginTop: 4 },
+  modalScroll: { padding: 10 },
+  addrItem: {
+    padding: 16, borderBottomWidth: 1, borderBottomColor: C.hairline,
+    gap: 4,
+  },
+  addrLabelWrap: {
+    alignSelf: 'flex-start', backgroundColor: '#f1f3f5',
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+  },
+  addrLabel: { fontSize: 10, fontWeight: '700', color: C.inkMuted },
+  addrText:  { fontSize: 14, color: C.ink, fontWeight: '600' },
+  addrTel:   { fontSize: 13, color: C.blue },
+  modalCloseBtn: {
+    padding: 16, alignItems: 'center', borderTopWidth: 1, borderTopColor: C.hairline,
+  },
+  modalCloseText: { fontSize: 16, fontWeight: '600', color: C.inkLight },
 });
