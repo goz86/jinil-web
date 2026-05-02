@@ -32,6 +32,9 @@ function CustomerCard({ customer, orders, onPress, isAdmin }) {
       <View style={styles.cardBody}>
         <Text style={styles.cardName} numberOfLines={1}>{customer.name}</Text>
         <Text style={styles.cardTel}>{customer.tel}</Text>
+        {customer.address && (
+          <Text style={styles.cardAddress} numberOfLines={1}>{customer.address}</Text>
+        )}
         {latest && <Text style={styles.cardDate}>최근 {latest}</Text>}
       </View>
 
@@ -119,19 +122,25 @@ export default function HomeScreen({ navigation }) {
   };
 
   const sortedCustomers = [...customers].sort((a, b) => {
-    const ordersA = orders.filter(o => o.customer_id == a.id).length;
-    const ordersB = orders.filter(o => o.customer_id == b.id).length;
+    const custOrdersA = orders.filter(o => o.customer_id == a.id);
+    const custOrdersB = orders.filter(o => o.customer_id == b.id);
     
-    // Rule 1: 0 orders go to bottom
-    if (ordersA > 0 && ordersB === 0) return -1;
-    if (ordersA === 0 && ordersB > 0) return 1;
+    const pendingA = custOrdersA.filter(o => o.status === 'pending').length;
+    const pendingB = custOrdersB.filter(o => o.status === 'pending').length;
+
+    // Rule 1: Priority for higher pending count
+    if (pendingA !== pendingB) return pendingB - pendingA;
     
-    // Rule 2: Sort by latest order date (newest first)
+    // Rule 2: 0 orders go to bottom
+    if (custOrdersA.length > 0 && custOrdersB.length === 0) return -1;
+    if (custOrdersA.length === 0 && custOrdersB.length > 0) return 1;
+    
+    // Rule 3: Sort by latest order date (newest first)
     const dateA = getLatestDate(a.id);
     const dateB = getLatestDate(b.id);
     if (dateA !== dateB) return dateB.localeCompare(dateA);
     
-    // Rule 3: Alphabetical if same date
+    // Rule 4: Alphabetical if same date
     return a.name.localeCompare(b.name);
   });
 
@@ -312,6 +321,7 @@ const styles = StyleSheet.create({
   cardBody:  { flex: 1, gap: 2 },
   cardName:  { fontSize: 15, fontWeight: '700', color: C.ink, letterSpacing: -0.2 },
   cardTel:   { fontSize: 12, color: C.blue },
+  cardAddress: { fontSize: 11, color: C.inkMuted, marginTop: 1 },
   cardDate:  { fontSize: 11, color: C.inkLight, marginTop: 1 },
   cardRight: { alignItems: 'flex-end', gap: 3 },
   cardTotal: { fontSize: 14, fontWeight: '700', color: C.ink },
