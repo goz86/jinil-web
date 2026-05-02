@@ -22,6 +22,14 @@ function CustomerCard({ customer, orders, onPress, isAdmin }) {
   const total   = orders.reduce((s, o) => s + orderTotal(o), 0);
   const latest  = orders[0]?.order_date;
 
+  // Count unique addresses
+  const addrMap = new Map();
+  if (customer.addr || customer.tel) addrMap.set(`${customer.addr}|${customer.tel}`, 1);
+  orders.forEach(o => {
+    if (o.addr || o.tel) addrMap.set(`${o.addr}|${o.tel}`, 1);
+  });
+  const addrCount = addrMap.size;
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.72}>
       {/* Avatar */}
@@ -31,7 +39,14 @@ function CustomerCard({ customer, orders, onPress, isAdmin }) {
 
       {/* Body */}
       <View style={styles.cardBody}>
-        <Text style={styles.cardName} numberOfLines={1}>{customer.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={styles.cardName} numberOfLines={1}>{customer.name}</Text>
+          {addrCount > 1 && (
+            <View style={styles.addrCountBadge}>
+              <Text style={styles.addrCountText}>{addrCount}곳</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.cardTel}>{customer.tel}</Text>
         {customer.addr && (
           <Text style={styles.cardAddress} numberOfLines={1}>{customer.addr}</Text>
@@ -427,6 +442,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#fed7aa',
   },
   pendingBadgeText: { color: '#b36a00', fontSize: 10, fontWeight: '700' },
+
+  addrCountBadge: {
+    backgroundColor: '#f1f3f5', borderRadius: 4,
+    paddingHorizontal: 4, paddingVertical: 1,
+  },
+  addrCountText: { color: C.inkMuted, fontSize: 10, fontWeight: '700' },
 
   // ── Empty
   emptySub:   { fontSize: 13, color: C.inkMuted, textAlign: 'center' },
