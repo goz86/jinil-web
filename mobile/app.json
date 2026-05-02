@@ -44,6 +44,25 @@
       "eas": {
         "projectId": "order-manager-mobile"
       }
+    },
+    "web": {
+      "bundler": "metro",
+      "display": "standalone",
+      "favicon": "./assets/icon.png",
+      "themeColor": "#1d1d1f",
+      "backgroundColor": "#ffffff",
+      "description": "진일 라벨 주문관리 시스템",
+      "config": {
+        "pwa": {
+          "manifest": {
+            "name": "주문관리",
+            "short_name": "주문관리",
+            "description": "진일 라벨 주문관리 hệ thống",
+            "background_color": "#ffffff",
+            "theme_color": "#1d1d1f"
+          }
+        }
+      }
     }
   }
 }

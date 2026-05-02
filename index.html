@@ -800,6 +800,13 @@
       opacity: 0.7;
     }
 
+    /* Active tab for expense filters */
+    .active-tab {
+      background: var(--blue) !important;
+      color: #fff !important;
+      border-color: var(--blue) !important;
+    }
+
     .mark-paid-btn {
       padding: 4px 13px;
       border-radius: 99px;
@@ -2329,15 +2336,15 @@
 
     .db-grid {
       display: grid;
-      grid-template-columns: 1.8fr 1fr;
-      gap: 20px;
-      margin-bottom: 24px;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
     }
 
     .db-chart-card {
       background: #fff;
       border-radius: var(--r-lg);
-      padding: 24px;
+      padding: 16px 20px;
       border: 1px solid var(--hairline);
       box-shadow: var(--shadow-sm);
       display: flex;
@@ -2347,15 +2354,15 @@
     .db-stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 10px;
     }
 
     .stat-card-new {
       border-radius: var(--r-md);
-      padding: 24px 20px;
+      padding: 12px 10px;
       border: 1px solid var(--hairline);
       box-shadow: var(--shadow-sm);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.15s, box-shadow 0.15s;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -2365,30 +2372,30 @@
     }
 
     .stat-card-new:hover {
-      transform: translateY(-2px);
+      transform: translateY(-1px);
       box-shadow: var(--shadow-md);
     }
 
     .stat-label-new {
-      font-size: 13px;
+      font-size: 10px;
       color: var(--ink-muted);
       font-weight: 700;
       text-transform: uppercase;
-      margin-bottom: 10px;
-      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+      letter-spacing: 0.4px;
     }
 
     .stat-value-new {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--ink);
       letter-spacing: -0.5px;
     }
 
     .stat-unit-new {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--ink-muted);
-      margin-left: 4px;
+      margin-left: 3px;
       font-weight: 500;
     }
 
@@ -2988,6 +2995,8 @@
           이력</span></div>
       <div class="nav-item" onclick="showPage('debt')"><span class="nav-icon">💰</span><span
           class="nav-label">미수금</span></div>
+      <div class="nav-item" onclick="showPage('expenses')"><span class="nav-icon">💸</span><span
+          class="nav-label">지출관리</span></div>
       <div class="nav-item" onclick="openReportModal()"><span class="nav-icon">📊</span><span class="nav-label">리포트
           PDF</span></div>
       <div class="nav-item" onclick="openActivityLog()"><span class="nav-icon">📜</span><span class="nav-label">활동
@@ -3042,8 +3051,11 @@
           <div class="db-chart-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
               <div>
-                <div style="font-size:17px;font-weight:700;letter-spacing:-0.3px">비즈니스 현황</div>
-                <div style="font-size:12px;color:var(--ink-muted);margin-top:2px" id="chart-subtitle">최근 14일간 매출 및 주문
+                <div style="font-size:14px;font-weight:700;letter-spacing:-0.3px">비즈니스 현황</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span style="display:inline-block;width:18px;height:2px;background:#0066cc;border-radius:2px"></span>매출</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span style="display:inline-block;width:18px;height:2px;background:#ef4444;border-radius:2px;border-bottom:2px dashed #ef4444;height:0"></span>지출</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span style="display:inline-block;width:18px;height:0;border-bottom:2px dashed #ff9500"></span>주문</span>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -3056,7 +3068,7 @@
                   style="display:none">🐵</button>
               </div>
             </div>
-            <div style="flex:1;min-height:300px;position:relative">
+            <div style="flex:1;min-height:200px;position:relative">
               <canvas id="mainChart"></canvas>
             </div>
           </div>
@@ -3086,6 +3098,18 @@
             <div class="stat-card-new">
               <div class="stat-label-new">거래처</div>
               <div class="stat-value-new" id="s-total-custs">0<span class="stat-unit-new"></span></div>
+            </div>
+            <div class="stat-card-new" style="cursor:pointer" onclick="showPage('expenses')">
+              <div class="stat-label-new">이번달 지출</div>
+              <div class="stat-value-new" id="s-month-expense" style="color:var(--red)">0<span class="stat-unit-new">원</span></div>
+            </div>
+            <div class="stat-card-new" style="cursor:pointer" onclick="showPage('expenses')">
+              <div class="stat-label-new">미지급 명세서</div>
+              <div class="stat-value-new" id="s-unpaid-invoices" style="color:var(--red)">0<span class="stat-unit-new">건</span></div>
+            </div>
+            <div class="stat-card-new" style="grid-column:1/-1;flex-direction:row;justify-content:space-between;padding:10px 16px">
+              <div class="stat-label-new" style="margin-bottom:0">이번달 순이익</div>
+              <div class="stat-value-new sensitive" id="s-month-profit" style="color:var(--green);font-size:22px">0<span class="stat-unit-new">원</span></div>
             </div>
           </div>
         </div>
@@ -3234,13 +3258,15 @@
           <div class="section-title">거래처 관리</div>
           <button class="btn btn-primary btn-sm" onclick="openModal('modal-cust')">+ 거래처 추가</button>
         </div>
-        <div class="grid-2">
-          <div class="card" style="padding:14px">
-            <div class="search-bar"><span style="color:var(--ink-muted)">🔍</span><input type="text"
+        <div class="grid-2" style="align-items:start">
+          <!-- Left: customer list -->
+          <div class="card" style="padding:14px;display:flex;flex-direction:column;max-height:calc(100vh - 160px)">
+            <div class="search-bar" style="flex-shrink:0"><span style="color:var(--ink-muted)">🔍</span><input type="text"
                 placeholder="거래처 검색..." id="cust-q" oninput="renderCustomers()"></div>
-            <div id="cust-list"></div>
+            <div id="cust-list" style="overflow-y:auto;flex:1;margin-top:8px"></div>
           </div>
-          <div class="card" id="cust-detail">
+          <!-- Right: customer detail -->
+          <div class="card" id="cust-detail" style="max-height:calc(100vh - 160px);overflow-y:auto">
             <div class="empty">
               <div class="empty-icon">👥</div>
               <div class="empty-text">거래처를 선택하세요</div>
@@ -3444,6 +3470,64 @@
         <div id="debt-list"></div>
       </div>
 
+      <!-- ══ EXPENSES ══ -->
+      <div class="page" id="page-expenses" style="display:none">
+        <div class="section-head">
+          <div class="section-title">지출 관리</div>
+          <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ 지출 등록</button>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+          <div class="card" style="padding:16px;text-align:center">
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">이번달 지출</div>
+            <div style="font-size:20px;font-weight:700;color:var(--red)" id="exp-s-total">0원</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center">
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">일일 지출</div>
+            <div style="font-size:20px;font-weight:700;color:var(--ink)" id="exp-s-daily">0원</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center">
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">수취 명세서</div>
+            <div style="font-size:20px;font-weight:700;color:var(--amber)" id="exp-s-invoice">0원</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center">
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">미지급 금액</div>
+            <div style="font-size:20px;font-weight:700;color:var(--red)" id="exp-s-unpaid">0원</div>
+          </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div style="display:flex;gap:4px;margin-bottom:14px">
+          <button class="btn btn-ghost btn-sm exp-tab active-tab" onclick="setExpTab('all',this)">전체</button>
+          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('daily',this)"> 일일 지출</button>
+          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('invoice',this)">📄 수취 명세서</button>
+          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('unpaid',this)" style="color:var(--red)">⚠️ 미지급</button>
+        </div>
+
+        <!-- List -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:#fafafa;border-bottom:1px solid var(--hairline)">
+                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">날짜</th>
+                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">구분</th>
+                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">항목</th>
+                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">공급처</th>
+                <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--ink-muted);font-weight:600">금액</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--ink-muted);font-weight:600">결제</th>
+                <th style="padding:10px 14px;font-size:11px"></th>
+              </tr>
+            </thead>
+            <tbody id="exp-list"></tbody>
+          </table>
+          <div id="exp-empty" style="text-align:center;padding:40px;color:var(--ink-muted);display:none">
+            <div style="font-size:32px;margin-bottom:8px">💸</div>
+            <div>지출 내역이 없습니다</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ HISTORY ══ -->
       <div class="page" id="page-history" style="display:none">
         <div class="section-head" style="margin-bottom:12px">
@@ -3531,16 +3615,25 @@
     <div class="form-grid">
       <div class="form-group">
         <label>거래처 *</label>
-        <div class="ss-container" id="ss-o-cust-container">
-          <input type="text" class="ss-input" id="o-cust-search" placeholder="거래처 검색..." autocomplete="off">
-          <input type="hidden" id="o-cust">
-          <div class="ss-list" id="o-cust-list"></div>
+        <div style="display:flex;gap:6px;align-items:flex-start">
+          <div class="ss-container" id="ss-o-cust-container" style="flex:1">
+            <input type="text" class="ss-input" id="o-cust-search" placeholder="거래처 검색..." autocomplete="off">
+            <input type="hidden" id="o-cust">
+            <div class="ss-list" id="o-cust-list"></div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="openQuickAddCust()"
+            title="새 거래처 등록" style="white-space:nowrap;flex-shrink:0;padding:8px 12px;border:1.5px dashed var(--blue);color:var(--blue);border-radius:var(--r-md)">
+            + 신규
+          </button>
         </div>
       </div>
       <div class="form-group"><label>주문일 *</label><input type="date" id="o-date"></div>
       <div class="form-group full"><label>배송 주소</label><input type="text" id="o-addr" placeholder="전체 주소"></div>
       <div class="form-group"><label>연락처</label><input type="text" id="o-tel" placeholder="010-0000-0000"></div>
       <div class="form-group"><label>송장번호</label><input type="text" id="o-track" placeholder="출고 후 입력"></div>
+      <div class="form-group"><label>대표자</label><input type="text" id="o-rep" placeholder="대표자 성명"></div>
+      <div class="form-group"><label>담당자명</label><input type="text" id="o-contact" placeholder="담당자 성명"></div>
+      <div class="form-group"><label>사업등록증 번호</label><input type="text" id="o-biz-no" placeholder="000-00-00000"></div>
     </div>
     <hr class="div">
     <div class="section-head">
@@ -3596,12 +3689,64 @@
   </div>
 </div>
 
+<!-- Expense Modal -->
+<div class="modal-overlay" id="modal-expense">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-expense-title">지출 등록</div>
+      <button class="modal-close" onclick="closeModal('modal-expense')">✕</button>
+    </div>
+    <!-- Type toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <button id="exp-type-daily" class="btn btn-primary btn-sm" style="flex:1"
+        onclick="setExpenseType('daily')"> 일일 지출</button>
+      <button id="exp-type-invoice" class="btn btn-ghost btn-sm" style="flex:1"
+        onclick="setExpenseType('invoice')">📄 수취 명세서</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>날짜 *</label><input type="date" id="exp-date"></div>
+      <div class="form-group" id="exp-category-wrap">
+        <label>카테고리</label>
+        <select id="exp-category" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px">
+          <option value="퀵서비스"> 퀵서비스</option>
+          <option value="식비"> 식비</option>
+          <option value="소모품"> 소모품</option>
+          <option value="교통비"> 교통비</option>
+          <option value="수리/유지보수"> 수리/유지보수</option>
+          <option value="기타"> 기타</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>항목명 *</label><input type="text" id="exp-desc" placeholder="예: 강남 퀵서비스, 사무용품 구입..."></div>
+      <div class="form-group" id="exp-vendor-wrap" style="display:none">
+        <label>공급처 (업체명)</label><input type="text" id="exp-vendor" placeholder="공급업체명">
+      </div>
+      <div class="form-group"><label>금액 *</label><input type="number" id="exp-amount" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/,'')"></div>
+      <div class="form-group" id="exp-paid-wrap">
+        <label>결제 상태</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="exp-paid" id="exp-paid-yes" value="true" checked> 즉시결제
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="exp-paid" id="exp-paid-no" value="false"> 미결제
+          </label>
+        </div>
+      </div>
+      <div class="form-group full"><label>메모</label><textarea id="exp-memo" placeholder="비고..." style="height:60px"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-expense')">취소</button>
+      <button class="btn btn-primary" onclick="saveExpense()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- Customer Modal -->
-<div class="modal-overlay" id="modal-cust">
+<div class="modal-overlay" id="modal-cust" style="z-index:10001">
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <div class="modal-title">거래처 추가</div>
-      <button class="modal-close" onclick="closeModal('modal-cust')">✕</button>
+      <div class="modal-title" id="modal-cust-title">거래처 추가</div>
+      <button class="modal-close" onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">✕</button>
     </div>
     <div class="form-grid">
       <div class="form-group"><label>업체명 *</label><input type="text" id="c-name" placeholder="업체명"></div>
@@ -3613,7 +3758,7 @@
       <div class="form-group"><label>KakaoTalk ID</label><input type="text" id="c-kakao" placeholder="카카오톡 아이디"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-cust')">취소</button>
+      <button class="btn btn-ghost" onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">취소</button>
       <button class="btn btn-primary" onclick="saveCustomer()">저장</button>
     </div>
   </div>
@@ -3721,10 +3866,28 @@
     return null;
   }
 
+  // Like supa() but strips optional columns and retries if Supabase returns a column-not-found error
+  // optionalKeys: array of field names that might not exist in the DB yet
+  async function supaResilient(method, table, body, query, optionalKeys = []) {
+    try {
+      return await supa(method, table, body, query);
+    } catch (e) {
+      const msg = (e.message || '').toLowerCase();
+      const isColErr = msg.includes('column') || msg.includes('42703') || msg.includes('does not exist') || msg.includes('schema cache');
+      if (isColErr && optionalKeys.length) {
+        console.warn(`supaResilient: retrying without [${optionalKeys.join(', ')}]`, e.message);
+        const reduced = { ...body };
+        optionalKeys.forEach(k => delete reduced[k]);
+        return await supa(method, table, reduced, query);
+      }
+      throw e;
+    }
+  }
+
   /* ════════════════════════════════════════════
      STATE
      ════════════════════════════════════════════ */
-  let DB = { customers: [], orders: [] };
+  let DB = { customers: [], orders: [], expenses: [] };
   let UI = {
     orderFilter: 'all',
     calYear: new Date().getFullYear(),
@@ -3767,11 +3930,47 @@
         // Pulse the DB indicator
         const dot = document.getElementById('db-dot');
         if (dot) { dot.style.transform = 'scale(1.6)'; setTimeout(() => dot.style.transform = '', 500); }
-        loadAll().then(renderAll);
+
+        // Smart update: don't wipe DB.orders with a filtered reload
+        if (payload.eventType === 'UPDATE' && payload.new?.id) {
+          // Only patch the changed order in memory → keeps the full loaded list intact
+          const idx = DB.orders.findIndex(o => o.id == payload.new.id);
+          if (idx !== -1) {
+            DB.orders[idx] = { ...DB.orders[idx], ...payload.new };
+          } else {
+            // Order not in current window → add it
+            DB.orders.unshift(payload.new);
+          }
+          renderAll();
+        } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+          DB.orders = DB.orders.filter(o => o.id != payload.old.id);
+          renderAll();
+        } else if (payload.eventType === 'INSERT' && payload.new?.id) {
+          if (!DB.orders.find(o => o.id == payload.new.id)) {
+            DB.orders.unshift(payload.new);
+          }
+          renderAll();
+        } else {
+          // Fallback: full reload only when we can't do smart update
+          loadAll().then(renderAll);
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, payload => {
         console.log('🔔 Realtime Change (Customers):', payload.eventType);
         loadAll().then(renderAll);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, payload => {
+        console.log('🔔 Realtime Change (Expenses):', payload.eventType);
+        if (payload.eventType === 'UPDATE' && payload.new?.id) {
+          const idx = DB.expenses.findIndex(e => e.id == payload.new.id);
+          if (idx !== -1) DB.expenses[idx] = { ...DB.expenses[idx], ...payload.new };
+          else DB.expenses.unshift(payload.new);
+        } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+          DB.expenses = DB.expenses.filter(e => e.id != payload.old.id);
+        } else if (payload.eventType === 'INSERT' && payload.new?.id) {
+          if (!DB.expenses.find(e => e.id == payload.new.id)) DB.expenses.unshift(payload.new);
+        }
+        renderExpenses(); renderDashboard();
       })
       .subscribe((status) => {
         console.log('📡 Realtime status:', status);
@@ -3820,10 +4019,10 @@
         console.error('Supplier cloud save error:', errText);
 
         if (errText.includes('42P01') || errText.includes('does not exist')) {
-          // Table missing → create + disable RLS, then retry
+          // Table missing → create with RLS policy, then retry
           await fetch(`${SUPA_URL}/rest/v1/rpc/exec_sql`, {
             method: 'POST', headers: getHeaders(),
-            body: JSON.stringify({ sql: `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value JSONB DEFAULT '{}'); ALTER TABLE settings DISABLE ROW LEVEL SECURITY;` })
+            body: JSON.stringify({ sql: `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value JSONB DEFAULT '{}'); ALTER TABLE settings ENABLE ROW LEVEL SECURITY; DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='settings' AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON settings FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF; END $$;` })
           });
           res = await doInsert();
           if (res.ok) showToast('공급자 정보 클라우드 저장 완료 ✓', 'success');
@@ -3841,13 +4040,20 @@
     }
   }
 
-  // Fix RLS on settings table — settings là dữ liệu công ty chung, không cần RLS
+  // Fix RLS on settings table — ensure authenticated users can access it
   async function fixSettingsRLS() {
-    const rlsSql = `ALTER TABLE settings DISABLE ROW LEVEL SECURITY;`;
+    const sql = `
+      ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='settings' AND policyname='app_auth_all') THEN
+          CREATE POLICY "app_auth_all" ON settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
+        END IF;
+      END $$;
+    `;
     try {
       const r = await fetch(`${SUPA_URL}/rest/v1/rpc/exec_sql`, {
         method: 'POST', headers: getHeaders(),
-        body: JSON.stringify({ sql: rlsSql })
+        body: JSON.stringify({ sql })
       });
       return r.ok;
     } catch (e) {
@@ -4052,16 +4258,16 @@
       if (!probe.ok) {
         const errText = await probe.text();
         if (errText.includes('42P01') || errText.includes('does not exist')) {
-          // Table missing → create + disable RLS + push saved supplier
+          // Table missing → create with RLS policy for authenticated users
           await fetch(`${SUPA_URL}/rest/v1/rpc/exec_sql`, {
             method: 'POST', headers: getHeaders(),
-            body: JSON.stringify({ sql: `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value JSONB DEFAULT '{}'); ALTER TABLE settings DISABLE ROW LEVEL SECURITY;` })
+            body: JSON.stringify({ sql: `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value JSONB DEFAULT '{}'); ALTER TABLE settings ENABLE ROW LEVEL SECURITY; DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='settings' AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON settings FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF; END $$;` })
           });
-          console.log('✅ settings table created with RLS disabled');
+          console.log('✅ settings table created with RLS policy');
         } else if (errText.includes('42501') || errText.includes('row-level')) {
-          // Table exists but RLS blocks write → disable RLS
+          // Table exists but RLS blocks write → add policy for authenticated users
           await fixSettingsRLS();
-          console.log('✅ settings RLS disabled');
+          console.log('✅ settings RLS policy added');
         }
         // After fixing, push saved supplier info
         const saved = localStorage.getItem('supplierInfo');
@@ -4115,7 +4321,6 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value JSONB DEFAULT '{}'
 );
-ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS activity_logs (
   id BIGSERIAL PRIMARY KEY,
   user_name TEXT DEFAULT '',
@@ -4125,12 +4330,44 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   detail TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-ALTER TABLE activity_logs DISABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS expenses (
+  id          BIGSERIAL PRIMARY KEY,
+  date        TEXT NOT NULL,
+  type        TEXT NOT NULL DEFAULT 'daily' CHECK(type IN ('daily','invoice')),
+  category    TEXT DEFAULT '',
+  vendor      TEXT DEFAULT '',
+  description TEXT DEFAULT '',
+  amount      INTEGER NOT NULL DEFAULT 0,
+  paid        BOOLEAN DEFAULT TRUE,
+  paid_at     TIMESTAMPTZ,
+  memo        TEXT DEFAULT '',
+  img_url     TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier TEXT DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS rep TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS contact TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS biz_no TEXT;
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_orders_date     ON orders(order_date DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status   ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_date   ON expenses(date DESC);
+-- Enable RLS with authenticated-user policy on all tables
+ALTER TABLE customers    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settings     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses     ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='customers'     AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON customers     FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='orders'        AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON orders        FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='settings'      AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON settings      FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='activity_logs' AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON activity_logs FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='expenses'      AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON expenses      FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
+END $$;
 `;
 
   // 기본: 최근 90일 주문만 로드 (빠름, 메모리 절약)
@@ -4145,14 +4382,16 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 
   async function loadAll(daysAgo = LOAD_DAYS) {
     const from = getDateFrom(daysAgo);
-    const [custs, ords] = await Promise.all([
+    const [custs, ords, exps] = await Promise.all([
       supa('GET', 'customers', null, '?order=name'),
-      supa('GET', 'orders', null, `?order=order_date.desc&order_date=gte.${from}&limit=1000`)
+      supa('GET', 'orders', null, `?order=order_date.desc&order_date=gte.${from}&limit=1000`),
+      supa('GET', 'expenses', null, `?order=date.desc&date=gte.${from}&limit=1000`).catch(() => []),
     ]);
     DB.customers = custs || [];
     DB.orders = ords || [];
-    DB.loadedFrom = from;    // 언제부터 로드했는지 기록
-    DB.hasMore = ords?.length === 1000; // 1000건이면 더 있을 수 있음
+    DB.expenses = exps || [];
+    DB.loadedFrom = from;
+    DB.hasMore = ords?.length === 1000;
     updateLoadMoreBtn();
   }
 
@@ -4270,13 +4509,26 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     });
   }
 
+  function confirmMarkPaid(orderId) {
+    const o = getOrder(orderId);
+    const c = getCust(o?.customer_id);
+    customConfirm({
+      title: '결제 완료 처리',
+      msg: `${c?.name || '—'} · ${o?.order_date || ''}\n이 주문을 결제 완료로 처리하시겠습니까?`,
+      icon: '💳',
+      okText: '결제 완료',
+      okClass: 'btn-primary',
+      onOk: () => markPaid(orderId, true),
+    });
+  }
+
   // 주문 목록용 — 클릭하면 결제 상태 토글 가능
   function paidBadgeToggle(o) {
     if (o.status !== 'shipped') return '';
     return o.paid
       ? `<span class="badge s-paid" onclick="event.stopPropagation();confirmUnpaid(${o.id})"
            style="cursor:pointer" title="클릭 → 미결제로 변경">✓ 결제완료</span>`
-      : `<span class="badge s-unpaid" onclick="event.stopPropagation();markPaid(${o.id},true)"
+      : `<span class="badge s-unpaid" onclick="event.stopPropagation();confirmMarkPaid(${o.id})"
            style="cursor:pointer" title="클릭 → 결제완료로 변경">미결제</span>`;
   }
 
@@ -4319,7 +4571,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
   /* ════════════════════════════════════════════
      NAVIGATION
      ════════════════════════════════════════════ */
-  const PAGE_TITLES = { dashboard: '대시보드', calendar: '캘린더', orders: '주문 목록', customers: '거래처 관리', invoice: '거래명세서', history: '출고 이력', debt: '미수금 관리' };
+  const PAGE_TITLES = { dashboard: '대시보드', calendar: '캘린더', orders: '주문 목록', customers: '거래처 관리', invoice: '거래명세서', history: '출고 이력', debt: '미수금 관리', expenses: '지출 관리' };
   const PAGE_ORDER = ['dashboard', 'calendar', 'orders', 'customers', 'invoice', 'history', 'debt'];
 
   function showPage(id, skipPush = false, replace = false) {
@@ -4416,7 +4668,27 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 
     const formatVal = (val, suffix) => UI.privacyMode ? `*******<span class="stat-unit-new">${suffix}</span>` : `${fmt(val)}<span class="stat-unit-new">${suffix}</span>`;
     document.getElementById('s-unshipped-amount').innerHTML = formatVal(unshippedAmount, '원');
-    document.getElementById('s-month-revenue').innerHTML = formatVal(monthShipped.reduce((s, o) => s + orderTotal(o), 0), '원');
+    const monthRevenue = monthShipped.reduce((s, o) => s + orderTotal(o), 0);
+    document.getElementById('s-month-revenue').innerHTML = formatVal(monthRevenue, '원');
+
+    // 2c. Expense stats
+    const expYm = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const monthExps = (DB.expenses || []).filter(e => (e.date || '').startsWith(expYm));
+    const monthExpTotal = monthExps.reduce((s, e) => s + (e.amount || 0), 0);
+    const unpaidInvoices = (DB.expenses || []).filter(e => e.type === 'invoice' && !e.paid);
+    const monthProfit = monthRevenue - monthExpTotal;
+    const elExp = document.getElementById('s-month-expense');
+    const elInv = document.getElementById('s-unpaid-invoices');
+    const elPro = document.getElementById('s-month-profit');
+    // Expense stats are always visible (staff can see costs, not revenue)
+    const fmtExp = v => `${fmt(v)}<span class="stat-unit-new">원</span>`;
+    if (elExp) elExp.innerHTML = fmtExp(monthExpTotal);
+    if (elInv) elInv.innerHTML = `${unpaidInvoices.length}<span class="stat-unit-new">건</span>`;
+    if (elPro) {
+      elPro.style.color = monthProfit >= 0 ? 'var(--green)' : 'var(--red)';
+      // profit is sensitive for staff
+      elPro.innerHTML = UI.privacyMode ? `*******<span class="stat-unit-new">원</span>` : fmtExp(Math.abs(monthProfit));
+    }
 
     // 2b. 미수금 banner
     const unpaidOrders = DB.orders.filter(o => o.status === 'shipped' && !o.paid);
@@ -4509,7 +4781,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     document.querySelectorAll('.chart-mode-tab').forEach(t =>
       t.classList.toggle('active', t.dataset.mode === mode)
     );
-    const subtitles = { day: '최근 14일간 매출 및 주문', week: '최근 8주간 매출 및 주문', month: '최근 6개월 매출 및 주문' };
+    const subtitles = { day: '최근 14일간 매출 · 지출 · 주문', week: '최근 8주간 매출 · 지출 · 주문', month: '최근 6개월 매출 · 지출 · 주문' };
     const sub = document.getElementById('chart-subtitle');
     if (sub) sub.textContent = subtitles[mode] || '';
     renderMainChart();
@@ -4756,7 +5028,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     const labels = [];
     const revenueData = [];
     const orderData = [];
+    const expenseData = [];
     const mode = UI.chartMode || 'day';
+    const exps = DB.expenses || [];
 
     if (mode === 'day') {
       for (let i = 13; i >= 0; i--) {
@@ -4766,6 +5040,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
         const dayOrders = DB.orders.filter(o => (o.order_date || '').startsWith(ds));
         orderData.push(dayOrders.length);
         revenueData.push(dayOrders.filter(o => o.status === 'shipped').reduce((s, o) => s + orderTotal(o), 0));
+        expenseData.push(exps.filter(e => (e.date || '').startsWith(ds)).reduce((s, e) => s + (e.amount || 0), 0));
       }
     } else if (mode === 'week') {
       for (let i = 7; i >= 0; i--) {
@@ -4777,6 +5052,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
         const wOrders = DB.orders.filter(o => { const d = (o.order_date || '').slice(0, 10); return d >= ss && d <= es; });
         orderData.push(wOrders.length);
         revenueData.push(wOrders.filter(o => o.status === 'shipped').reduce((s, o) => s + orderTotal(o), 0));
+        expenseData.push(exps.filter(e => { const d = (e.date || '').slice(0, 10); return d >= ss && d <= es; }).reduce((s, e) => s + (e.amount || 0), 0));
       }
     } else if (mode === 'month') {
       for (let i = 5; i >= 0; i--) {
@@ -4786,6 +5062,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
         const mOrders = DB.orders.filter(o => (o.order_date || '').startsWith(ym));
         orderData.push(mOrders.length);
         revenueData.push(mOrders.filter(o => o.status === 'shipped').reduce((s, o) => s + orderTotal(o), 0));
+        expenseData.push(exps.filter(e => (e.date || '').startsWith(ym)).reduce((s, e) => s + (e.amount || 0), 0));
       }
     }
 
@@ -4805,6 +5082,17 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
             yAxisID: 'y'
           },
           {
+            label: '지출 (원)',
+            data: expenseData,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239,68,68,0.04)',
+            borderWidth: 2,
+            borderDash: [4, 3],
+            tension: 0.4,
+            fill: false,
+            yAxisID: 'y'
+          },
+          {
             label: '주문 (건)',
             data: orderData,
             borderColor: '#ff9500',
@@ -4812,6 +5100,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
             borderWidth: 2,
             borderDash: [5, 5],
             tension: 0.4,
+            fill: false,
             yAxisID: 'y1'
           }
         ]
@@ -4824,7 +5113,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
           tooltip: {
             mode: 'index',
             intersect: false,
-            backgroundColor: 'rgba(255,255,255,0.9)',
+            backgroundColor: 'rgba(255,255,255,0.96)',
             titleColor: '#1d1d1f',
             bodyColor: '#1d1d1f',
             borderColor: '#d2d2d7',
@@ -4835,8 +5124,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
               label: function (context) {
                 let label = context.dataset.label || '';
                 if (label) label += ': ';
-                if (context.datasetIndex === 0) label += fmt(context.parsed.y) + '원';
-                else label += context.parsed.y + '건';
+                if (context.datasetIndex === 2) label += context.parsed.y + '건';
+                else label += fmt(context.parsed.y) + '원';
                 return label;
               }
             }
@@ -5049,11 +5338,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
      ════════════════════════════════════════════ */
   function refreshCustSelects() {
     // We handle the custom searchable dropdowns here
-    initSearchSelect('o-cust', fillOrderAddr);
+    initSearchSelect('o-cust', fillOrderAddr, true);
     initSearchSelect('inv-cust', onInvCustChange);
   }
 
-  function initSearchSelect(id, onChange) {
+  function initSearchSelect(id, onChange, allowNew = false) {
     const input = document.getElementById(id + '-search');
     const list = document.getElementById(id + '-list');
     const hidden = document.getElementById(id);
@@ -5069,13 +5358,21 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
         c.name.toLowerCase().includes(filter.toLowerCase()) ||
         (c.tel || '').includes(filter)
       );
-      list.innerHTML = filtered.map(c => `
+      let html = filtered.map(c => `
         <div class="ss-item" onclick="selectSSItem('${id}', '${c.id}', '${c.name.replace(/'/g, "\\'")}')">
           <div style="font-weight:600">${c.name}</div>
           <div style="font-size:11px;color:var(--ink-muted)">${c.tel || ''}</div>
         </div>
       `).join('');
-      list.style.display = filtered.length ? 'block' : 'none';
+      // "새 거래처 등록" option at the bottom
+      if (allowNew) {
+        html += `<div class="ss-item" onclick="openQuickAddCust()" style="border-top:1px dashed var(--hairline);color:var(--blue)">
+          <div style="font-weight:700;font-size:13px">＋ 새 거래처 등록</div>
+          <div style="font-size:11px;opacity:0.7">목록에 없으면 바로 등록</div>
+        </div>`;
+      }
+      list.innerHTML = html;
+      list.style.display = (filtered.length || allowNew) ? 'block' : 'none';
     };
 
     input.onfocus = () => renderList(input.value);
@@ -5119,7 +5416,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     document.querySelector('#modal-order .modal-title').textContent = '새 주문 등록';
     refreshCustSelects();
     document.getElementById('o-date').value = today();
-    ['o-addr', 'o-tel', 'o-track', 'o-memo'].forEach(id => document.getElementById(id).value = '');
+    ['o-addr', 'o-tel', 'o-track', 'o-memo', 'o-rep', 'o-contact', 'o-biz-no'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('o-items-tb').innerHTML = '';
     UI.orderImgBase64 = null;
     document.getElementById('img-prev').style.display = 'none';
@@ -5135,7 +5432,10 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
     if (!id) return;
     const c = getCust(id);
     document.getElementById('o-addr').value = c?.addr || '';
-    document.getElementById('o-tel').value = c?.tel || '';
+    document.getElementById('o-tel').value  = c?.tel  || '';
+    document.getElementById('o-rep').value     = c?.rep     || '';
+    document.getElementById('o-contact').value = c?.contact || '';
+    document.getElementById('o-biz-no').value  = c?.biz_no  || '';
   }
 
   function editOrder(id) {
@@ -5255,26 +5555,33 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
       tel: document.getElementById('o-tel').value,
       items, tracking: document.getElementById('o-track').value,
       status: 'new', memo: document.getElementById('o-memo').value,
-      img_url: UI.orderImgBase64 || ''
+      img_url: UI.orderImgBase64 || '',
+      rep: document.getElementById('o-rep').value,
+      contact: document.getElementById('o-contact').value,
+      biz_no: document.getElementById('o-biz-no').value
     };
     showLoading(true);
+    const c = getCust(custId);
+    const itms = items.map(i => `${i.name} ×${i.qty}`).join(', ');
+
+    const OPTIONAL_ORDER_COLS = ['rep', 'contact', 'biz_no'];   // columns added later, may not exist yet
+
     try {
-      const c = getCust(custId);
-      const itms = items.map(i => `${i.name} ×${i.qty}`).join(', ');
       if (UI.editOrderId) {
-        await supa('PATCH', 'orders', order, `?id=eq.${UI.editOrderId}`);
+        await supaResilient('PATCH', 'orders', order, `?id=eq.${UI.editOrderId}`, OPTIONAL_ORDER_COLS);
         const idx = DB.orders.findIndex(o => o.id == UI.editOrderId);
         if (idx !== -1) DB.orders[idx] = { ...DB.orders[idx], ...order };
         showToast('주문 수정 완료 ✓');
         logAction('edit', 'order', UI.editOrderId, `주문 수정 — ${c?.name || '—'} (${itms})`);
       } else {
-        const saved = await supa('POST', 'orders', order);
+        const saved = await supaResilient('POST', 'orders', order, '', OPTIONAL_ORDER_COLS);
         DB.orders.unshift(Array.isArray(saved) ? saved[0] : saved);
         showToast('주문 저장 완료 ✓');
         logAction('create', 'order', null, `신규 주문 — ${c?.name || '—'} (${itms})`);
       }
       closeModal('modal-order'); renderAll();
     } catch (e) {
+      console.error('saveOrder error:', e);
       if (UI.editOrderId) {
         const idx = DB.orders.findIndex(o => o.id == UI.editOrderId);
         if (idx !== -1) DB.orders[idx] = { ...DB.orders[idx], ...order };
@@ -5363,7 +5670,11 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 
     showLoading(true);
     try {
-      await supa('PATCH', 'orders', { tracking: track, courier: courier, shipped_date: finalDt, status: 'shipped' }, `?id=eq.${o.id}`);
+      await supaResilient('PATCH', 'orders',
+        { tracking: track, courier: courier, shipped_date: finalDt, status: 'shipped' },
+        `?id=eq.${o.id}`,
+        ['courier']   // courier column might not exist yet → retry without it
+      );
       showToast('출고 처리 완료 ✓');
 
       const msg = getShippingMessage(o);
@@ -5604,7 +5915,7 @@ ${pdfLink}
               ${paidBadge(o.paid)}
             </div>
             <button class="mark-paid-btn ${o.paid ? 'paid' : 'unpaid'}"
-              onclick="event.stopPropagation();${o.paid ? `confirmUnpaid(${o.id})` : `markPaid(${o.id},true)`}">
+              onclick="event.stopPropagation();${o.paid ? `confirmUnpaid(${o.id})` : `confirmMarkPaid(${o.id})`}">
               ${o.paid ? '결제취소' : '결제완료'}
             </button>
             <button class="btn btn-ghost btn-sm"
@@ -5646,6 +5957,31 @@ ${pdfLink}
   /* ════════════════════════════════════════════
      CUSTOMERS
      ════════════════════════════════════════════ */
+  function copyCustInfo(custId) {
+    const c = getCust(custId);
+    if (!c) return;
+    const text = [
+      `업체명: ${c.name || ''}`,
+      `담당자명: ${c.contact || c.rep || ''}`,
+      `전화번호: ${c.tel || ''}`,
+      `주소: ${c.addr || ''}`,
+    ].join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`📋 ${c.name} 정보 복사 완료`, 'success');
+    }).catch(() => {
+      // fallback for browsers that block clipboard
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast(`📋 ${c.name} 정보 복사 완료`, 'success');
+    });
+  }
+
   function renderCustomers() {
     const q = (document.getElementById('cust-q')?.value || '').toLowerCase();
     const list = DB.customers
@@ -5661,9 +5997,9 @@ ${pdfLink}
       const ords = DB.orders.filter(o => o.customer_id == c.id);
       const total = ords.reduce((s, o) => s + orderTotal(o), 0);
       return `<div class="cust-item ${UI.currentCustId == c.id ? 'active' : ''}" onclick="selectCust(${c.id})">
-      <div class="cust-avatar" style="background:${col}18;color:${col}">${c.name[0]}</div>
+      <div class="cust-avatar" style="background:${col}18;color:${col}" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})">${c.name[0]}</div>
       <div style="flex:1;min-width:0">
-        <div class="cust-name">${c.name}</div>
+        <div class="cust-name" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})" style="cursor:pointer">${c.name}</div>
         <div class="cust-tel">${c.tel}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -5678,60 +6014,400 @@ ${pdfLink}
     UI.currentCustId = id; renderCustomers();
     const c = getCust(id); if (!c) return;
     const col = custColor(c);
-    const ords = DB.orders.filter(o => o.customer_id == id).sort((a, b) => b.order_date.localeCompare(a.order_date));
+    const STATUS_PRIORITY = { pending: 0, new: 1, shipped: 2 };
+    const ords = DB.orders.filter(o => o.customer_id == id).sort((a, b) => {
+      const pa = STATUS_PRIORITY[a.status] ?? 9;
+      const pb = STATUS_PRIORITY[b.status] ?? 9;
+      if (pa !== pb) return pa - pb;                          // 출고대기 → 신규 → 출고완료
+      return b.order_date.localeCompare(a.order_date);       // 같은 상태면 최신순
+    });
     const total = ords.reduce((s, o) => s + orderTotal(o), 0);
     document.getElementById('cust-detail').innerHTML = `
+    <!-- Header: avatar + name + action buttons -->
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--hairline)">
       <div class="cust-avatar" style="width:44px;height:44px;font-size:18px;background:${col}18;color:${col}">${c.name[0]}</div>
-      <div>
+      <div style="flex:1;min-width:0">
         <div style="font-size:16px;font-weight:700;letter-spacing:-0.2px">${c.name}</div>
-        <div style="font-size:12px;color:var(--ink-muted);margin-top:2px">${c.tel}</div>
+        <div style="font-size:12px;color:var(--ink-muted);margin-top:2px">${c.tel || '—'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm" onclick="editCust(${c.id})" title="거래처 수정"
+          style="padding:6px 12px;font-size:12px;color:var(--blue)">✏️ 수정</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteCust(${c.id})" title="거래처 삭제"
+          style="padding:6px 12px;font-size:12px;color:var(--red)">🗑️ 삭제</button>
       </div>
     </div>
+    <!-- Info grid -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px">
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">대표자</div>${c.rep || '—'}</div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">담당자</div>${c.contact || '—'}</div>
       <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주소</div>${c.addr || '—'}</div>
+      ${c.biz_no ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">사업자번호</div>${c.biz_no}</div>` : ''}
+      ${c.kakao ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">카카오톡</div>${c.kakao}</div>` : ''}
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">총 매출</div><span style="color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total) + '원'}</span></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주문 건수</div>${ords.length}건</div>
     </div>
-    <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">최근 주문</div>
-    ${ords.slice(0, 6).map(o => `
-      <div class="order-mini" onclick="openDetail(${o.id})" style="margin-bottom:6px">
-        <div class="order-mini-left">
-          <div class="order-mini-name">${o.order_date}</div>
-          <div class="order-mini-goods">${(o.items || []).map(i => i.name).join(', ')}</div>
-        </div>
-        <div class="order-mini-right">
-          <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
-          <div style="margin-top:4px">${statusBadge(o.status)}</div>
-        </div>
-      </div>`).join('') || '<div class="empty" style="padding:14px"><div class="empty-text">주문 없음</div></div>'}`;
+    <!-- Recent orders -->
+    <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">
+      주문 목록 <span style="font-size:10px;color:var(--ink-light);font-weight:400;text-transform:none">${ords.length}건</span>
+    </div>
+    <div style="overflow-y:auto;max-height:340px;display:flex;flex-direction:column;gap:6px;padding-right:2px">
+      ${ords.map(o => `
+        <div class="order-mini" onclick="openDetail(${o.id})" style="margin-bottom:0;flex-shrink:0">
+          <div class="order-mini-left">
+            <div class="order-mini-name">${o.order_date}</div>
+            <div class="order-mini-goods">${(o.items || []).map(i => i.name).join(', ')}</div>
+          </div>
+          <div class="order-mini-right">
+            <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
+            <div style="margin-top:4px">${statusBadge(o.status)}</div>
+          </div>
+        </div>`).join('') || '<div class="empty" style="padding:14px"><div class="empty-text">주문 없음</div></div>'}
+    </div>`;
+  }
+
+  // Opens modal-cust stacked on top of modal-order, pre-filled with typed name
+  // ── Edit customer ─────────────────────────────
+  function editCust(id) {
+    const c = getCust(id); if (!c) return;
+    UI.editCustId = id;
+    document.getElementById('modal-cust-title').textContent = '거래처 수정';
+    document.getElementById('c-name').value    = c.name    || '';
+    document.getElementById('c-rep').value     = c.rep     || '';
+    document.getElementById('c-contact').value = c.contact || '';
+    document.getElementById('c-tel').value     = c.tel     || '';
+    document.getElementById('c-addr').value    = c.addr    || '';
+    document.getElementById('c-biz').value     = c.biz_no  || '';
+    document.getElementById('c-kakao').value   = c.kakao   || '';
+    openModal('modal-cust');
+  }
+
+  // ── Delete customer ────────────────────────────
+  function deleteCust(id) {
+    const c = getCust(id); if (!c) return;
+    const orderCount = DB.orders.filter(o => o.customer_id == id).length;
+    customConfirm({
+      title: '거래처 삭제',
+      msg: `"${c.name}"을(를) 삭제하시겠습니까?${orderCount > 0 ? `\n⚠️ 연결된 주문 ${orderCount}건도 함께 삭제됩니다.` : ''}`,
+      icon: '🗑️',
+      okText: '삭제',
+      okClass: 'btn-danger',
+      onOk: async () => {
+        showLoading(true);
+        try {
+          await supa('DELETE', 'orders', null, `?customer_id=eq.${id}`);
+          await supa('DELETE', 'customers', null, `?id=eq.${id}`);
+          DB.orders = DB.orders.filter(o => o.customer_id != id);
+          DB.customers = DB.customers.filter(c => c.id != id);
+          showToast(`"${c.name}" 삭제 완료`);
+          logAction('delete', 'customer', id, `거래처 삭제 — ${c.name}`);
+        } catch (e) {
+          DB.orders = DB.orders.filter(o => o.customer_id != id);
+          DB.customers = DB.customers.filter(c => c.id != id);
+          showToast('삭제됨 (오프라인)', 'info');
+        }
+        showLoading(false);
+        UI.currentCustId = null;
+        document.getElementById('cust-detail').innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">거래처를 선택하세요</div></div>';
+        renderCustomers(); refreshCustSelects(); renderOrders(); renderDashboard();
+      }
+    });
+  }
+
+  function openQuickAddCust() {
+    const typed = (document.getElementById('o-cust-search')?.value || '').trim();
+    // Clear cust form
+    ['c-name','c-rep','c-contact','c-tel','c-addr','c-biz','c-kakao'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    if (typed) document.getElementById('c-name').value = typed;
+    document.getElementById('modal-cust-title').textContent = '새 거래처 등록';
+    UI.custSavedForOrder = true;   // flag: after save, auto-select in order modal
+    openModal('modal-cust');
   }
 
   async function saveCustomer() {
     const name = document.getElementById('c-name').value.trim();
     if (!name) { showToast('업체명을 입력하세요', 'error'); return; }
-    const c = {
-      name, rep: document.getElementById('c-rep').value,
+
+    const isEdit = !!UI.editCustId;
+    const data = {
+      name,
+      rep:     document.getElementById('c-rep').value,
       contact: document.getElementById('c-contact').value,
-      tel: document.getElementById('c-tel').value,
-      addr: document.getElementById('c-addr').value,
-      biz_no: document.getElementById('c-biz').value,
-      kakao: document.getElementById('c-kakao').value,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+      tel:     document.getElementById('c-tel').value,
+      addr:    document.getElementById('c-addr').value,
+      biz_no:  document.getElementById('c-biz').value,
+      kakao:   document.getElementById('c-kakao').value,
     };
+
     showLoading(true);
-    try {
-      const saved = await supa('POST', 'customers', c);
-      DB.customers.push(Array.isArray(saved) ? saved[0] : saved);
-      showToast('거래처 추가 완료 ✓');
-    } catch (e) {
-      c.id = Date.now(); DB.customers.push(c);
-      showToast('저장됨 (오프라인)', 'info');
+    let resultCust = null;
+
+    if (isEdit) {
+      // ── UPDATE existing customer ────────────────
+      const id = UI.editCustId;
+      try {
+        await supa('PATCH', 'customers', data, `?id=eq.${id}`);
+        const idx = DB.customers.findIndex(c => c.id == id);
+        if (idx !== -1) { DB.customers[idx] = { ...DB.customers[idx], ...data }; resultCust = DB.customers[idx]; }
+        showToast('거래처 수정 완료 ✓');
+        logAction('edit', 'customer', id, `거래처 수정 — ${name}`);
+      } catch (e) {
+        const idx = DB.customers.findIndex(c => c.id == id);
+        if (idx !== -1) { DB.customers[idx] = { ...DB.customers[idx], ...data }; resultCust = DB.customers[idx]; }
+        showToast('저장됨 (오프라인)', 'info');
+      }
+      UI.editCustId = null;
+    } else {
+      // ── INSERT new customer ─────────────────────
+      const newData = { ...data, color: COLORS[Math.floor(Math.random() * COLORS.length)] };
+      try {
+        const saved = await supa('POST', 'customers', newData);
+        resultCust = Array.isArray(saved) ? saved[0] : saved;
+        DB.customers.push(resultCust);
+        showToast('거래처 추가 완료 ✓');
+        logAction('create', 'customer', null, `거래처 추가 — ${name}`);
+      } catch (e) {
+        newData.id = Date.now(); DB.customers.push(newData);
+        resultCust = newData;
+        showToast('저장됨 (오프라인)', 'info');
+      }
     }
+
     showLoading(false);
-    closeModal('modal-cust'); renderCustomers(); refreshCustSelects();
+    closeModal('modal-cust');
+    document.getElementById('modal-cust-title').textContent = '거래처 추가';
+    renderCustomers(); refreshCustSelects();
+
+    // Refresh detail panel if we just edited the currently-selected customer
+    if (isEdit && UI.currentCustId == resultCust?.id) selectCust(resultCust.id);
+
+    // If opened from 새 주문 등록, auto-select the new customer
+    if (UI.custSavedForOrder && resultCust) {
+      UI.custSavedForOrder = false;
+      setSSValue('o-cust', resultCust.id);
+      fillOrderAddr();
+      showToast(`✅ "${resultCust.name}" 거래처 선택됨`, 'success');
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     EXPENSES (지출 관리)
+     ════════════════════════════════════════════ */
+  let _expTab = 'all';
+
+  function setExpTab(tab, el) {
+    _expTab = tab;
+    document.querySelectorAll('.exp-tab').forEach(b => b.classList.remove('active-tab'));
+    if (el) el.classList.add('active-tab');
+    renderExpenses();
+  }
+
+  function setExpenseType(type) {
+    document.getElementById('exp-type-daily').className   = type === 'daily'   ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+    document.getElementById('exp-type-invoice').className = type === 'invoice' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+    document.getElementById('exp-type-daily').style.flex   = '1';
+    document.getElementById('exp-type-invoice').style.flex = '1';
+    document.getElementById('exp-category-wrap').style.display = type === 'daily'   ? '' : 'none';
+    document.getElementById('exp-vendor-wrap').style.display   = type === 'invoice' ? '' : 'none';
+    // invoice type: default unpaid
+    if (type === 'invoice') document.getElementById('exp-paid-no').checked = true;
+    else document.getElementById('exp-paid-yes').checked = true;
+    document.getElementById('modal-expense').dataset.type = type;
+  }
+
+  function openExpenseModal(id = null) {
+    UI.editExpenseId = id;
+    document.getElementById('modal-expense-title').textContent = id ? '지출 수정' : '지출 등록';
+    if (id) {
+      const e = DB.expenses.find(x => x.id == id);
+      if (!e) return;
+      setExpenseType(e.type || 'daily');
+      document.getElementById('exp-date').value     = e.date        || '';
+      document.getElementById('exp-category').value = e.category    || '퀵서비스';
+      document.getElementById('exp-desc').value     = e.description || '';
+      document.getElementById('exp-vendor').value   = e.vendor      || '';
+      document.getElementById('exp-amount').value   = e.amount      || '';
+      document.getElementById('exp-memo').value     = e.memo        || '';
+      document.getElementById(e.paid ? 'exp-paid-yes' : 'exp-paid-no').checked = true;
+    } else {
+      setExpenseType('daily');
+      document.getElementById('exp-date').value     = today();
+      document.getElementById('exp-category').value = '퀵서비스';
+      document.getElementById('exp-desc').value     = '';
+      document.getElementById('exp-vendor').value   = '';
+      document.getElementById('exp-amount').value   = '';
+      document.getElementById('exp-memo').value     = '';
+      document.getElementById('exp-paid-yes').checked = true;
+    }
+    openModal('modal-expense');
+  }
+
+  async function saveExpense() {
+    const type   = document.getElementById('modal-expense').dataset.type || 'daily';
+    const date   = document.getElementById('exp-date').value;
+    const desc   = document.getElementById('exp-desc').value.trim();
+    const amount = parseInt(document.getElementById('exp-amount').value) || 0;
+    if (!date || !desc || !amount) { showToast('날짜, 항목명, 금액을 입력하세요', 'error'); return; }
+
+    const paid = document.querySelector('input[name="exp-paid"]:checked')?.value === 'true';
+    const byUser = UI.currentUser?.nickname || UI.currentUser?.username || '알 수 없음';
+    const exp = {
+      date, type,
+      category:    type === 'daily' ? document.getElementById('exp-category').value : '',
+      vendor:      type === 'invoice' ? document.getElementById('exp-vendor').value : '',
+      description: desc,
+      amount,
+      paid,
+      paid_at:    paid ? new Date().toISOString() : null,
+      memo:       document.getElementById('exp-memo').value,
+      created_by: byUser,
+    };
+
+    showLoading(true);
+    const isEdit = !!UI.editExpenseId;
+    // created_by는 Supabase에 컬럼이 없을 수 있으므로 optional로 처리
+    const EXP_OPTIONAL = ['created_by'];
+    try {
+      if (isEdit) {
+        await supaResilient('PATCH', 'expenses', exp, `?id=eq.${UI.editExpenseId}`, EXP_OPTIONAL);
+        const idx = DB.expenses.findIndex(e => e.id == UI.editExpenseId);
+        if (idx !== -1) DB.expenses[idx] = { ...DB.expenses[idx], ...exp };
+        showToast('수정 완료 ✓');
+        logAction('edit', 'expense', UI.editExpenseId, `지출 수정 — ${desc} (${byUser})`);
+      } else {
+        const saved = await supaResilient('POST', 'expenses', exp, '', EXP_OPTIONAL);
+        DB.expenses.unshift(Array.isArray(saved) ? saved[0] : saved);
+        showToast('지출 등록 완료 ✓');
+        logAction('create', 'expense', null, `지출 등록 — ${desc} ${fmt(amount)}원 (${byUser})`);
+      }
+      showLoading(false);
+      UI.editExpenseId = null;
+      closeModal('modal-expense');
+      renderExpenses(); renderDashboard();
+      return;
+    } catch (err) {
+      const errMsg = (err.message || '').toLowerCase();
+      const errCode = (() => { try { return JSON.parse(err.message)?.code || ''; } catch { return ''; } })();
+      showLoading(false);
+      // RLS policy violation → disable RLS in Supabase
+      if (errCode === '42501' || errMsg.includes('42501') || errMsg.includes('row-level security') || errMsg.includes('rls')) {
+        customConfirm({
+          title: '⚠️ Supabase 권한 오류',
+          msg: 'expenses 테이블에 Row Level Security가 활성화되어 있습니다.\n\nSupabase → SQL Editor에서 아래 SQL을 실행하세요:\n\nALTER TABLE expenses DISABLE ROW LEVEL SECURITY;',
+          icon: '🔐',
+          okText: '확인',
+          okClass: 'btn-primary',
+          onOk: () => {},
+        });
+        return;
+      }
+      // If expenses table doesn't exist yet → show clear message
+      if (errMsg.includes('42p01') || errMsg.includes('does not exist') || errMsg.includes('relation')) {
+        showToast('⚠️ Supabase에 expenses 테이블이 없습니다. SCHEMA SQL을 실행하세요.', 'error');
+        return;
+      }
+      // Other network errors → show error, do NOT save locally (will be lost on reload)
+      showToast(`저장 실패: ${err.message || '서버 오류'}`, 'error');
+      return;
+    }
+  }
+
+  async function markExpensePaid(id, newPaid) {
+    const e = DB.expenses.find(x => x.id == id); if (!e) return;
+    const prev = e.paid;
+    e.paid = newPaid; e.paid_at = newPaid ? new Date().toISOString() : null;
+    renderExpenses(); renderDashboard();
+    try {
+      await supa('PATCH', 'expenses', { paid: newPaid, paid_at: e.paid_at }, `?id=eq.${id}`);
+      showToast(newPaid ? '결제 완료 처리 ✓' : '미지급으로 변경됨', newPaid ? 'success' : 'info');
+    } catch (err) {
+      e.paid = prev; renderExpenses();
+      showToast('저장 실패', 'error');
+    }
+  }
+
+  function confirmDeleteExpense(id) {
+    const e = DB.expenses.find(x => x.id == id); if (!e) return;
+    customConfirm({
+      title: '지출 삭제', icon: '🗑️',
+      msg: `"${e.description}" ${fmt(e.amount)}원\n이 지출 내역을 삭제하시겠습니까?`,
+      okText: '삭제', okClass: 'btn-danger',
+      onOk: async () => {
+        try { await supa('DELETE', 'expenses', null, `?id=eq.${id}`); } catch (_) {}
+        DB.expenses = DB.expenses.filter(x => x.id != id);
+        renderExpenses(); renderDashboard();
+        showToast('삭제 완료');
+      }
+    });
+  }
+
+  function renderExpenses() {
+    const ym = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const all = DB.expenses || [];
+
+    // Stats (this month)
+    const thisMonth = all.filter(e => (e.date || '').startsWith(ym));
+    const totalAmt   = thisMonth.reduce((s, e) => s + (e.amount || 0), 0);
+    const dailyAmt   = thisMonth.filter(e => e.type === 'daily').reduce((s, e) => s + (e.amount || 0), 0);
+    const invoiceAmt = thisMonth.filter(e => e.type === 'invoice').reduce((s, e) => s + (e.amount || 0), 0);
+    const unpaidAmt  = all.filter(e => e.type === 'invoice' && !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
+    const fv = v => fmt(v) + '원'; // 지출 금액은 직원도 항상 표시
+    const s = id => document.getElementById(id);
+    if (s('exp-s-total'))   s('exp-s-total').textContent   = fv(totalAmt);
+    if (s('exp-s-daily'))   s('exp-s-daily').textContent   = fv(dailyAmt);
+    if (s('exp-s-invoice')) s('exp-s-invoice').textContent = fv(invoiceAmt);
+    if (s('exp-s-unpaid'))  s('exp-s-unpaid').textContent  = fv(unpaidAmt);
+
+    // Filter list
+    let list = [...all].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    if (_expTab === 'daily')   list = list.filter(e => e.type === 'daily');
+    if (_expTab === 'invoice') list = list.filter(e => e.type === 'invoice');
+    if (_expTab === 'unpaid')  list = list.filter(e => !e.paid);
+
+    const tbody = document.getElementById('exp-list');
+    const empty = document.getElementById('exp-empty');
+    if (!tbody) return;
+
+    if (!list.length) {
+      tbody.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    const CATEGORY_ICON = { '퀵서비스':'','식비':'','소모품':'','교통비':'','수리/유지보수':'','기타':'' };
+
+    tbody.innerHTML = list.map(e => {
+      const isInvoice = e.type === 'invoice';
+      const icon = isInvoice ? '📄' : (CATEGORY_ICON[e.category] || '💸');
+      const typeBadge = isInvoice
+        ? `<span style="font-size:10px;background:#fff7ed;color:#b36a00;border:1px solid #fed7aa;border-radius:99px;padding:2px 8px;font-weight:700">수취명세서</span>`
+        : `<span style="font-size:10px;background:#e8f0fb;color:var(--blue);border:1px solid #c2e0ff;border-radius:99px;padding:2px 8px;font-weight:700">${e.category || '일일'}</span>`;
+      const paidBadge = e.paid
+        ? `<span style="font-size:10px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:700;cursor:${isInvoice ? 'pointer' : 'default'}"
+             ${isInvoice ? `onclick="event.stopPropagation();markExpensePaid(${e.id},false)" title="클릭 → 미지급으로 변경"` : ''}>결제완료</span>`
+        : `<span style="font-size:10px;background:#fff1f0;color:var(--red);border:1px solid #fecaca;border-radius:99px;padding:2px 8px;font-weight:700;cursor:pointer"
+             onclick="event.stopPropagation();markExpensePaid(${e.id},true)" title="클릭 → 결제완료">미지급</span>`;
+      return `<tr style="border-bottom:1px solid var(--hairline);cursor:default">
+        <td style="padding:11px 14px;font-size:13px;white-space:nowrap;color:var(--ink-muted)">${e.date || ''}</td>
+        <td style="padding:11px 14px">${typeBadge}</td>
+        <td style="padding:11px 14px;font-size:13px;font-weight:600;max-width:200px">
+          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${icon} ${e.description || ''}</div>
+          ${e.memo ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${e.memo}</div>` : ''}
+          ${e.created_by ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:3px">👤 ${e.created_by}</div>` : ''}
+        </td>
+        <td style="padding:11px 14px;font-size:12px;color:var(--ink-muted)">${e.vendor || '—'}</td>
+        <td style="padding:11px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--red)">${fv(e.amount)}</td>
+        <td style="padding:11px 14px;text-align:center">${paidBadge}</td>
+        <td style="padding:11px 14px;display:flex;gap:4px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-xs" onclick="openExpenseModal(${e.id})" style="color:var(--blue)">✏️</button>
+          <button class="btn btn-ghost btn-xs" onclick="confirmDeleteExpense(${e.id})" style="color:var(--red)">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
   }
 
   /* ════════════════════════════════════════════
@@ -6294,6 +6970,7 @@ ${pdfLink}
     renderCustomers();
     renderHistory();
     renderDebt();
+    renderExpenses();
     if (UI.selectedDate) renderDayDetail(UI.selectedDate);
     renderCalendar();
   }
@@ -6419,10 +7096,13 @@ ${pdfLink}
     try {
       const { data: { session } } = await _supa.auth.getSession();
       if (session) {
+        // ⚡ Set JWT FIRST — trước khi bất kỳ DB call nào (quan trọng cho RLS)
+        _jwtToken = session.access_token;
         const email = session.user.email;
         const username = Object.entries(USER_EMAIL_MAP).find(([, v]) => v === email)?.[0] || email.split('@')[0];
         applyUserRole(email, username);
-        // overlay đang ẩn → không cần làm gì, chỉ load app
+        // overlay đang ẩn → load data ngay (JWT đã sẵn sàng)
+        initDB().then(() => startAutoRefresh());
         return;
       }
     } catch (e) { console.warn('Auth check failed:', e.message); }
@@ -6453,10 +7133,13 @@ ${pdfLink}
         document.getElementById('l-user').style.borderColor = '#ef4444';
         setTimeout(() => document.getElementById('l-user').style.borderColor = '', 1500);
       } else {
+        // ⚡ Set JWT FIRST — trước khi bất kỳ DB call nào (quan trọng cho RLS)
+        _jwtToken = data.session?.access_token || null;
         errEl.style.display = 'none';
         applyUserRole(email, username);
         hideLoginOverlay();
         logAction('login', 'system', null, `로그인`);
+        initDB().then(() => startAutoRefresh());
       }
     } catch (e) {
       errEl.textContent = '네트워크 오류: ' + e.message;
@@ -6799,8 +7482,8 @@ ${pdfLink}
   }
 
   /* ── Init ──────────────────────────────────── */
+  // checkLogin() tự xử lý initDB() sau khi JWT được set (tránh race condition với RLS)
   checkLogin();
-  initDB().then(() => startAutoRefresh());
 </script>
 </body>
 
