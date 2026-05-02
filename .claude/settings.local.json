@@ -12,7 +12,12 @@
       "Bash(Write-Host \"---\")",
       "Bash(Get-Content \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\screens\\\\LoginScreen.js\")",
       "Bash(Get-Content \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\App.js\")",
-      "Bash(Select-Object -First 20)"
+      "Bash(Select-Object -First 20)",
+      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\" /b /a-d)",
+      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\" /b /ad)",
+      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\screens\" /b)",
+      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\components\" /b)",
+      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\lib\" /b)"
     ]
   }
 }

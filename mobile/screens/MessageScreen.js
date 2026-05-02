@@ -300,12 +300,12 @@ export default function MessageScreen({ route, navigation }) {
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
       const shippedDateTime = `${shipDate} ${hh}:${mm}`;
-      const update = { 
-        status: 'shipped', 
-        shipped_date: shippedDateTime, 
-        tracking: trackingNo || '', 
+      const update = {
+        status: 'shipped',
+        shipped_date: shippedDateTime,
+        tracking: trackingNo || '',
         img_url: imgUrl || '',
-        addr: customer.address || '',
+        addr: customer.addr || '',   // Fix: was customer.address (typo) → addr never saved
         tel: customer.tel || ''
       };
       const oids = orderIds && orderIds.length > 0 ? orderIds : null;
