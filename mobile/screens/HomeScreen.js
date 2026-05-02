@@ -327,14 +327,15 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleAddrSelect = (addr, tel, customerId) => {
-    // Find the matching customer by id (or fall back to primary)
+    // Find the customer matching the selected address (for PDF / message name info)
     const matchCust = customers.find(c => c.id == customerId) || selCust?.cust;
-    // Get orders for that specific customer_id
-    const custOrders = orders.filter(o => o.customer_id == matchCust.id);
+    // Always pass ALL orders for the entire name-group so user can see
+    // pending orders from every customer_id with the same name
+    const allGroupOrders = orders.filter(o => selCust?.allIds?.includes(o.customer_id));
     setSelCust(null);
     navigation.navigate('Order', {
-      customer: { ...matchCust, addr, tel },
-      orders: custOrders,
+      customer: { ...matchCust, addr, tel }, // selected address used for PDF & message
+      orders: allGroupOrders,               // all pending orders across all records
     });
   };
 

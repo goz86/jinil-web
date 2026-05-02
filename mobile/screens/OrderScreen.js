@@ -157,15 +157,19 @@ export default function OrderScreen({ route, navigation }) {
     return result;
   };
 
-  // Collect the unique order IDs that have at least one checked item
+  // Only orders where ALL items are checked → mark as shipped
+  // Orders where only SOME items are checked → keep as pending (partial shipment)
   const getCheckedOrderIds = () => {
-    const ids = new Set();
-    localOrders.forEach(o =>
-      (o.items || []).forEach((_, idx) => {
-        if (checkedMap[`${o.id}_${idx}`]) ids.add(o.id);
-      })
-    );
-    return [...ids];
+    const fullyChecked = [];
+    const partiallyChecked = [];
+    localOrders.forEach(o => {
+      const total   = (o.items || []).length;
+      const checked = (o.items || []).filter((_, idx) => checkedMap[`${o.id}_${idx}`]).length;
+      if (checked === 0) return;
+      if (checked === total) fullyChecked.push(o.id);   // all items → mark shipped
+      else partiallyChecked.push({ id: o.id, checked, total });
+    });
+    return { fullyChecked, partiallyChecked };
   };
 
   const checkedCount = Object.values(checkedMap).filter(Boolean).length;
@@ -173,13 +177,29 @@ export default function OrderScreen({ route, navigation }) {
   const allChecked   = totalCount > 0 && checkedCount === totalCount;
 
   const handleNext = () => {
-    const items    = getCheckedItems();
-    const orderIds = getCheckedOrderIds();
+    const items = getCheckedItems();
     if (items.length === 0) {
       Alert.alert('알림', '출고할 품목을 한 개 이상 선택하세요');
       return;
     }
-    navigation.navigate('Camera', { customer, items, orderIds });
+    const { fullyChecked, partiallyChecked } = getCheckedOrderIds();
+
+    // Warn user if partially selecting from an order
+    if (partiallyChecked.length > 0) {
+      const warn = partiallyChecked
+        .map(p => `• ${p.checked}/${p.total}개 선택됨`)
+        .join('\n');
+      Alert.alert(
+        '⚠️ 일부 품목만 선택됨',
+        `아래 주문은 일부 품목만 선택했습니다:\n${warn}\n\n선택된 품목만 거래명세서에 포함되며, 나머지는 출고 대기로 유지됩니다.\n\n계속하시겠습니까?`,
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '계속', onPress: () => navigation.navigate('Camera', { customer, items, orderIds: fullyChecked }) },
+        ]
+      );
+      return;
+    }
+    navigation.navigate('Camera', { customer, items, orderIds: fullyChecked });
   };
 
   return (
