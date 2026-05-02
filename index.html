@@ -6317,6 +6317,33 @@ ${pdfLink}
 
   async function markExpensePaid(id, newPaid) {
     const e = DB.expenses.find(x => x.id == id); if (!e) return;
+    
+    if (newPaid) {
+      customConfirm({
+        title: '결제 완료 처리',
+        msg: `"${e.description}"\n${fmt(e.amount)}원을 결제 완료로 처리하시겠습니까?`,
+        icon: '💳',
+        okText: '결제 완료',
+        onOk: async () => {
+          await _execMarkExpensePaid(id, true);
+        }
+      });
+    } else {
+      customConfirm({
+        title: '결제 취소',
+        msg: `"${e.description}"\n결제 완료 상태를 취소하고 미지급으로 변경하시겠습니까?`,
+        icon: '⚠️',
+        okText: '결제 취소',
+        okClass: 'btn-danger',
+        onOk: async () => {
+          await _execMarkExpensePaid(id, false);
+        }
+      });
+    }
+  }
+
+  async function _execMarkExpensePaid(id, newPaid) {
+    const e = DB.expenses.find(x => x.id == id); if (!e) return;
     const prev = e.paid;
     e.paid = newPaid; e.paid_at = newPaid ? new Date().toISOString() : null;
     renderExpenses(); renderDashboard();
