@@ -33,8 +33,8 @@ function CustomerCard({ customer, orders, onPress, isAdmin }) {
       <View style={styles.cardBody}>
         <Text style={styles.cardName} numberOfLines={1}>{customer.name}</Text>
         <Text style={styles.cardTel}>{customer.tel}</Text>
-        {customer.address && (
-          <Text style={styles.cardAddress} numberOfLines={1}>{customer.address}</Text>
+        {customer.addr && (
+          <Text style={styles.cardAddress} numberOfLines={1}>{customer.addr}</Text>
         )}
         {latest && <Text style={styles.cardDate}>최근 {latest}</Text>}
       </View>
@@ -64,10 +64,10 @@ function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
   const addrMap = new Map();
   
   // 1. Add default address from customer profile
-  if (customer.address || customer.tel) {
-    const key = `${customer.address || ''}|${customer.tel || ''}`;
+  if (customer.addr || customer.tel) {
+    const key = `${customer.addr || ''}|${customer.tel || ''}`;
     addrMap.set(key, { 
-      addr: customer.address || '', 
+      addr: customer.addr || '', 
       tel: customer.tel || '', 
       label: '기본 주소' 
     });
@@ -115,7 +115,7 @@ function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
             
             <TouchableOpacity 
               style={[styles.addrItem, { borderBottomWidth: 0 }]} 
-              onPress={() => onSelect('', '')}
+              onPress={() => onSelect(customer.addr, customer.tel)}
             >
               <Text style={[styles.addrText, { color: C.blue, fontWeight: '700' }]}>+ 새로운 주소로 진행</Text>
             </TouchableOpacity>
@@ -241,7 +241,7 @@ export default function HomeScreen({ navigation }) {
     const { cust, orders: custOrders } = selCust;
     setSelCust(null);
     navigation.navigate('Order', {
-      customer: { ...cust, address: addr, tel: tel }, // Pass selected address
+      customer: { ...cust, addr: addr, tel: tel }, // Pass selected address
       orders: custOrders,
     });
   };
