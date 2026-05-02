@@ -16,15 +16,17 @@ const avatarColor = (name = '?') =>
   AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
 // ── Customer card ─────────────────────────────────────
-function CustomerCard({ customer, orders, onPress, isAdmin }) {
+function CustomerCard({ customer, orders, allCustomers, onPress, isAdmin }) {
   const color = customer.color || avatarColor(customer.name);
   const pending = orders.filter(o => o.status === 'pending').length;
   const total = orders.reduce((s, o) => s + orderTotal(o), 0);
   const latest = orders[0]?.order_date;
 
-  // Count unique addresses
+  // Count unique addresses across ALL records with same name + order history
   const addrMap = new Map();
-  if (customer.addr || customer.tel) addrMap.set(`${customer.addr}|${customer.tel}`, 1);
+  (allCustomers || [customer]).forEach(c => {
+    if (c.addr || c.tel) addrMap.set(`${c.addr}|${c.tel}`, 1);
+  });
   orders.forEach(o => {
     if (o.addr || o.tel) addrMap.set(`${o.addr}|${o.tel}`, 1);
   });
@@ -72,7 +74,8 @@ function CustomerCard({ customer, orders, onPress, isAdmin }) {
 }
 
 // ── Address Select Modal ────────────────────────────────
-function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
+// onSelect(addr, tel, customerId) — customerId of the record this address belongs to
+function AddressSelectModal({ visible, customer, allCustomers, orders, onSelect, onClose }) {
   const [showNewInput, setShowNewInput] = useState(false);
   const [newAddr, setNewAddr]           = useState('');
   const [newTel,  setNewTel]            = useState('');
@@ -85,20 +88,27 @@ function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
 
   if (!customer) return null;
 
-  // Collect unique addresses: customer profile first, then order history (newest→oldest)
+  const allCusts = allCustomers || [customer];
+
+  // Collect unique addresses:
+  // 1. Basic address from EVERY customer record with same name (each has its customerId)
   const addrMap = new Map();
-  if (customer.addr || customer.tel) {
-    const key = `${customer.addr || ''}|${customer.tel || ''}`;
-    addrMap.set(key, { addr: customer.addr || '', tel: customer.tel || '', label: '기본 주소', isDefault: true });
-  }
-  // orders already sorted newest-first from loadData
+  allCusts.forEach(c => {
+    if (c.addr || c.tel) {
+      const key = `${c.addr || ''}|${c.tel || ''}`;
+      if (!addrMap.has(key)) {
+        addrMap.set(key, { addr: c.addr || '', tel: c.tel || '', customerId: c.id, label: '기본 주소', isDefault: true });
+      }
+    }
+  });
+  // 2. Historical addresses from order history (newest first)
   [...orders]
     .sort((a, b) => (b.order_date || '').localeCompare(a.order_date || ''))
     .forEach(o => {
       if (o.addr || o.tel) {
         const key = `${o.addr || ''}|${o.tel || ''}`;
         if (!addrMap.has(key)) {
-          addrMap.set(key, { addr: o.addr || '', tel: o.tel || '', label: `이전 배송지 · ${o.order_date || ''}`, isDefault: false });
+          addrMap.set(key, { addr: o.addr || '', tel: o.tel || '', customerId: o.customer_id, label: `이전 배송지 · ${o.order_date || ''}`, isDefault: false });
         }
       }
     });
@@ -107,7 +117,8 @@ function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
   const handleNewConfirm = () => {
     const addr = newAddr.trim();
     if (!addr) return;
-    onSelect(addr, newTel.trim());
+    // New address → use primary customer's id
+    onSelect(addr, newTel.trim(), customer.id);
   };
 
   return (
@@ -129,7 +140,7 @@ function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
                 <TouchableOpacity
                   key={idx}
                   style={styles.addrItem}
-                  onPress={() => onSelect(item.addr, item.tel)}
+                  onPress={() => onSelect(item.addr, item.tel, item.customerId)}
                 >
                   <View style={[styles.addrLabelWrap, item.isDefault && { backgroundColor: C.blueLight }]}>
                     <Text style={[styles.addrLabel, item.isDefault && { color: C.blue }]}>{item.label}</Text>
@@ -261,57 +272,68 @@ export default function HomeScreen({ navigation }) {
     };
   }, [loadData]);
 
-  const getLatestDate = (custId) => {
-    const custOrders = orders.filter(o => o.customer_id == custId);
-    if (custOrders.length === 0) return '0000-00-00';
-    return custOrders[0].order_date; // Orders are already sorted by date desc
-  };
+  // ── Group customers by name (same name = same customer, multiple addresses) ──
+  const customerGroups = React.useMemo(() => {
+    const groups = {}; // name → { primary, allCustomers, allIds, allOrders }
+    customers.forEach(c => {
+      if (!groups[c.name]) {
+        groups[c.name] = { primary: c, allCustomers: [], allIds: [] };
+      }
+      groups[c.name].allCustomers.push(c);
+      groups[c.name].allIds.push(c.id);
+    });
+    // Attach orders
+    return Object.values(groups).map(g => {
+      const allOrders = orders.filter(o => g.allIds.includes(o.customer_id));
+      // Pick primary = the one with most recent order, or first
+      const latestOrder = allOrders[0];
+      const primary = latestOrder
+        ? (g.allCustomers.find(c => c.id == latestOrder.customer_id) || g.primary)
+        : g.primary;
+      return { ...g, primary, allOrders };
+    });
+  }, [customers, orders]);
 
-  const sortedCustomers = [...customers].sort((a, b) => {
-    const custOrdersA = orders.filter(o => o.customer_id == a.id);
-    const custOrdersB = orders.filter(o => o.customer_id == b.id);
-
-    const pendingA = custOrdersA.filter(o => o.status === 'pending').length;
-    const pendingB = custOrdersB.filter(o => o.status === 'pending').length;
-
-    // Rule 1: Priority for higher pending count
+  // ── Sort groups by priority ───────────────────────────
+  const sortedGroups = [...customerGroups].sort((a, b) => {
+    const pendingA = a.allOrders.filter(o => o.status === 'pending').length;
+    const pendingB = b.allOrders.filter(o => o.status === 'pending').length;
     if (pendingA !== pendingB) return pendingB - pendingA;
-
-    // Rule 2: 0 orders go to bottom
-    if (custOrdersA.length > 0 && custOrdersB.length === 0) return -1;
-    if (custOrdersA.length === 0 && custOrdersB.length > 0) return 1;
-
-    // Rule 3: Sort by latest order date (newest first)
-    const dateA = getLatestDate(a.id);
-    const dateB = getLatestDate(b.id);
+    if (a.allOrders.length > 0 && b.allOrders.length === 0) return -1;
+    if (a.allOrders.length === 0 && b.allOrders.length > 0) return 1;
+    const dateA = a.allOrders[0]?.order_date || '0000-00-00';
+    const dateB = b.allOrders[0]?.order_date || '0000-00-00';
     if (dateA !== dateB) return dateB.localeCompare(dateA);
-
-    // Rule 4: Alphabetical if same date
-    return a.name.localeCompare(b.name);
+    return a.primary.name.localeCompare(b.primary.name);
   });
 
-  const filtered = sortedCustomers.filter(c =>
-    c.name.toLowerCase().includes(query.toLowerCase()) ||
-    (c.tel || '').includes(query)
+  // ── Filter by search query ────────────────────────────
+  const filteredGroups = sortedGroups.filter(g =>
+    g.primary.name.toLowerCase().includes(query.toLowerCase()) ||
+    g.allCustomers.some(c => (c.tel || '').includes(query)) ||
+    g.allOrders.some(o => (o.addr || '').toLowerCase().includes(query.toLowerCase()))
   );
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
-  const shippedToday = orders.filter(o => o.status === 'shipped' &&
-    o.shipped_date === new Date().toISOString().slice(0, 10)).length;
-
   const { width } = useWindowDimensions();
   const numColumns = width >= 600 ? 2 : 1;
 
-  const handleCustPress = (cust) => {
-    const custOrders = orders.filter(o => o.customer_id == cust.id);
-    setSelCust({ cust, orders: custOrders });
+  const handleCustPress = (group) => {
+    setSelCust({
+      cust: group.primary,
+      allCustomers: group.allCustomers,
+      allIds: group.allIds,
+    });
   };
 
-  const handleAddrSelect = (addr, tel) => {
-    const { cust, orders: custOrders } = selCust;
+  const handleAddrSelect = (addr, tel, customerId) => {
+    // Find the matching customer by id (or fall back to primary)
+    const matchCust = customers.find(c => c.id == customerId) || selCust?.cust;
+    // Get orders for that specific customer_id
+    const custOrders = orders.filter(o => o.customer_id == matchCust.id);
     setSelCust(null);
     navigation.navigate('Order', {
-      customer: { ...cust, addr: addr, tel: tel }, // Pass selected address
+      customer: { ...matchCust, addr, tel },
       orders: custOrders,
     });
   };
@@ -331,7 +353,7 @@ export default function HomeScreen({ navigation }) {
       {/* ── Stats header ── */}
       <View style={styles.header}>
         <View style={styles.statsRow}>
-          <StatPill value={customers.length} label="거래처" color={C.blue} />
+          <StatPill value={customerGroups.length} label="거래처" color={C.blue} />
           <View style={styles.statDivider} />
           <StatPill value={pendingCount} label="출고대기" color='#b36a00' />
           <View style={styles.statDivider} />
@@ -366,13 +388,13 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* ── Customer list ── */}
+      {/* ── Customer list (grouped by name) ── */}
       <FlatList
-        data={filtered}
+        data={filteredGroups}
         key={numColumns}
         numColumns={numColumns}
         columnWrapperStyle={numColumns > 1 ? { gap: 10 } : null}
-        keyExtractor={item => String(item.id)}
+        keyExtractor={g => g.primary.name}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         refreshControl={
@@ -392,25 +414,24 @@ export default function HomeScreen({ navigation }) {
             {!query && <Text style={styles.emptySub}>Supabase에 거래처 데이터를 추가하세요</Text>}
           </View>
         }
-        renderItem={({ item }) => {
-          const custOrders = orders.filter(o => o.customer_id == item.id);
-          return (
-            <View style={{ flex: 1 / numColumns }}>
-              <CustomerCard
-                customer={item}
-                orders={custOrders}
-                onPress={() => handleCustPress(item)}
-                isAdmin={isAdmin}
-              />
-            </View>
-          );
-        }}
+        renderItem={({ item: group }) => (
+          <View style={{ flex: 1 / numColumns }}>
+            <CustomerCard
+              customer={group.primary}
+              orders={group.allOrders}
+              allCustomers={group.allCustomers}
+              onPress={() => handleCustPress(group)}
+              isAdmin={isAdmin}
+            />
+          </View>
+        )}
       />
 
       <AddressSelectModal
         visible={!!selCust}
         customer={selCust?.cust}
-        orders={orders.filter(o => o.customer_id == selCust?.cust?.id)}
+        allCustomers={selCust?.allCustomers}
+        orders={orders.filter(o => selCust?.allIds?.includes(o.customer_id))}
         onSelect={handleAddrSelect}
         onClose={() => setSelCust(null)}
       />
