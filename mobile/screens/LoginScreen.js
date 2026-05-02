@@ -64,7 +64,7 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <Text style={styles.title}>진일 라벨</Text>
-          <Text style={styles.subtitle}>주문관리 Hệ thống</Text>
+          <Text style={styles.subtitle}>주문관리 시스템</Text>
         </View>
 
         {/* Card */}
@@ -75,7 +75,7 @@ export default function LoginScreen() {
             <Text style={styles.fieldLabel}>아이디</Text>
             <TextInput
               style={styles.input}
-              placeholder="admin 또는 admin1"
+              placeholder="사용자 ID 입력"
               placeholderTextColor={C.inkLight}
               value={id}
               onChangeText={v => { setId(v); setErrMsg(''); }}
