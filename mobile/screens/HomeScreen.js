@@ -95,7 +95,7 @@ function AddressSelectModal({ visible, customer, orders, onSelect, onClose }) {
         <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{customer.name}</Text>
-            <Text style={styles.modalSub}>배송지/연락처를 lựa chọn</Text>
+            <Text style={styles.modalSub}>배송지/연락처를 선택해 주세요.</Text>
           </View>
           
           <RNScrollView style={styles.modalScroll} bounces={false}>
