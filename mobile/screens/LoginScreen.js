@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Animated,
+  ActivityIndicator, Animated, Image
 } from 'react-native';
 import { useAuth } from '../lib/auth';
 import { C } from '../lib/supabase';
@@ -58,11 +58,13 @@ export default function LoginScreen() {
 
         {/* Logo */}
         <View style={styles.logoWrap}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoEmoji}>🏷</Text>
-          </View>
+          <Image
+            source={require('../assets/icon.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>진일 라벨</Text>
-          <Text style={styles.subtitle}>주문관리 시스템</Text>
+          <Text style={styles.subtitle}>주문관리 Hệ thống</Text>
         </View>
 
         {/* Card */}
@@ -98,7 +100,7 @@ export default function LoginScreen() {
                 onSubmitEditing={handleLogin}
               />
               <TouchableOpacity onPress={() => setShowPw(p => !p)} style={styles.eyeBtn}>
-                <Text style={{ fontSize: 18 }}>{showPw ? '🙈' : '👁️'}</Text>
+                <Text style={{ fontSize: 18 }}>{showPw ? '🔓' : '🔒'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -142,16 +144,11 @@ const styles = StyleSheet.create({
 
   // Logo
   logoWrap:   { alignItems: 'center', gap: 8 },
-  logoCircle: {
-    width: 72, height: 72, borderRadius: 20,
-    backgroundColor: '#1d1d1f',
-    alignItems: 'center', justifyContent: 'center',
+  logoImage: {
+    width: 80, height: 80,
+    borderRadius: 18,
     marginBottom: 4,
-    shadowColor: '#000', shadowOpacity: 0.18,
-    shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
   },
-  logoEmoji:  { fontSize: 34 },
   title:      { fontSize: 24, fontWeight: '700', color: C.ink, letterSpacing: -0.5 },
   subtitle:   { fontSize: 14, color: C.inkMuted, fontWeight: '500' },
 
