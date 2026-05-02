@@ -13,7 +13,7 @@ const SCAN_BOX_W = SCREEN_W * 0.78;
 const SCAN_BOX_H = 110;
 
 export default function CameraScreen({ route, navigation }) {
-  const { customer, items, orderIds, mode: initialMode } = route.params || {};
+  const { customer, items, orderIds, fullyChecked, mode: initialMode } = route.params || {};
 
   const [permission,      requestPermission]     = useCameraPermissions();
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
@@ -119,7 +119,7 @@ export default function CameraScreen({ route, navigation }) {
   const handleContinue = () => {
     const d = new Date();
     const shipDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    navigation.navigate('Message', { customer, items, orderIds, trackingNo, photoUri, shipDate });
+    navigation.navigate('Message', { customer, items, orderIds, fullyChecked, trackingNo, photoUri, shipDate });
   };
 
   // ── Reset ─────────────────────────────────────────────
@@ -220,7 +220,7 @@ export default function CameraScreen({ route, navigation }) {
           )}
           <Text style={styles.topTitle}>
             {mode === 'quickScan' ? '🔍 송장 바코드 스캔' :
-             mode === 'scan'      ? '📦 바코드 스캔' :
+             mode === 'scan'      ? '📦 바코드 스캔 → 📷 사진 촬영' :
                                     '📷 사진 촬영'}
           </Text>
           {customer && (
@@ -249,7 +249,7 @@ export default function CameraScreen({ route, navigation }) {
               <View style={[styles.corner, styles.cornerBR]} />
               <View style={styles.scanLine} />
             </View>
-            <Text style={styles.scanHint}>바코드를 네모 안에 맞춰주세요</Text>
+            <Text style={styles.scanHint}>바코드를 네모 안에 맞추거나 아래 ● 버튼으로 바로 촬영하세요</Text>
           </View>
         )}
 
@@ -259,13 +259,19 @@ export default function CameraScreen({ route, navigation }) {
             <>
               <TouchableOpacity style={styles.sideBtn} onPress={openManualModal}>
                 <Text style={styles.sideBtnEmoji}>⌨️</Text>
-                <Text style={styles.sideBtnText}>직접 입력</Text>
+                <Text style={styles.sideBtnText}>번호 입력</Text>
               </TouchableOpacity>
-              <View style={styles.shutterPlaceholder} />
+              {/* Center shutter: skip barcode and go straight to photo mode */}
+              <TouchableOpacity
+                style={styles.shutter}
+                onPress={() => { setScanned(true); setMode('photo'); }}
+              >
+                <View style={styles.shutterInner} />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.sideBtn}
-                onPress={() => { setScanned(true); setMode('photo'); }}>
+                onPress={() => { setPhotoUri(null); setTrackingNo(''); setMode('done'); }}>
                 <Text style={styles.sideBtnEmoji}>⏭</Text>
-                <Text style={styles.sideBtnText}>바코드 없음</Text>
+                <Text style={styles.sideBtnText}>사진 없이</Text>
               </TouchableOpacity>
             </>
           )}

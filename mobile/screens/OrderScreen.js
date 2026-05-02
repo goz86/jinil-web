@@ -93,14 +93,29 @@ export default function OrderScreen({ route, navigation }) {
 
   const [localOrders, setLocalOrders] = useState(orders);
 
-  // Build initial checked map (all false)
-  const initMap = {};
-  localOrders.forEach(o =>
-    (o.items || []).forEach((_, idx) => {
-      initMap[`${o.id}_${idx}`] = false;
-    })
-  );
-  const [checkedMap, setCheckedMap] = useState(initMap);
+  // Build initial checked map (all false) — lazy initializer runs once
+  const [checkedMap, setCheckedMap] = useState(() => {
+    const m = {};
+    orders.forEach(o =>
+      (o.items || []).forEach((_, idx) => { m[`${o.id}_${idx}`] = false; })
+    );
+    return m;
+  });
+
+  // Keep checkedMap in sync when real-time updates change localOrders
+  // Preserves existing checked states; prunes stale keys
+  useEffect(() => {
+    setCheckedMap(prev => {
+      const next = {};
+      localOrders.forEach(o =>
+        (o.items || []).forEach((_, idx) => {
+          const k = `${o.id}_${idx}`;
+          next[k] = prev[k] ?? false;
+        })
+      );
+      return next;
+    });
+  }, [localOrders]);
 
   // ── Real-time Sync ────────────────────────────────────
   useEffect(() => {
@@ -140,40 +155,59 @@ export default function OrderScreen({ route, navigation }) {
       [`${orderId}_${itemIdx}`]: !prev[`${orderId}_${itemIdx}`],
     }));
 
+  // Only toggle non-shipped order items
   const toggleAll = () => {
-    const allOn = Object.values(checkedMap).every(Boolean);
-    const next  = {};
-    Object.keys(checkedMap).forEach(k => { next[k] = !allOn; });
-    setCheckedMap(next);
+    const pendingKeys = [];
+    localOrders
+      .filter(o => o.status !== 'shipped')
+      .forEach(o =>
+        (o.items || []).forEach((_, idx) => pendingKeys.push(`${o.id}_${idx}`))
+      );
+    const allOn = pendingKeys.length > 0 && pendingKeys.every(k => checkedMap[k]);
+    setCheckedMap(prev => {
+      const next = { ...prev };
+      pendingKeys.forEach(k => { next[k] = !allOn; });
+      return next;
+    });
   };
 
+  // Only collect items from non-shipped orders
   const getCheckedItems = () => {
     const result = [];
-    localOrders.forEach(o =>
-      (o.items || []).forEach((item, idx) => {
-        if (checkedMap[`${o.id}_${idx}`]) result.push(item);
-      })
-    );
+    localOrders
+      .filter(o => o.status !== 'shipped')
+      .forEach(o =>
+        (o.items || []).forEach((item, idx) => {
+          if (checkedMap[`${o.id}_${idx}`]) result.push(item);
+        })
+      );
     return result;
   };
 
-  // Only orders where ALL items are checked → mark as shipped
-  // Orders where only SOME items are checked → keep as pending (partial shipment)
+  // Orders where ALL items are checked → mark shipped after delivery
+  // Orders where only SOME items are checked → leave as pending (partial shipment)
   const getCheckedOrderIds = () => {
-    const fullyChecked = [];
-    const partiallyChecked = [];
-    localOrders.forEach(o => {
-      const total   = (o.items || []).length;
-      const checked = (o.items || []).filter((_, idx) => checkedMap[`${o.id}_${idx}`]).length;
-      if (checked === 0) return;
-      if (checked === total) fullyChecked.push(o.id);   // all items → mark shipped
-      else partiallyChecked.push({ id: o.id, checked, total });
-    });
-    return { fullyChecked, partiallyChecked };
+    const fullyChecked   = [];
+    const partialChecked = [];
+    localOrders
+      .filter(o => o.status !== 'shipped')
+      .forEach(o => {
+        const total   = (o.items || []).length;
+        const checked = (o.items || []).filter((_, idx) => checkedMap[`${o.id}_${idx}`]).length;
+        if (checked === 0) return;
+        if (checked === total) fullyChecked.push(o.id);
+        else                   partialChecked.push(o.id);
+      });
+    return { fullyChecked, partialChecked };
   };
 
-  const checkedCount = Object.values(checkedMap).filter(Boolean).length;
-  const totalCount   = Object.keys(checkedMap).length;
+  // Count only pending items for footer display
+  const pendingKeys = [];
+  localOrders
+    .filter(o => o.status !== 'shipped')
+    .forEach(o => (o.items || []).forEach((_, idx) => pendingKeys.push(`${o.id}_${idx}`)));
+  const checkedCount = pendingKeys.filter(k => checkedMap[k]).length;
+  const totalCount   = pendingKeys.length;
   const allChecked   = totalCount > 0 && checkedCount === totalCount;
 
   const handleNext = () => {
@@ -182,24 +216,12 @@ export default function OrderScreen({ route, navigation }) {
       Alert.alert('알림', '출고할 품목을 한 개 이상 선택하세요');
       return;
     }
-    const { fullyChecked, partiallyChecked } = getCheckedOrderIds();
-
-    // Warn user if partially selecting from an order
-    if (partiallyChecked.length > 0) {
-      const warn = partiallyChecked
-        .map(p => `• ${p.checked}/${p.total}개 선택됨`)
-        .join('\n');
-      Alert.alert(
-        '⚠️ 일부 품목만 선택됨',
-        `아래 주문은 일부 품목만 선택했습니다:\n${warn}\n\n선택된 품목만 거래명세서에 포함되며, 나머지는 출고 대기로 유지됩니다.\n\n계속하시겠습니까?`,
-        [
-          { text: '취소', style: 'cancel' },
-          { text: '계속', onPress: () => navigation.navigate('Camera', { customer, items, orderIds: fullyChecked }) },
-        ]
-      );
-      return;
-    }
-    navigation.navigate('Camera', { customer, items, orderIds: fullyChecked });
+    // fullyChecked  → orders whose ALL items are selected → will be marked shipped
+    // partialChecked → orders with only some items selected → stay pending
+    const { fullyChecked, partialChecked } = getCheckedOrderIds();
+    // Pass all affected order IDs so MessageScreen knows which ones to update
+    const orderIds = [...fullyChecked, ...partialChecked];
+    navigation.navigate('Camera', { customer, items, orderIds, fullyChecked });
   };
 
   return (

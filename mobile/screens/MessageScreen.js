@@ -188,7 +188,7 @@ function SendBtn({ emoji, label, sub, color = C.blue, onPress, disabled }) {
 
 // ── Main ──────────────────────────────────────────────
 export default function MessageScreen({ route, navigation }) {
-  const { customer, items, orderIds, trackingNo, photoUri, shipDate } = route.params;
+  const { customer, items, orderIds, fullyChecked, trackingNo, photoUri, shipDate } = route.params;
 
   const [step, setStep] = useState('processing'); // 'processing' | 'ready'
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -305,19 +305,20 @@ export default function MessageScreen({ route, navigation }) {
         shipped_date: shippedDateTime,
         tracking: trackingNo || '',
         img_url: imgUrl || '',
-        addr: customer.addr || '',   // Fix: was customer.address (typo) → addr never saved
+        addr: customer.addr || '',
         tel: customer.tel || ''
       };
-      const oids = orderIds && orderIds.length > 0 ? orderIds : null;
+
+      // Only mark orders whose ALL items were included in this shipment
+      // fullyChecked = orders where every item was selected → safe to mark shipped
+      // partialChecked orders stay pending (user ships remaining items later)
+      const oids = fullyChecked && fullyChecked.length > 0 ? fullyChecked : null;
 
       if (oids) {
-        // Update only the specific orders the user selected
         await supabase.from('orders').update(update).in('id', oids);
-      } else {
-        // Fallback: update all pending orders for this customer
-        await supabase.from('orders').update(update)
-          .eq('customer_id', customer.id).eq('status', 'pending');
       }
+      // If oids is null/empty (all selections were partial), we still create the
+      // invoice/message but don't change any order status — user handles manually.
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('완료 ✅', '출고 처리가 완료되었습니다', [
