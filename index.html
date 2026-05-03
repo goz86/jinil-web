@@ -2909,10 +2909,12 @@
       top: 3.5px;
       left: 12px;
       height: 2px;
-      background: var(--blue);
+      background: linear-gradient(90deg, var(--blue), #60a5fa, var(--blue));
+      background-size: 200% 100%;
       z-index: 2;
-      transition: width 0.4s;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
       width: calc((100% - 24px) * var(--p) / 100);
+      animation: mini-shimmer 4s linear infinite;
     }
     .mini-step {
       display: flex;
@@ -2932,8 +2934,17 @@
     }
     .mini-step-dot.active {
       background: var(--blue);
-      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2);
       transform: scale(1.2);
+      animation: mini-breathing 3.5s ease-in-out infinite;
+    }
+    @keyframes mini-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @keyframes mini-breathing {
+      0%, 100% { transform: scale(1.1); box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1); }
+      50% { transform: scale(1.3); box-shadow: 0 0 0 5px rgba(0, 102, 204, 0.3); }
     }
     .mini-step-dot.completed {
       background: var(--blue);
