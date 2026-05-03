@@ -529,6 +529,9 @@ const styles = StyleSheet.create({
   addrCountText: { color: C.inkMuted, fontSize: 10, fontWeight: '700' },
 
   // ── Empty
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12 },
+  emptyEmoji: { fontSize: 44, opacity: 0.3 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.inkMuted },
   emptySub: { fontSize: 13, color: C.inkMuted, textAlign: 'center' },
 
   // ── Modal

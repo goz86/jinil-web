@@ -332,7 +332,7 @@ export default function OrderScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   root:   { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: 14, paddingBottom: 110, gap: 20 },
+  scroll: { padding: 14, paddingBottom: 130, gap: 20 },
 
   // ── Customer header
   custHeader: {
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.canvas,
     borderTopWidth: 1, borderTopColor: C.border,
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 30,
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48,
     gap: 12,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: -2 },
     elevation: 8,

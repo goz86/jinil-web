@@ -93,7 +93,7 @@ export default function CameraScreen({ route, navigation }) {
     if (!cameraRef.current || shooting) return;
     setShooting(true);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85, shutterSound: false });
       if (mediaPermission?.granted) await MediaLibrary.saveToLibraryAsync(photo.uri);
       setPhotos(prev => [...prev, photo.uri]);
       Vibration.vibrate([0, 40, 60, 40]); // double-pulse = success

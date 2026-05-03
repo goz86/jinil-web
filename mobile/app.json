@@ -22,7 +22,12 @@
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "plugins": [
@@ -42,7 +47,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "order-manager-mobile"
+        "projectId": "4ca19ef6-f353-45f1-9969-93c66712c2c2"
       }
     },
     "web": {
@@ -63,6 +68,7 @@
           }
         }
       }
-    }
+    },
+    "owner": "seoultech98"
   }
 }

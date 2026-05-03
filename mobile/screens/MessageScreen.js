@@ -91,7 +91,7 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
     const it = pdfItems[i];
     if (it) {
       return `<tr>
-        <td>${mo}</td><td>${dy}</td>
+        <td>${mo}/${dy}</td>
         <td style="text-align:left;padding-left:6px">${it.name}${it.spec ? ` (${it.spec})` : ''}</td>
         <td></td><td>${it.qty}</td>
         <td style="text-align:right">${fmt(it.price)}</td>
@@ -99,7 +99,7 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
         <td></td><td></td>
       </tr>`;
     }
-    return `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+    return `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
   }).join('');
 
   const css = `
@@ -161,7 +161,7 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
         <div class="bank-val">${supplier['sup-bank']}</div>
       </div>` : ''}
       <table>
-        <thead><tr><th>월</th><th>일</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
+        <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="total">
@@ -180,7 +180,7 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
 }
 
 // ── Send option button ────────────────────────────────
-function SendBtn({ emoji, label, sub, color = C.blue, onPress, disabled }) {
+function SendBtn({ icon, emoji, label, sub, color = C.blue, onPress, disabled }) {
   return (
     <TouchableOpacity
       style={[styles.sendBtn, disabled && styles.sendBtnDisabled]}
@@ -189,7 +189,7 @@ function SendBtn({ emoji, label, sub, color = C.blue, onPress, disabled }) {
       disabled={disabled}
     >
       <View style={[styles.sendBtnIcon, { backgroundColor: color + '18' }]}>
-        <Text style={styles.sendBtnEmoji}>{emoji}</Text>
+        {icon ? icon : <Text style={styles.sendBtnEmoji}>{emoji}</Text>}
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.sendBtnLabel, { color: disabled ? C.inkLight : color }]}>{label}</Text>
@@ -266,18 +266,26 @@ export default function MessageScreen({ route, navigation }) {
   const sendSMS = async () => {
     const phone = (customer.tel || '').replace(/[^0-9]/g, '');
     
-    // Always copy to clipboard
-    await Clipboard.setStringAsync(message);
-    setSent(true);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
+    setStep('marking_shipped');
+    setStepMsg('출고 정보 lưu hệ thống...');
+    
     try {
-      // Use URL scheme for direct opening (Pre-fills number and text on most devices)
+      // 1. Mark as shipped in DB first
+      await performMarkShipped();
+
+      // 2. Copy to clipboard
+      await Clipboard.setStringAsync(message);
+
+      // 3. Open SMS
       const sep = Platform.OS === 'ios' ? '&' : '?';
       const url = `sms:${phone}${sep}body=${encodeURIComponent(message)}`;
       await Linking.openURL(url);
+
+      // 3. Go home automatically
+      navigation.navigate('Home');
     } catch (e) {
-      Alert.alert('알림', '메시지가 클립보드에 복사되었습니다. SMS 앱을 열어 붙여넣기 하세요.');
+      Alert.alert('오류', e.message);
+      setStep('ready');
     }
   };
 
@@ -309,11 +317,17 @@ export default function MessageScreen({ route, navigation }) {
 
   // KakaoTalk / Share sheet — copy text FIRST then share photos sequentially
   const shareKakao = async () => {
-    await Clipboard.setStringAsync(message);
-    setSent(true);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setStep('marking_shipped');
+    setStepMsg('출고 정보 lưu hệ thống...');
 
     try {
+      // 1. Mark as shipped in DB first
+      await performMarkShipped();
+
+      // 2. Copy to clipboard
+      await Clipboard.setStringAsync(message);
+
+      // 3. Share
       if (allPhotos.length > 0) {
         const ok = await Sharing.isAvailableAsync();
         if (ok) {
@@ -324,8 +338,12 @@ export default function MessageScreen({ route, navigation }) {
       } else {
         await Share.share({ message, title: `[출고 알림] ${customer.name}` });
       }
+
+      // 3. Go home
+      navigation.navigate('Home');
     } catch (e) {
       if (e.message !== 'User did not share') Alert.alert('오류', e.message);
+      setStep('ready');
     }
   };
 
@@ -362,103 +380,76 @@ export default function MessageScreen({ route, navigation }) {
     throw new Error('orders update failed after removing unsupported columns');
   };
 
-  const handleMarkShipped = async () => {
-    try {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const shippedDateTime = `${shipDate} ${hh}:${mm}`;
+  const performMarkShipped = async () => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const shippedDateTime = `${shipDate} ${hh}:${mm}`;
 
-      // 1. 전체 선택된 주문 → status: 'shipped' (DB constraint-safe)
-      if (fullyChecked && fullyChecked.length > 0) {
-        for (const orderId of fullyChecked) {
-          const { data: ord, error: fetchErr } = await supabase
-            .from('orders')
-            .select('items, status')
-            .eq('id', orderId)
-            .single();
-          if (fetchErr || !ord) {
-            console.warn('주문 조회 실패:', fetchErr?.message);
-          }
-
-          const nextItems = (ord?.items || []).map(item => ({
-            ...item,
-            shipped:          true,
-            shipped_tracking: trackingNo || '',
-            shipped_date:     shippedDateTime,
-            shipped_img_url:  imgUrls[0] || '',
-            shipped_img_urls: imgUrls,
-            shipped_pdf_url:  pdfUrl || '',
-          }));
-
-          await updateOrdersSafely({
-            ...(nextItems.length ? { items: nextItems } : {}),
-            status:       'shipped',
-            shipped_date: shippedDateTime,
-            tracking:     trackingNo || '',
-            img_url:      imgUrls[0] || '',
-            pdf_url:      pdfUrl || '',
-            addr:         customer.addr || '',
-            tel:          customer.tel || '',
-          }, query => query.eq('id', orderId));
-        }
+    if (fullyChecked && fullyChecked.length > 0) {
+      for (const orderId of fullyChecked) {
+        const { data: ord } = await supabase.from('orders').select('items').eq('id', orderId).single();
+        const nextItems = (ord?.items || []).map(item => ({
+          ...item,
+          shipped: true,
+          shipped_tracking: trackingNo || '',
+          shipped_date: shippedDateTime,
+          shipped_img_urls: imgUrls,
+          shipped_pdf_url: pdfUrl || '',
+        }));
+        await updateOrdersSafely({
+          items: nextItems,
+          status: 'shipped',
+          shipped_date: shippedDateTime,
+          tracking: trackingNo || '',
+          pdf_url: pdfUrl || '',
+          addr: customer.addr || '',
+          tel: customer.tel || '',
+        }, q => q.eq('id', orderId));
       }
+    }
 
-      // 2. 부분 선택된 주문 → items JSON에만 shipped: true 기록
-      //    status는 'pending' 유지 (DB CHECK constraint 우회)
-      //    Web에서는 items 데이터로 부분출고 감지
-      if (partialDetails && partialDetails.length > 0) {
-        for (const pd of partialDetails) {
-          const { data: ord, error: fetchErr } = await supabase
-            .from('orders')
-            .select('items, status')
-            .eq('id', pd.orderId)
-            .single();
-          if (fetchErr || !ord) {
-            console.warn('주문 조회 실패:', fetchErr?.message);
-            continue;
-          }
-
-          const newItems = (ord.items || []).map((item, idx) => {
-            if (pd.itemIdxs.includes(idx)) {
-              return {
-                ...item,
-                shipped:          true,
-                shipped_tracking: trackingNo || '',
-                shipped_date:     shippedDateTime,
-                shipped_img_url:  imgUrls[0] || '',
-                shipped_img_urls: imgUrls,
-                shipped_pdf_url:  pdfUrl || '',
-              };
-            }
-            return item;
-          });
-
-          // 모든 품목이 shipped → 완전 출고 처리
-          const allNowShipped = newItems.every(it => it.shipped);
-          await updateOrdersSafely({
-            items:    newItems,
-            status:   allNowShipped ? 'shipped' : 'pending', // 'pending' safe w/ constraint
-            tracking: trackingNo || '',
-            addr:     customer.addr || '',
-            tel:      customer.tel || '',
-            ...(imgUrls[0] ? { img_url: imgUrls[0] } : {}),
-            ...(pdfUrl ? { pdf_url: pdfUrl } : {}),
-            ...(allNowShipped ? {
+    if (partialDetails && partialDetails.length > 0) {
+      for (const pd of partialDetails) {
+        const { data: ord } = await supabase.from('orders').select('items').eq('id', pd.orderId).single();
+        const newItems = (ord?.items || []).map((item, idx) => {
+          if (pd.itemIdxs.includes(idx)) {
+            return {
+              ...item,
+              shipped: true,
+              shipped_tracking: trackingNo || '',
               shipped_date: shippedDateTime,
-              img_url:      imgUrls[0] || '',
-              pdf_url:      pdfUrl || '',
-            } : {}),
-          }, query => query.eq('id', pd.orderId));
-        }
+              shipped_img_urls: imgUrls,
+              shipped_pdf_url: pdfUrl || '',
+            };
+          }
+          return item;
+        });
+        const allNowShipped = newItems.every(it => it.shipped);
+        await updateOrdersSafely({
+          items: newItems,
+          status: allNowShipped ? 'shipped' : 'pending',
+          tracking: trackingNo || '',
+          addr: customer.addr || '',
+          tel: customer.tel || '',
+          ...(allNowShipped ? { shipped_date: shippedDateTime, pdf_url: pdfUrl || '' } : {}),
+        }, q => q.eq('id', pd.orderId));
       }
+    }
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const handleMarkShipped = async () => {
+    setStep('marking_shipped');
+    setStepMsg('출고 처리 중...');
+    try {
+      await performMarkShipped();
       Alert.alert('완료 ✅', '출고 처리가 완료되었습니다', [
         { text: '홈으로', onPress: () => navigation.navigate('Home') },
       ]);
     } catch (e) {
       Alert.alert('오류', e.message);
+      setStep('ready');
     }
   };
 
@@ -577,7 +568,7 @@ export default function MessageScreen({ route, navigation }) {
           onPress={sendSMS}
         />
         <SendBtn
-          emoji="🟡"
+          icon={<Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2111/2111466.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />}
           label="카카오톡 공유"
           sub={photoUri ? '사진 + 메시지 공유' : '메시지 공유'}
           color="#3a1d1d"
