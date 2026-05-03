@@ -6331,7 +6331,7 @@ END $$;
     // Build date → [{name, status}] map
     const dmap = {};
     DB.orders.forEach(o => {
-      const d = String(o.order_date || '').split('T')[0];
+      const d = String(o.order_date || '').slice(0, 10);
       if (!d) return;
       if (!dmap[d]) dmap[d] = [];
       const c = getCust(o.customer_id);
