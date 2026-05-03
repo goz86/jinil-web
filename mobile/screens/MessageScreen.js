@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Image, Share, Linking, Alert, Platform, ActivityIndicator,
+  Image, Share, Linking, Alert, Platform, ActivityIndicator, FlatList,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
@@ -69,12 +69,26 @@ ${itemLines}
 }
 
 // ── Invoice HTML ──────────────────────────────────────
+// MAX_PDF_ITEMS: portrait A4 단면 기준 최대 30개
+const MAX_PDF_ITEMS = 30;
+
 function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
+  // 전체 합계는 선택된 모든 품목 기준
   const total = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
   const [yr, mo, dy] = shipDate.split('-');
 
-  const rows = Array.from({ length: 14 }).map((_, i) => {
-    const it = items[i];
+  // PDF에 실제로 들어가는 품목 (최대 20개)
+  const pdfItems  = items.slice(0, MAX_PDF_ITEMS);
+  // 14개 이하면 14행, 그 이상이면 실제 품목 수만큼 행 생성
+  const rowCount  = Math.max(14, pdfItems.length);
+  // 15개 이상이면 행 높이를 줄여서 한 페이지에 맞춤
+  const compact   = pdfItems.length > 14;
+  const tdPadding = compact ? '1px 2px' : '3px 3px';
+  const tdFont    = compact ? '7pt'     : '7.5pt';
+  const thPadding = compact ? '2px 3px' : '4px 3px';
+
+  const rows = Array.from({ length: rowCount }).map((_, i) => {
+    const it = pdfItems[i];
     if (it) {
       return `<tr>
         <td>${mo}</td><td>${dy}</td>
@@ -89,13 +103,13 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
   }).join('');
 
   const css = `
-    @page { size: A4 landscape; margin: 0; }
+    @page { size: A4 portrait; margin: 0; }
     * { box-sizing: border-box; }
     body { font-family: sans-serif; margin: 0; padding: 8mm; background:#fff; }
-    .wrap { display:flex; width:100%; border:2px solid #1a6b3a; height:182mm; }
+    .wrap { display:flex; width:100%; border:2px solid #1a6b3a; height:auto; }
     .copy { flex:1; padding:10px; border-right:2px solid #1a6b3a; position:relative; display:flex; flex-direction:column; }
     .copy:last-child { border-right:none; }
-    .side { position:absolute; right:0; top:0; bottom:0; width:28px; border-left:2px solid #1a6b3a; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f0fdf4; }
+    .side { width:28px; flex-shrink:0; border-left:2px solid #1a6b3a; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f0fdf4; }
     .side-title { writing-mode:vertical-rl; font-size:15pt; font-weight:700; color:#1a6b3a; letter-spacing:4px; }
     .side-label { writing-mode:vertical-rl; font-size:7pt; color:#555; margin-top:8px; }
     .parties { display:flex; gap:4px; margin-right:32px; margin-bottom:4px; }
@@ -108,9 +122,9 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
     .bank-bar { display:flex; align-items:center; margin-right:32px; margin-bottom:4px; border:1.5px solid #1a6b3a; background:#fffbe6; font-size:8pt; }
     .bank-lbl { padding:4px 10px; border-right:1.5px solid #1a6b3a; font-weight:700; color:#1a6b3a; background:#e8f5e8; white-space:nowrap; }
     .bank-val { padding:4px 12px; font-weight:600; color:#1d1d1f; }
-    table { width:calc(100% - 32px); border-collapse:collapse; font-size:7.5pt; margin-top:4px; border:1px solid #1a6b3a; }
-    th { background:#e8f5e8; color:#1a6b3a; border:1px solid #1a6b3a; padding:4px 3px; font-size:7.5pt; }
-    td { border:1px solid #d4e8d4; padding:3px 3px; text-align:center; }
+    table { width:calc(100% - 32px); border-collapse:collapse; font-size:${tdFont}; margin-top:4px; border:1px solid #1a6b3a; }
+    th { background:#e8f5e8; color:#1a6b3a; border:1px solid #1a6b3a; padding:${thPadding}; font-size:${tdFont}; }
+    td { border:1px solid #d4e8d4; padding:${tdPadding}; text-align:center; }
     .total { display:flex; border:1.5px solid #1a6b3a; margin-top:6px; width:calc(100% - 32px); }
     .total-lbl { background:#e8f5e8; color:#1a6b3a; font-weight:700; padding:5px 12px; border-right:1.5px solid #1a6b3a; font-size:10pt; }
     .total-val { flex:1; padding:5px 12px; text-align:right; font-weight:700; font-size:10pt; }
@@ -154,15 +168,15 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
         <div class="total-lbl">합 계</div>
         <div class="total-val">${fmt(total)}원</div>
       </div>
-      <div class="side">
-        <div class="side-title">거래명세서</div>
-        <div class="side-label">(${label})</div>
-      </div>
+    </div>
+    <div class="side">
+      <div class="side-title">거래명세서</div>
+      <div class="side-label">(${label})</div>
     </div>
   `;
 
   return `<html><head><meta charset="utf-8"><style>${css}</style></head>
-    <body><div class="wrap">${copyHtml('공급받는자용')}${copyHtml('공급자용')}</div></body></html>`;
+    <body><div class="wrap">${copyHtml('공급받는자용')}</div></body></html>`;
 }
 
 // ── Send option button ────────────────────────────────
@@ -188,49 +202,55 @@ function SendBtn({ emoji, label, sub, color = C.blue, onPress, disabled }) {
 
 // ── Main ──────────────────────────────────────────────
 export default function MessageScreen({ route, navigation }) {
-  const { customer, items, orderIds, fullyChecked, trackingNo, photoUri, shipDate } = route.params;
+  const { customer, items, orderIds, fullyChecked, partialDetails, trackingNo, photos, photoUri, shipDate } = route.params;
+  // Normalize: accept both `photos` array (new) and legacy `photoUri` (single)
+  const allPhotos = photos || (photoUri ? [photoUri] : []);
 
-  const [step, setStep] = useState('processing'); // 'processing' | 'ready'
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [imgUrl, setImgUrl] = useState(null);
-  const [stepMsg, setStepMsg] = useState('PDF 생성 중...');
-  const [sent, setSent] = useState(false);
+  const [step,         setStep]         = useState('processing');
+  const [pdfUrl,       setPdfUrl]       = useState(null);
+  const [imgUrls,      setImgUrls]      = useState([]); // all uploaded photo URLs
+  const [stepMsg,      setStepMsg]      = useState('PDF 생성 중...');
+  const [sent,         setSent]         = useState(false);
+  const [pdfTruncated, setPdfTruncated] = useState(false);
 
   useEffect(() => { processAssets(); }, []);
 
   const processAssets = async () => {
     try {
-      // 1. Fetch supplier info from Supabase
+      if (items.length > MAX_PDF_ITEMS) setPdfTruncated(true);
+
+      // 1. Fetch supplier info
       setStepMsg('공급자 정보 불러오는 중...');
       const supplier = await fetchSupplier();
 
-      // 2. Generate PDF
+      // 2. Generate + upload PDF
       setStepMsg('거래명세서 PDF 생성 중...');
       const html = generateInvoiceHTML(customer, items, shipDate, supplier);
       const { uri: pdfUri } = await Print.printToFileAsync({ html, base64: false });
 
-      // 3. Upload PDF — Named as "jinil_Date.pdf" to avoid encoding issues
       setStepMsg('PDF 업로드 중...');
-      const dateStr = shipDate.replace(/-/g, '');               // 20260501
-      const ts      = Math.floor(Date.now() / 1000) % 10000;    // short ts to allow multiple daily shipments
+      const dateStr = shipDate.replace(/-/g, '');
+      const ts      = Math.floor(Date.now() / 1000) % 10000;
       const pdfPath = `jinil_${dateStr}_${ts}.pdf`;
       const rawUrl  = await uploadFile(BUCKETS.invoices, pdfPath, pdfUri);
-      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}`;
-      setPdfUrl(viewerUrl);
+      setPdfUrl(`https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}`);
 
-      // 4. Compress + upload photo — unique filename prevents overwriting previous entries
-      if (photoUri) {
-        setStepMsg('사진 압축 및 업로드 중...');
-        const compressedUri = await compressImage(photoUri);   // ~150-300KB
-        const imgPath = `img_${customer.id}_${dateStr}_${ts}.jpg`;
-        const iUrl = await uploadFile(BUCKETS.photos, imgPath, compressedUri);
-        setImgUrl(iUrl);
+      // 3. Compress + upload ALL photos concurrently
+      if (allPhotos.length > 0) {
+        setStepMsg(`사진 ${allPhotos.length}장 업로드 중...`);
+        const uploadTasks = allPhotos.map(async (uri, idx) => {
+          const compressed = await compressImage(uri);
+          const imgPath = `img_${customer.id}_${dateStr}_${ts}_${idx}.jpg`;
+          return uploadFile(BUCKETS.photos, imgPath, compressed);
+        });
+        const urls = await Promise.all(uploadTasks);
+        setImgUrls(urls);
       }
 
       setStep('ready');
     } catch (e) {
       console.warn('Asset error:', e.message);
-      setStep('ready'); // proceed even on error
+      setStep('ready');
     }
   };
 
@@ -261,19 +281,43 @@ export default function MessageScreen({ route, navigation }) {
     }
   };
 
-  // KakaoTalk / Share sheet — copy text FIRST then open share
+  // 사진 1장씩 순차 공유 (expo-sharing은 1파일씩만 지원)
+  const sharePhotoSequential = async (photos, idx = 0) => {
+    if (idx >= photos.length) return; // 모두 완료
+    const ok = await Sharing.isAvailableAsync();
+    if (!ok) return;
+    try {
+      await Sharing.shareAsync(photos[idx], {
+        dialogTitle: `송장 사진 ${idx + 1}/${photos.length}장`,
+        mimeType: 'image/jpeg',
+      });
+    } catch (e) {
+      if (e.message === 'User did not share') return; // 취소 시 중단
+    }
+    // 다음 사진이 있으면 연속 공유 여부 확인
+    if (idx + 1 < photos.length) {
+      Alert.alert(
+        `📷 ${idx + 1}/${photos.length}장 완료`,
+        `다음 사진(${idx + 2}/${photos.length}장)을 공유하시겠습니까?`,
+        [
+          { text: '완료', style: 'cancel' },
+          { text: '다음 사진 공유 →', onPress: () => sharePhotoSequential(photos, idx + 1) },
+        ]
+      );
+    }
+  };
+
+  // KakaoTalk / Share sheet — copy text FIRST then share photos sequentially
   const shareKakao = async () => {
-    // Copy message to clipboard first so user can paste text in KakaoTalk
     await Clipboard.setStringAsync(message);
     setSent(true);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      if (photoUri) {
+      if (allPhotos.length > 0) {
         const ok = await Sharing.isAvailableAsync();
         if (ok) {
-          // Share sheet with photo (user selects KakaoTalk); text already copied to clipboard
-          await Sharing.shareAsync(photoUri, { dialogTitle: '카카오톡으로 공유', mimeType: 'image/jpeg' });
+          await sharePhotoSequential(allPhotos, 0);
         } else {
           await Share.share({ message, title: `[출고 알림] ${customer.name}` });
         }
@@ -281,44 +325,133 @@ export default function MessageScreen({ route, navigation }) {
         await Share.share({ message, title: `[출고 알림] ${customer.name}` });
       }
     } catch (e) {
-      if (e.message !== 'User did not share') {
-        Alert.alert('오류', e.message);
-      }
+      if (e.message !== 'User did not share') Alert.alert('오류', e.message);
     }
   };
 
   const sharePhoto = async () => {
-    if (!photoUri) { Alert.alert('사진 없음'); return; }
-    const ok = await Sharing.isAvailableAsync();
-    if (ok) await Sharing.shareAsync(photoUri, { dialogTitle: '송장 사진', mimeType: 'image/jpeg' });
+    if (allPhotos.length === 0) { Alert.alert('사진 없음'); return; }
+    await sharePhotoSequential(allPhotos, 0);
+  };
+
+  const missingColumnFrom = (error) => {
+    const message = error?.message || '';
+    const match = message.match(/Could not find the '([^']+)' column/);
+    return match?.[1] || null;
+  };
+
+  const updateOrdersSafely = async (payload, applyFilter) => {
+    let nextPayload = { ...payload };
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const query = supabase.from('orders').update(nextPayload);
+      const { error } = await applyFilter(query);
+      if (!error) return;
+
+      const missingColumn = missingColumnFrom(error);
+      if (missingColumn && Object.prototype.hasOwnProperty.call(nextPayload, missingColumn)) {
+        const { [missingColumn]: _removed, ...rest } = nextPayload;
+        nextPayload = rest;
+        console.warn(`orders.${missingColumn} column unavailable; retrying without it`);
+        continue;
+      }
+
+      throw error;
+    }
+
+    throw new Error('orders update failed after removing unsupported columns');
   };
 
   const handleMarkShipped = async () => {
     try {
-      // Save shipped_date with time (e.g. "2026-05-01 14:30")
       const now = new Date();
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
       const shippedDateTime = `${shipDate} ${hh}:${mm}`;
-      const update = {
-        status: 'shipped',
-        shipped_date: shippedDateTime,
-        tracking: trackingNo || '',
-        img_url: imgUrl || '',
-        addr: customer.addr || '',
-        tel: customer.tel || ''
-      };
 
-      // Only mark orders whose ALL items were included in this shipment
-      // fullyChecked = orders where every item was selected → safe to mark shipped
-      // partialChecked orders stay pending (user ships remaining items later)
-      const oids = fullyChecked && fullyChecked.length > 0 ? fullyChecked : null;
+      // 1. 전체 선택된 주문 → status: 'shipped' (DB constraint-safe)
+      if (fullyChecked && fullyChecked.length > 0) {
+        for (const orderId of fullyChecked) {
+          const { data: ord, error: fetchErr } = await supabase
+            .from('orders')
+            .select('items, status')
+            .eq('id', orderId)
+            .single();
+          if (fetchErr || !ord) {
+            console.warn('주문 조회 실패:', fetchErr?.message);
+          }
 
-      if (oids) {
-        await supabase.from('orders').update(update).in('id', oids);
+          const nextItems = (ord?.items || []).map(item => ({
+            ...item,
+            shipped:          true,
+            shipped_tracking: trackingNo || '',
+            shipped_date:     shippedDateTime,
+            shipped_img_url:  imgUrls[0] || '',
+            shipped_img_urls: imgUrls,
+            shipped_pdf_url:  pdfUrl || '',
+          }));
+
+          await updateOrdersSafely({
+            ...(nextItems.length ? { items: nextItems } : {}),
+            status:       'shipped',
+            shipped_date: shippedDateTime,
+            tracking:     trackingNo || '',
+            img_url:      imgUrls[0] || '',
+            pdf_url:      pdfUrl || '',
+            addr:         customer.addr || '',
+            tel:          customer.tel || '',
+          }, query => query.eq('id', orderId));
+        }
       }
-      // If oids is null/empty (all selections were partial), we still create the
-      // invoice/message but don't change any order status — user handles manually.
+
+      // 2. 부분 선택된 주문 → items JSON에만 shipped: true 기록
+      //    status는 'pending' 유지 (DB CHECK constraint 우회)
+      //    Web에서는 items 데이터로 부분출고 감지
+      if (partialDetails && partialDetails.length > 0) {
+        for (const pd of partialDetails) {
+          const { data: ord, error: fetchErr } = await supabase
+            .from('orders')
+            .select('items, status')
+            .eq('id', pd.orderId)
+            .single();
+          if (fetchErr || !ord) {
+            console.warn('주문 조회 실패:', fetchErr?.message);
+            continue;
+          }
+
+          const newItems = (ord.items || []).map((item, idx) => {
+            if (pd.itemIdxs.includes(idx)) {
+              return {
+                ...item,
+                shipped:          true,
+                shipped_tracking: trackingNo || '',
+                shipped_date:     shippedDateTime,
+                shipped_img_url:  imgUrls[0] || '',
+                shipped_img_urls: imgUrls,
+                shipped_pdf_url:  pdfUrl || '',
+              };
+            }
+            return item;
+          });
+
+          // 모든 품목이 shipped → 완전 출고 처리
+          const allNowShipped = newItems.every(it => it.shipped);
+          await updateOrdersSafely({
+            items:    newItems,
+            status:   allNowShipped ? 'shipped' : 'pending', // 'pending' safe w/ constraint
+            tracking: trackingNo || '',
+            addr:     customer.addr || '',
+            tel:      customer.tel || '',
+            ...(imgUrls[0] ? { img_url: imgUrls[0] } : {}),
+            ...(pdfUrl ? { pdf_url: pdfUrl } : {}),
+            ...(allNowShipped ? {
+              shipped_date: shippedDateTime,
+              img_url:      imgUrls[0] || '',
+              pdf_url:      pdfUrl || '',
+            } : {}),
+          }, query => query.eq('id', pd.orderId));
+        }
+      }
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('완료 ✅', '출고 처리가 완료되었습니다', [
@@ -375,7 +508,7 @@ export default function MessageScreen({ route, navigation }) {
           <Text style={styles.summaryLbl}>합계</Text>
           <Text style={[styles.summaryVal, { color: C.blue, fontSize: 16, fontWeight: '800' }]}>{fmt(total)}원</Text>
         </View>
-        <View style={[styles.summaryRow, { borderBottomWidth: 0 }]}>
+        <View style={[styles.summaryRow, { borderBottomWidth: pdfTruncated ? 1 : 0 }]}>
           <Text style={styles.summaryLbl}>명세서</Text>
           <View style={[styles.pdfChip, pdfUrl ? styles.pdfChipOk : styles.pdfChipWait]}>
             <Text style={[styles.pdfChipText, { color: pdfUrl ? '#1a7f2a' : '#b36a00' }]}>
@@ -383,18 +516,40 @@ export default function MessageScreen({ route, navigation }) {
             </Text>
           </View>
         </View>
+        {/* 품목 20개 초과 시 경고 */}
+        {pdfTruncated && (
+          <View style={[styles.summaryRow, { borderBottomWidth: 0, backgroundColor: '#fff7ed', borderRadius: 8, padding: 10, marginTop: 4 }]}>
+            <Text style={{ fontSize: 12, color: '#b36a00', fontWeight: '600', lineHeight: 18 }}>
+              ⚠️ 품목 {items.length}개 중 PDF에는 {MAX_PDF_ITEMS}개만 포함됩니다.{'\n'}
+              나머지 {items.length - MAX_PDF_ITEMS}개는 메시지 문자에는 포함되어 있습니다.
+            </Text>
+          </View>
+        )}
       </View>
 
-      {/* Photo preview */}
-      {photoUri && (
+      {/* Photo preview — multiple photos grid */}
+      {allPhotos.length > 0 && (
         <View style={styles.photoCard}>
           <View style={styles.photoHeader}>
-            <Text style={styles.sectionTitle}>📷 송장 사진</Text>
+            <Text style={styles.sectionTitle}>📷 송장 사진 ({allPhotos.length}장)</Text>
             <TouchableOpacity style={styles.sharePhotoBtn} onPress={sharePhoto}>
-              <Text style={styles.sharePhotoBtnText}>📤 사진만 공유</Text>
+              <Text style={styles.sharePhotoBtnText}>📤 공유</Text>
             </TouchableOpacity>
           </View>
-          <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
+          {allPhotos.length === 1 ? (
+            <Image source={{ uri: allPhotos[0] }} style={styles.photo} resizeMode="cover" />
+          ) : (
+            <View style={styles.photoGrid}>
+              {allPhotos.map((uri, idx) => (
+                <View key={idx} style={styles.photoGridItem}>
+                  <Image source={{ uri }} style={styles.photoGridImg} resizeMode="cover" />
+                  <View style={styles.photoGridBadge}>
+                    <Text style={styles.photoGridBadgeText}>{idx + 1}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       )}
 
@@ -548,4 +703,20 @@ const styles = StyleSheet.create({
     width: '100%', alignItems: 'center',
   },
   pendingHintText: { color: C.inkMuted, fontSize: 12, textAlign: 'center', lineHeight: 20 },
+
+  // ── Multiple photos grid
+  photoGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4,
+  },
+  photoGridItem: {
+    position: 'relative',
+    width: '48%', aspectRatio: 4 / 3, borderRadius: 10, overflow: 'hidden',
+  },
+  photoGridImg: { width: '100%', height: '100%' },
+  photoGridBadge: {
+    position: 'absolute', bottom: 6, right: 6,
+    backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 8,
+    paddingHorizontal: 7, paddingVertical: 2,
+  },
+  photoGridBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 });

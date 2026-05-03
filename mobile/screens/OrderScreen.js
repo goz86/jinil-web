@@ -10,31 +10,38 @@ const STATUS = {
   new:     { label: '신규',     color: C.blue,    bg: C.blueLight  },
   pending: { label: '출고대기', color: '#b36a00', bg: '#fff7ed'    },
   shipped: { label: '출고완료', color: '#1a7f2a', bg: '#f0fdf4'    },
+  partial: { label: '부분출고', color: '#7c3aed', bg: '#f5f3ff'    },
 };
 
 // ── Checkbox item row ─────────────────────────────────
-function ItemRow({ item, checked, onToggle, isShipped, isAdmin }) {
-  const isDone = checked || isShipped;
+function ItemRow({ item, checked, onToggle, isShipped, itemShipped, isAdmin }) {
+  const isDone = checked || isShipped || itemShipped;
+  const isDisabled = isShipped || itemShipped;
   return (
     <TouchableOpacity
-      style={[styles.itemRow, checked && styles.itemRowChecked]}
+      style={[styles.itemRow, checked && styles.itemRowChecked, itemShipped && { backgroundColor: '#fafafa' }]}
       onPress={onToggle}
       activeOpacity={0.7}
-      disabled={isShipped}
+      disabled={isDisabled}
     >
-      <View style={[styles.checkbox, isDone && styles.checkboxOn, isShipped && { opacity: 0.5 }]}>
+      <View style={[styles.checkbox, isDone && styles.checkboxOn, isDisabled && { opacity: 0.45 }]}>
         {isDone && <Text style={styles.checkmark}>✓</Text>}
       </View>
 
       <View style={styles.itemBody}>
-        <Text style={[styles.itemName, isDone && styles.itemNameDone]} numberOfLines={1}>
+        <Text style={[
+          styles.itemName,
+          isDone && styles.itemNameDone,
+          itemShipped && { textDecorationLine: 'line-through', color: C.inkMuted },
+        ]} numberOfLines={1}>
           {item.name}
+          {itemShipped ? '  ✓출고' : ''}
         </Text>
         {item.spec ? <Text style={styles.itemSpec}>{item.spec}</Text> : null}
       </View>
 
       <View style={styles.itemRight}>
-        <Text style={[styles.itemSubtotal, isDone && { color: C.blue }]}>
+        <Text style={[styles.itemSubtotal, itemShipped && { color: C.inkMuted, textDecorationLine: 'line-through' }]}>
           {isAdmin ? fmt(item.qty * item.price)+'원' : '••••원'}
         </Text>
         <Text style={styles.itemQtyPrice}>× {item.qty}개{isAdmin ? ` · ${fmt(item.price)}원` : ''}</Text>
@@ -45,7 +52,11 @@ function ItemRow({ item, checked, onToggle, isShipped, isAdmin }) {
 
 // ── Order group ───────────────────────────────────────
 function OrderSection({ order, checkedMap, onToggle, isAdmin }) {
-  const st    = STATUS[order.status] || STATUS.new;
+  // 부분출고 감지: status 대신 items JSON으로 판단 (DB constraint 우회)
+  const hasPartialItems = (order.items || []).some(i => i.shipped === true);
+  const isPartial = hasPartialItems && order.status !== 'shipped';
+  const effectiveStatus = isPartial ? 'partial' : (order.status || 'new');
+  const st    = STATUS[effectiveStatus] || STATUS.new;
   const total = orderTotal(order);
   const isShipped = order.status === 'shipped';
   const isPaid    = !!order.paid;
@@ -79,6 +90,7 @@ function OrderSection({ order, checkedMap, onToggle, isAdmin }) {
           checked={checkedMap[`${order.id}_${idx}`] || false}
           onToggle={() => onToggle(order.id, idx)}
           isShipped={order.status === 'shipped'}
+          itemShipped={item.shipped === true}
           isAdmin={isAdmin}
         />
       ))}
@@ -89,7 +101,9 @@ function OrderSection({ order, checkedMap, onToggle, isAdmin }) {
 // ── Main ──────────────────────────────────────────────
 export default function OrderScreen({ route, navigation }) {
   const { isAdmin } = useAuth();
-  const { customer, orders } = route.params;
+  const { customer, orders, allIds: groupIds } = route.params;
+  // allIds = mọi customer_id cùng tên (nhiều địa chỉ → nhiều records)
+  const allIds = (groupIds && groupIds.length > 0) ? groupIds : [customer.id];
 
   const [localOrders, setLocalOrders] = useState(orders);
 
@@ -119,32 +133,39 @@ export default function OrderScreen({ route, navigation }) {
 
   // ── Real-time Sync ────────────────────────────────────
   useEffect(() => {
-    console.log(`🔌 Subscribing to orders for customer: ${customer.name}`);
-    
-    const channel = supabase.channel(`orders-${customer.id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
+    console.log(`🔌 Subscribing to orders for group: ${customer.name} (ids: ${allIds.join(',')})`);
+
+    // Supabase Realtime filter supports IN operator: customer_id=in.(id1,id2,...)
+    const realtimeFilter = allIds.length === 1
+      ? `customer_id=eq.${allIds[0]}`
+      : `customer_id=in.(${allIds.join(',')})`;
+
+    const channelName = `orders-group-${allIds.slice().sort().join('-')}`;
+
+    const channel = supabase.channel(channelName)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
         table: 'orders',
-        filter: `customer_id=eq.${customer.id}`
-      }, async (payload) => {
-        console.log('🔔 Real-time order update received:', payload.eventType);
-        // Refresh list
+        filter: realtimeFilter,
+      }, async () => {
+        console.log('🔔 Real-time order update — refreshing all group orders');
+        // Fetch ALL orders for ALL customer_ids in this name-group
         const { data } = await supabase
           .from('orders')
           .select('*')
-          .eq('customer_id', customer.id)
+          .in('customer_id', allIds)
           .order('order_date', { ascending: false });
-        
+
         if (data) setLocalOrders(data);
       })
       .subscribe();
 
     return () => {
-      console.log('📴 Unsubscribing from orders');
+      console.log('📴 Unsubscribing from orders group');
       supabase.removeChannel(channel);
     };
-  }, [customer.id]);
+  }, [allIds.join(',')]);
 
   const pending = localOrders.filter(o => o.status !== 'shipped');
   const shipped = localOrders.filter(o => o.status === 'shipped');
@@ -171,41 +192,55 @@ export default function OrderScreen({ route, navigation }) {
     });
   };
 
-  // Only collect items from non-shipped orders
+  // Collect checked items (exclude already item-shipped); include order/index metadata
   const getCheckedItems = () => {
     const result = [];
     localOrders
       .filter(o => o.status !== 'shipped')
       .forEach(o =>
         (o.items || []).forEach((item, idx) => {
-          if (checkedMap[`${o.id}_${idx}`]) result.push(item);
+          if (!item.shipped && checkedMap[`${o.id}_${idx}`])
+            result.push({ ...item, _orderId: o.id, _itemIdx: idx });
         })
       );
     return result;
   };
 
-  // Orders where ALL items are checked → mark shipped after delivery
-  // Orders where only SOME items are checked → leave as pending (partial shipment)
+  // fullyChecked: all unshipped items of order selected → mark full order shipped
+  // partialChecked: only some items selected → partial shipment
+  // partialDetails: [{orderId, itemIdxs}] — which item indices to mark shipped
   const getCheckedOrderIds = () => {
     const fullyChecked   = [];
     const partialChecked = [];
+    const partialDetails = [];
     localOrders
       .filter(o => o.status !== 'shipped')
       .forEach(o => {
-        const total   = (o.items || []).length;
-        const checked = (o.items || []).filter((_, idx) => checkedMap[`${o.id}_${idx}`]).length;
+        // Only count unshipped items as "available to ship"
+        const unshippedTotal = (o.items || []).filter(it => !it.shipped).length;
+        const checkedIdxs = (o.items || [])
+          .map((item, idx) => ({ item, idx }))
+          .filter(({ item, idx }) => !item.shipped && checkedMap[`${o.id}_${idx}`])
+          .map(({ idx }) => idx);
+        const checked = checkedIdxs.length;
         if (checked === 0) return;
-        if (checked === total) fullyChecked.push(o.id);
-        else                   partialChecked.push(o.id);
+        if (checked === unshippedTotal) {
+          fullyChecked.push(o.id);
+        } else {
+          partialChecked.push(o.id);
+          partialDetails.push({ orderId: o.id, itemIdxs: checkedIdxs });
+        }
       });
-    return { fullyChecked, partialChecked };
+    return { fullyChecked, partialChecked, partialDetails };
   };
 
-  // Count only pending items for footer display
+  // Count only unshipped items (exclude item.shipped) for footer display
   const pendingKeys = [];
   localOrders
     .filter(o => o.status !== 'shipped')
-    .forEach(o => (o.items || []).forEach((_, idx) => pendingKeys.push(`${o.id}_${idx}`)));
+    .forEach(o => (o.items || []).forEach((item, idx) => {
+      if (!item.shipped) pendingKeys.push(`${o.id}_${idx}`);
+    }));
   const checkedCount = pendingKeys.filter(k => checkedMap[k]).length;
   const totalCount   = pendingKeys.length;
   const allChecked   = totalCount > 0 && checkedCount === totalCount;
@@ -218,10 +253,9 @@ export default function OrderScreen({ route, navigation }) {
     }
     // fullyChecked  → orders whose ALL items are selected → will be marked shipped
     // partialChecked → orders with only some items selected → stay pending
-    const { fullyChecked, partialChecked } = getCheckedOrderIds();
-    // Pass all affected order IDs so MessageScreen knows which ones to update
+    const { fullyChecked, partialChecked, partialDetails } = getCheckedOrderIds();
     const orderIds = [...fullyChecked, ...partialChecked];
-    navigation.navigate('Camera', { customer, items, orderIds, fullyChecked });
+    navigation.navigate('Camera', { customer, items, orderIds, fullyChecked, partialDetails });
   };
 
   return (

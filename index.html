@@ -719,6 +719,12 @@
       color: #b36a00;
     }
 
+    .s-partial {
+      background: #f5f3ff;
+      color: #7c3aed;
+      border: 1px solid #ddd8fe;
+    }
+
     .s-paid {
       background: #f0fdf4;
       color: #15803d;
@@ -888,9 +894,58 @@
       display: none;
     }
 
+    .admin-alert-btn {
+      position: relative;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      border-color: #fed7aa !important;
+      color: #b45309 !important;
+      background: #fff7ed !important;
+    }
+
+    .admin-alert-btn.has-items {
+      display: inline-flex;
+    }
+
+    .admin-alert-count {
+      min-width: 18px;
+      height: 18px;
+      border-radius: 99px;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+
+    .pay-request-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .pay-request-row:last-child {
+      border-bottom: 0;
+    }
+
     .s-shipped {
       background: var(--green-tint);
       color: #1a7f2a;
+    }
+
+    .order-detail-item.is-shipped {
+      opacity: .58;
+    }
+
+    .order-detail-item.is-shipped .order-detail-item-label {
+      text-decoration: line-through;
+      color: var(--ink-muted);
     }
 
     /* ── CONFIRM MODAL PREMIUM STYLING ── */
@@ -1704,30 +1759,51 @@
     .hist-cards-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     /* ── HISTORY CARDS ── */
-    .history-card {
+    .history-order-group {
       background: var(--canvas);
       border: 1px solid var(--border);
       border-radius: var(--r-lg);
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
-      transition: box-shadow .15s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .045);
+      transition: box-shadow .15s, border-color .15s;
     }
 
-    .history-card:hover {
-      box-shadow: 0 3px 12px rgba(0, 0, 0, .08);
+    .history-order-group:hover {
+      border-color: rgba(0, 102, 204, .25);
+      box-shadow: 0 5px 18px rgba(0, 0, 0, .075);
+    }
+
+    .history-order-group.is-partial {
+      border-left: 3px solid #7c3aed;
+    }
+
+    .history-card {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .history-card+.history-card {
+      border-top: 1px solid var(--border);
     }
 
     .history-card-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 18px;
       padding: 12px 16px;
       background: var(--parchment);
       border-bottom: 1px solid var(--border);
+    }
+
+    .history-card-main {
+      min-width: 190px;
+      flex: 0 0 250px;
     }
 
     .history-thumb {
@@ -1742,6 +1818,52 @@
 
     .history-thumb:hover {
       transform: scale(1.06);
+    }
+
+    .history-photo-stack {
+      display: flex;
+      gap: 6px;
+      flex: 1 1 auto;
+      align-items: center;
+      min-width: 180px;
+      max-width: 520px;
+      overflow-x: auto;
+      padding: 2px 0 4px;
+      scrollbar-width: thin;
+    }
+
+    .history-photo-stack .history-thumb {
+      width: 54px;
+      height: 54px;
+      flex: 0 0 54px;
+    }
+
+    .history-photo-more {
+      position: relative;
+    }
+
+    .history-photo-more::after {
+      content: attr(data-count);
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 99px;
+      background: rgba(0, 0, 0, .62);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+
+    .history-amount-box {
+      text-align: right;
+      flex: 0 0 90px;
+      margin-left: auto;
     }
 
     .history-body {
@@ -1762,6 +1884,30 @@
       margin: 2px 2px 0 0;
       font-size: 11px;
       color: var(--ink);
+    }
+
+    @media (max-width: 768px) {
+      .history-card-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .history-card-main {
+        flex: 1 1 100%;
+      }
+
+      .history-photo-stack {
+        order: 2;
+        flex: 1 1 calc(100% - 96px);
+        min-width: 0;
+        max-width: none;
+      }
+
+      .history-amount-box {
+        order: 3;
+        flex: 0 0 82px;
+      }
     }
 
     .fullscreen-overlay {
@@ -2682,135 +2828,124 @@
       color: var(--ink);
     }
 
+    /* ── Mobile Responsive (≤768px) — Drawer sidebar ───── */
     @media (max-width: 768px) {
-      .mobile-menu-btn {
-        display: block;
-      }
+      html { font-size: 14px; }
 
+      /* ── Hamburger button: show on mobile ── */
+      .mobile-menu-btn { display: block; }
+
+      /* ── Sidebar: hidden off-screen by default ── */
       .sidebar {
-        position: fixed;
-        top: 0;
-        left: -240px;
-        bottom: 0;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 240px !important;
+        height: 100% !important;
+        flex-direction: column !important;
         z-index: 1000;
-        width: 240px;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.1);
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
+      /* ── Sidebar open (hamburger tapped) ── */
       body.sidebar-active .sidebar {
-        transform: translateX(240px);
+        transform: translateX(0);
       }
 
+      /* ── Dimmed overlay behind drawer ── */
       .sidebar-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.4);
+        background: rgba(0,0,0,0.45);
         z-index: 999;
         display: none;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
       }
+      body.sidebar-active .sidebar-overlay { display: block; }
 
-      body.sidebar-active .sidebar-overlay {
-        display: block;
-      }
+      /* ── Main content: always full width ── */
+      .main { width: 100% !important; flex: 1; }
 
-      .main {
-        width: 100%;
-      }
+      /* ── Topbar ── */
+      .topbar { padding: 0 14px; height: 54px; }
+      .topbar-right { display: none; }
 
-      .topbar {
-        padding: 0 16px;
-        height: 56px;
-      }
+      /* ── Content area padding ── */
+      .content { padding: 14px !important; }
+      .page { padding: 0 !important; }
 
-      .topbar-right {
-        display: none;
-      }
-
-      /* Hide secondary buttons to save space */
-      .content {
-        padding: 16px;
-      }
-
+      /* ── Grid → single column ── */
       .db-grid,
       .db-bottom-row,
       .stats-row,
       .db-stats-grid,
       .grid-2,
-      .grid-3 {
-        grid-template-columns: 1fr ! from;
+      .grid-3,
+      .form-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .form-group.full { grid-column: span 1 !important; }
+
+      /* ── Stats ── */
+      .stat-card-new { padding: 14px; }
+      .stat-value-new { font-size: 22px; }
+      .stat-pill { padding: 10px 12px !important; }
+
+      /* ── Section head: vertical stack ── */
+      .section-head {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
       }
 
-      .stat-card-new {
-        padding: 16px;
-      }
+      /* ── Tables: horizontal scroll ── */
+      .tbl-wrap, .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .tbl-wrap table, table { min-width: 520px; }
+      .data-table th, .data-table td { padding: 8px 8px !important; font-size: 11px !important; }
+      th, td { padding: 9px 8px; font-size: 12px; }
 
-      .stat-value-new {
-        font-size: 22px;
-      }
+      /* ── Tabs ── */
+      .tab { font-size: 11px; padding: 6px 6px; white-space: nowrap; }
+      .tabs { gap: 2px; }
 
-      /* Login Responsive */
-      #login-overlay {
-        flex-direction: column;
-        overflow-y: auto;
-      }
+      /* ── Buttons ── */
+      .btn-sm { padding: 6px 10px !important; font-size: 11px !important; }
 
-      .login-left {
-        padding: 30px 24px;
-        order: 2;
-        width: 100%;
-      }
+      /* ── Cards ── */
+      .card { border-radius: var(--r-md) !important; }
 
-      .login-right {
-        min-height: 240px;
-        order: 1;
-        width: 100%;
-        padding: 40px 24px;
-        border-radius: 0 0 40px 40px;
-      }
-
-      .login-title {
-        font-size: 28px;
-        margin-bottom: 24px;
-      }
-
-      .login-right-art {
-        opacity: 0.3;
-      }
-
-      /* Table Optimization */
-      .tbl-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .tbl-wrap table {
-        min-width: 650px;
-      }
-
-      th,
-      td {
-        padding: 10px 10px;
-        font-size: 12px;
-      }
-
-      .tab {
-        font-size: 11px;
-        padding: 6px 4px;
-        white-space: nowrap;
-      }
-
-      .tabs {
-        gap: 2px;
-      }
-
-      /* Modal Responsive */
+      /* ── Modal: sheet from bottom ── */
+      .modal-overlay { align-items: flex-end !important; }
       .modal {
-        width: 95% !important;
-        margin: 10px auto;
-        max-height: 90vh;
+        max-width: 100% !important;
+        width: 100% !important;
+        max-height: 92vh;
+        border-radius: var(--r-lg) var(--r-lg) 0 0 !important;
+        overflow-y: auto;
+        margin: 0 !important;
       }
+
+      /* ── Login ── */
+      #login-overlay { flex-direction: column; overflow-y: auto; }
+      .login-left { padding: 28px 20px; order: 2; width: 100%; }
+      .login-right {
+        min-height: 200px; order: 1; width: 100%;
+        padding: 36px 24px; border-radius: 0 0 36px 36px;
+      }
+      .login-title { font-size: 26px; margin-bottom: 20px; }
+      .login-right-art { opacity: 0.25; }
+    }
+
+    /* ── Extra small (≤480px): icon-only sidebar nav ── */
+    @media (max-width: 480px) {
+      .sidebar { width: 200px !important; }
+      .topbar { height: 50px; padding: 0 12px; }
     }
   </style>
 </head>
@@ -3033,6 +3168,10 @@
             onblur="setTimeout(()=>closeGlobalSearch(),180)">
           <div class="global-search-results" id="gsearch-results"></div>
         </div>
+        <button class="btn btn-ghost admin-alert-btn" id="pay-req-btn" onclick="openPaymentRequests()"
+          style="padding:8px 14px;font-size:13px;font-weight:700">
+          🔔 결제요청 <span class="admin-alert-count" id="pay-req-count">0</span>
+        </button>
         <button class="btn btn-ghost" onclick="showPage('calendar')"
           style="padding:8px 18px; font-size:14px; font-weight:600">📅 캘린더</button>
         <button class="btn btn-ghost" onclick="openNewOrder()"
@@ -3065,7 +3204,7 @@
                   <button class="chart-mode-tab" data-mode="month" onclick="setChartMode('month')">월별</button>
                 </div>
                 <button id="privacy-btn" class="privacy-toggle" onclick="togglePrivacy()" title="금액 숨김 토글"
-                  style="display:none">🐵</button>
+                  style="display:none">🔓</button>
               </div>
             </div>
             <div style="flex:1;min-height:200px;position:relative">
@@ -3151,6 +3290,10 @@
             <div id="today-wrap" style="max-height: 655px; overflow-y: auto; padding: 10px 0;"></div>
           </div>
         </div>
+        <div class="card" style="padding:20px;margin-top:16px" id="db-top-customers-card">
+          <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--ink)">🏆 Top 5 거래처 (매출)</div>
+          <div id="db-top-customers"></div>
+        </div>
       </div>
 
       <div class="page" id="page-calendar">
@@ -3219,6 +3362,15 @@
           <button class="tab" onclick="setTab('new',this)">신규</button>
           <button class="tab" onclick="setTab('pending',this)">출고대기</button>
           <button class="tab" onclick="setTab('shipped',this)">출고완료</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <span style="font-size:12px;color:var(--ink-muted);font-weight:600">기간:</span>
+          <input type="date" id="order-date-from" onchange="renderOrders()" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
+          <span style="font-size:12px;color:var(--ink-muted)">~</span>
+          <input type="date" id="order-date-to" onchange="renderOrders()" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
+          <button class="btn btn-ghost btn-xs" onclick="clearOrderDateFilter()" style="color:var(--ink-muted)">✕ 초기화</button>
+          <button class="btn btn-ghost btn-xs" onclick="setOrderDateFilterMonth(0)" style="color:var(--blue)">이번달</button>
+          <button class="btn btn-ghost btn-xs" onclick="setOrderDateFilterMonth(-1)" style="color:var(--ink-muted)">지난달</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div class="tbl-wrap" style="max-height: 680px; overflow-y: auto;">
@@ -3477,10 +3629,17 @@
           <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ 지출 등록</button>
         </div>
 
+        <!-- Month navigator -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px">
+          <button onclick="shiftExpMonth(-1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--canvas);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)">‹</button>
+          <span id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--ink);min-width:90px;text-align:center"></span>
+          <button onclick="shiftExpMonth(1)" id="exp-month-next" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--canvas);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)">›</button>
+        </div>
+
         <!-- Stats -->
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
           <div class="card" style="padding:16px;text-align:center">
-            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">이번달 지출</div>
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">월 총 지출</div>
             <div style="font-size:20px;font-weight:700;color:var(--red)" id="exp-s-total">0원</div>
           </div>
           <div class="card" style="padding:16px;text-align:center">
@@ -3488,7 +3647,7 @@
             <div style="font-size:20px;font-weight:700;color:var(--ink)" id="exp-s-daily">0원</div>
           </div>
           <div class="card" style="padding:16px;text-align:center">
-            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">수취 명세서</div>
+            <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">수취 명세서 미지급</div>
             <div style="font-size:20px;font-weight:700;color:var(--amber)" id="exp-s-invoice">0원</div>
           </div>
           <div class="card" style="padding:16px;text-align:center">
@@ -3500,7 +3659,7 @@
         <!-- Filter tabs -->
         <div style="display:flex;gap:4px;margin-bottom:14px">
           <button class="btn btn-ghost btn-sm exp-tab active-tab" onclick="setExpTab('all',this)">전체</button>
-          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('daily',this)"> 일일 지출</button>
+          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('daily',this)">일일 지출</button>
           <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('invoice',this)">📄 수취 명세서</button>
           <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('unpaid',this)" style="color:var(--red)">⚠️ 미지급</button>
         </div>
@@ -3551,6 +3710,34 @@
           <input type="text" id="history-q" placeholder="거래처 이름 검색..." oninput="renderHistory()">
         </div>
         <div id="history-cards"></div>
+      </div>
+
+      <!-- ══ PRODUCTS ══ -->
+      <div class="page" id="page-products" style="display:none">
+        <div class="section-head">
+          <div>
+            <div class="section-title">제품 목록</div>
+            <div class="section-sub" id="products-count">카탈로그 — 주문 등록 시 제품명/단가 자동완성</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 제품 추가</button>
+        </div>
+        <div style="margin-bottom:12px">
+          <input type="text" id="product-q" class="search-input" placeholder="제품명 검색..." oninput="renderProducts()" style="max-width:320px">
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>제품명</th>
+                <th>규격/단위</th>
+                <th style="text-align:right">기본단가</th>
+                <th>메모</th>
+                <th style="width:80px"></th>
+              </tr>
+            </thead>
+            <tbody id="products-tb"></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -3741,6 +3928,29 @@
   </div>
 </div>
 
+<!-- Product Datalist for autocomplete -->
+<datalist id="product-datalist"></datalist>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-product-title">제품 추가</div>
+      <button class="modal-close" onclick="closeModal('modal-product')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label>제품명 *</label><input type="text" id="p-name" placeholder="예: 진일 라벨 A4"></div>
+      <div class="form-group"><label>규격 / 단위</label><input type="text" id="p-spec" placeholder="예: 100매/박스"></div>
+      <div class="form-group"><label>기본 단가 (원)</label><input type="number" id="p-price" placeholder="0" min="0"></div>
+      <div class="form-group full"><label>메모</label><input type="text" id="p-memo" placeholder="내부 참고사항"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-product')">취소</button>
+      <button class="btn btn-primary" onclick="saveProduct()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- Customer Modal -->
 <div class="modal-overlay" id="modal-cust" style="z-index:10001">
   <div class="modal" style="max-width:480px">
@@ -3756,6 +3966,10 @@
       <div class="form-group full"><label>주소</label><input type="text" id="c-addr" placeholder="전체 주소"></div>
       <div class="form-group"><label>사업자번호</label><input type="text" id="c-biz" placeholder="000-00-00000"></div>
       <div class="form-group"><label>KakaoTalk ID</label><input type="text" id="c-kakao" placeholder="카카오톡 아이디"></div>
+      <div class="form-group full">
+        <label>메모 / 특이사항</label>
+        <textarea id="c-notes" rows="3" placeholder="배송 주의사항, 결제 방식, 특이사항 등..." style="width:100%;resize:vertical;border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--canvas);line-height:1.5"></textarea>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">취소</button>
@@ -3769,23 +3983,16 @@
   <div class="modal" style="max-width:420px;max-height:80vh;display:flex;flex-direction:column">
     <div class="modal-header" style="flex-shrink:0">
       <div class="modal-title">📍 배송 주소 선택</div>
-      <button class="modal-close" onclick="closeModal('modal-addr-pick')">✕</button>
+      <button class="modal-close" onclick="closeAddrPicker()">✕</button>
     </div>
     <div class="modal-body" style="overflow-y:auto;flex:1;padding-top:4px">
       <!-- 기존 주소 목록 -->
       <div id="addr-pick-list"></div>
-      <!-- 새 주소 입력 -->
-      <div style="margin-top:12px;border-top:1px solid var(--hairline);padding-top:14px">
-        <div style="font-size:12px;font-weight:600;color:var(--ink-muted);margin-bottom:8px">✏️ 새 주소 직접 입력</div>
-        <input type="text" id="addr-pick-new" placeholder="새 배송 주소 입력..."
-          style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--hairline);border-radius:var(--r-md);font-size:13px;outline:none"
-          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--hairline)'"
-          onkeydown="if(event.key==='Enter')applyNewAddr()">
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modal-addr-pick')">취소</button>
-          <button class="btn btn-primary" style="flex:1" onclick="applyNewAddr()">이 주소로 선택</button>
-        </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeAddrPicker()">취소</button>
       </div>
+      <!-- hidden input kept for applyNewAddr() compat -->
+      <input type="text" id="addr-pick-new" style="display:none">
     </div>
   </div>
 </div>
@@ -3836,6 +4043,19 @@
         <button class="btn btn-ghost" onclick="closeModal('modal-confirm')">취소</button>
         <button class="btn btn-primary" id="confirm-ok-btn">확인</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-pay-requests">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">🔔 결제 승인 요청</div>
+      <button class="modal-close" onclick="closeModal('modal-pay-requests')">✕</button>
+    </div>
+    <div id="pay-requests-body" style="max-height:420px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-pay-requests')">닫기</button>
     </div>
   </div>
 </div>
@@ -3895,25 +4115,51 @@
   // Like supa() but strips optional columns and retries if Supabase returns a column-not-found error
   // optionalKeys: array of field names that might not exist in the DB yet
   async function supaResilient(method, table, body, query, optionalKeys = []) {
-    try {
-      return await supa(method, table, body, query);
-    } catch (e) {
-      const msg = (e.message || '').toLowerCase();
-      const isColErr = msg.includes('column') || msg.includes('42703') || msg.includes('does not exist') || msg.includes('schema cache');
-      if (isColErr && optionalKeys.length) {
-        console.warn(`supaResilient: retrying without [${optionalKeys.join(', ')}]`, e.message);
-        const reduced = { ...body };
-        optionalKeys.forEach(k => delete reduced[k]);
+    const reduced = { ...body };
+    const remaining = [...optionalKeys];
+    while (true) {
+      try {
         return await supa(method, table, reduced, query);
+      } catch (e) {
+        const msg = (e.message || '').toLowerCase();
+        const isColErr = msg.includes('column') || msg.includes('42703') || msg.includes('does not exist') || msg.includes('schema cache');
+        if (!isColErr || !remaining.length) throw e;
+
+        const missing = remaining.find(k =>
+          msg.includes(`'${k.toLowerCase()}'`) ||
+          msg.includes(`"${k.toLowerCase()}"`) ||
+          msg.includes(k.toLowerCase())
+        ) || remaining[0];
+        remaining.splice(remaining.indexOf(missing), 1);
+        delete reduced[missing];
+        console.warn(`supaResilient: retrying without [${missing}]`, e.message);
       }
-      throw e;
     }
+  }
+
+  async function loadSettingValue(key, fallback = null) {
+    try {
+      const rows = await supa('GET', 'settings', null, `?key=eq.${encodeURIComponent(key)}&select=value`);
+      return rows?.[0]?.value ?? fallback;
+    } catch (e) {
+      console.warn('loadSettingValue failed:', key, e.message);
+      return fallback;
+    }
+  }
+
+  async function saveSettingValue(key, value) {
+    const res = await fetch(`${SUPA_URL}/rest/v1/settings`, {
+      method: 'POST',
+      headers: getHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
+      body: JSON.stringify({ key, value })
+    });
+    if (!res.ok) throw new Error(await res.text());
   }
 
   /* ════════════════════════════════════════════
      STATE
      ════════════════════════════════════════════ */
-  let DB = { customers: [], orders: [], expenses: [] };
+  let DB = { customers: [], orders: [], expenses: [], products: [] };
   let UI = {
     orderFilter: 'all',
     calYear: new Date().getFullYear(),
@@ -3926,6 +4172,9 @@
     privacyMode: false,
     chartMode: 'day',      // 'day' | 'week' | 'month'
     currentUser: null,     // { username, email, role, nickname }
+    paymentRequests: [],
+    paymentRequestCount: 0,
+    paymentRequestTimer: null,
   };
 
   /* ════════════════════════════════════════════
@@ -3984,6 +4233,13 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, payload => {
         console.log('🔔 Realtime Change (Customers):', payload.eventType);
         loadAll().then(renderAll);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
+        if (payload.new && payload.new.key === 'payment_requests') {
+          if (UI.currentUser?.role === 'admin') {
+            loadPaymentRequests({ notify: true }).catch(e => console.warn('payment request realtime failed:', e.message));
+          }
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, payload => {
         console.log('🔔 Realtime Change (Expenses):', payload.eventType);
@@ -4252,6 +4508,14 @@
           sql: `
           DO $$
           BEGIN
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS rep TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS contact TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS tel TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS addr TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS biz_no TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS kakao TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+            ALTER TABLE customers ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#0066cc';
             IF (SELECT data_type FROM information_schema.columns WHERE table_name='orders' AND column_name='shipped_date') = 'date' THEN
               ALTER TABLE orders ALTER COLUMN shipped_date TYPE TEXT;
               ALTER TABLE orders ALTER COLUMN order_date TYPE TEXT;
@@ -4262,6 +4526,13 @@
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='courier') THEN
               ALTER TABLE orders ADD COLUMN courier TEXT DEFAULT '';
             END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='partial_shipped_date') THEN
+              ALTER TABLE orders ADD COLUMN partial_shipped_date TEXT DEFAULT '';
+            END IF;
+            BEGIN
+              ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+              ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK(status IN ('new','pending','shipped','partial'));
+            EXCEPTION WHEN OTHERS THEN NULL; END;
           END $$;` })
       }).catch(e => console.warn('Migration failed:', e));
     } catch (e) {
@@ -4324,6 +4595,7 @@ CREATE TABLE IF NOT EXISTS customers (
   addr TEXT DEFAULT '',
   biz_no TEXT DEFAULT '',
   kakao TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
   color TEXT DEFAULT '#0066cc',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -4370,12 +4642,25 @@ CREATE TABLE IF NOT EXISTS expenses (
   img_url     TEXT DEFAULT '',
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS rep TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS contact TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS tel TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS addr TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS biz_no TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS kakao TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#0066cc';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier TEXT DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS rep TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS contact TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS biz_no TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS partial_shipped_date TEXT DEFAULT '';
+DO $$ BEGIN
+  ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+  ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK(status IN ('new','pending','shipped','partial'));
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_orders_date     ON orders(order_date DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status   ON orders(status);
@@ -4394,6 +4679,20 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='activity_logs' AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON activity_logs FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='expenses'      AND policyname='app_auth_all') THEN CREATE POLICY "app_auth_all" ON expenses      FOR ALL TO authenticated USING (true) WITH CHECK (true); END IF;
 END $$;
+CREATE TABLE IF NOT EXISTS products (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  spec TEXT DEFAULT '',
+  price INTEGER DEFAULT 0,
+  memo TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='products' AND policyname='app_auth_all') THEN
+    CREATE POLICY "app_auth_all" ON products FOR ALL TO authenticated USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 `;
 
   // 기본: 최근 90일 주문만 로드 (빠름, 메모리 절약)
@@ -4408,14 +4707,16 @@ END $$;
 
   async function loadAll(daysAgo = LOAD_DAYS) {
     const from = getDateFrom(daysAgo);
-    const [custs, ords, exps] = await Promise.all([
+    const [custs, ords, exps, prods] = await Promise.all([
       supa('GET', 'customers', null, '?order=name'),
       supa('GET', 'orders', null, `?order=order_date.desc&order_date=gte.${from}&limit=1000`),
       supa('GET', 'expenses', null, `?order=date.desc&date=gte.${from}&limit=1000`).catch(() => []),
+      supa('GET', 'products', null, '?order=name').catch(() => []),
     ]);
     DB.customers = custs || [];
     DB.orders = ords || [];
     DB.expenses = exps || [];
+    DB.products = prods || [];
     DB.loadedFrom = from;
     DB.hasMore = ords?.length === 1000;
     updateLoadMoreBtn();
@@ -4488,7 +4789,90 @@ END $$;
   const fmt = n => Number(n || 0).toLocaleString('ko-KR');
   const getCust = id => DB.customers.find(c => c.id == id);
   const getOrder = id => DB.orders.find(o => o.id == id);
-  const orderTotal = o => (o.items || []).reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
+  function orderItems(o) {
+    const raw = o?.items;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    if (raw && typeof raw === 'object') return Object.values(raw);
+    return [];
+  }
+  function itemIsShipped(i) {
+    return i?.shipped === true || i?.shipped === 'true';
+  }
+  function hasShippedItems(o) {
+    return orderItems(o).some(itemIsShipped);
+  }
+  function asArray(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return Array.isArray(parsed) ? parsed : [trimmed];
+        } catch (e) {
+          return [trimmed];
+        }
+      }
+      return [trimmed];
+    }
+    return [];
+  }
+  function uniqueValues(values) {
+    return [...new Set(values.filter(Boolean))];
+  }
+  function effectiveOrderStatus(o) {
+    const items = orderItems(o);
+    const shippedCount = items.filter(itemIsShipped).length;
+    if (o?.status === 'shipped' || (items.length > 0 && shippedCount === items.length)) return 'shipped';
+    if (o?.status === 'partial' || shippedCount > 0) return 'partial';
+    if (o?.status === 'pending') return 'pending';
+    return 'new';
+  }
+  function shipmentTracking(o) {
+    const shippedItem = orderItems(o).find(itemIsShipped);
+    return o?.tracking || shippedItem?.shipped_tracking || '';
+  }
+  function shipmentImage(o) {
+    return shipmentImages(o)[0] || '';
+  }
+  function shipmentImages(o) {
+    const itemImages = orderItems(o)
+      .filter(itemIsShipped)
+      .flatMap(i => [
+        ...asArray(i.shipped_img_urls),
+        ...asArray(i.shipped_img_url),
+        ...asArray(i.img_urls),
+        ...asArray(i.img_url),
+      ]);
+    return uniqueValues([
+      ...asArray(o?.img_urls),
+      ...asArray(o?.img_url),
+      ...itemImages,
+    ]);
+  }
+  function shipmentPdf(o) {
+    const shippedItem = orderItems(o).find(itemIsShipped);
+    return o?.pdf_url || shippedItem?.shipped_pdf_url || '';
+  }
+  function itemPdfUrls(i) {
+    return uniqueValues([
+      ...asArray(i.shipped_pdf_urls),
+      ...asArray(i.shipped_pdf_url),
+      ...asArray(i.pdf_urls),
+      ...asArray(i.pdf_url),
+    ]);
+  }
+  const orderTotal = o => orderItems(o).reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
   const COLORS = ['#0066cc', '#28cd41', '#ff9500', '#0d9488', '#a78bfa', '#ff3b30', '#e879f9', '#38bdf8'];
   const custColor = c => c?.color || COLORS[(c?.name || '?').charCodeAt(0) % COLORS.length];
 
@@ -4512,17 +4896,36 @@ END $$;
   function statusBadge(s) {
     if (s === 'shipped') return '<span class="badge s-shipped">출고완료</span>';
     if (s === 'pending') return '<span class="badge s-pending">출고대기</span>';
+    if (s === 'partial') return '<span class="badge s-partial">부분출고</span>';
     return '<span class="badge s-new">신규</span>';
   }
 
-  function paidBadge(paid) {
+  // 주문 객체 기반 badge — items JSON의 shipped 필드로 부분출고 감지
+  function orderStatusBadge(o) {
+    return statusBadge(effectiveOrderStatus(o));
+  }
+
+  function paidBadge(paid, orderId = null) {
+    if (!orderId) {
+      return paid
+        ? '<span class="badge s-paid">결제완료</span>'
+        : '<span class="badge s-unpaid">미결제</span>';
+    }
+    const isAdmin = UI.currentUser?.role === 'admin';
+    const action = paid
+      ? (isAdmin ? `confirmUnpaid(${orderId})` : `showToast('관리자만 결제 상태를 변경할 수 있습니다','error')`)
+      : (isAdmin ? `confirmMarkPaid(${orderId})` : `requestPaymentApproval(${orderId})`);
     return paid
-      ? '<span class="badge s-paid">결제완료</span>'
-      : '<span class="badge s-unpaid">미결제</span>';
+      ? `<span class="badge s-paid" style="cursor:pointer" onclick="event.stopPropagation();${action}">결제완료</span>`
+      : `<span class="badge s-unpaid" style="cursor:pointer" onclick="event.stopPropagation();${action}">미결제</span>`;
   }
 
   // 결제완료 → 미결제 전환 시 확인창
   function confirmUnpaid(orderId) {
+    if (UI.currentUser?.role !== 'admin') {
+      showToast('관리자만 결제 상태를 변경할 수 있습니다', 'error');
+      return;
+    }
     const o = getOrder(orderId);
     const c = getCust(o?.customer_id);
     customConfirm({
@@ -4536,6 +4939,10 @@ END $$;
   }
 
   function confirmMarkPaid(orderId) {
+    if (UI.currentUser?.role !== 'admin') {
+      requestPaymentApproval(orderId);
+      return;
+    }
     const o = getOrder(orderId);
     const c = getCust(o?.customer_id);
     customConfirm({
@@ -4551,11 +4958,15 @@ END $$;
   // 주문 목록용 — 클릭하면 결제 상태 토글 가능
   function paidBadgeToggle(o) {
     if (o.status !== 'shipped') return '';
-    return o.paid
-      ? `<span class="badge s-paid" onclick="event.stopPropagation();confirmUnpaid(${o.id})"
-           style="cursor:pointer" title="클릭 → 미결제로 변경">✓ 결제완료</span>`
-      : `<span class="badge s-unpaid" onclick="event.stopPropagation();confirmMarkPaid(${o.id})"
-           style="cursor:pointer" title="클릭 → 결제완료로 변경">미결제</span>`;
+    const isAdmin = UI.currentUser?.role === 'admin';
+    if (o.paid) {
+      return isAdmin
+        ? `<span class="badge s-paid" onclick="event.stopPropagation();confirmUnpaid(${o.id})"
+             style="cursor:pointer" title="클릭 → 미결제로 변경">✓ 결제완료</span>`
+        : '<span class="badge s-paid">✓ 결제완료</span>';
+    }
+    return `<span class="badge s-unpaid" onclick="event.stopPropagation();${isAdmin ? `confirmMarkPaid(${o.id})` : `requestPaymentApproval(${o.id})`}"
+             style="cursor:pointer" title="${isAdmin ? '클릭 → 결제완료로 변경' : '클릭 → 관리자에게 결제 승인 요청'}">미결제</span>`;
   }
 
   function showLoading(v) { document.getElementById('loading').classList.toggle('show', v); }
@@ -4597,7 +5008,7 @@ END $$;
   /* ════════════════════════════════════════════
      NAVIGATION
      ════════════════════════════════════════════ */
-  const PAGE_TITLES = { dashboard: '대시보드', calendar: '캘린더', orders: '주문 목록', customers: '거래처 관리', invoice: '거래명세서', history: '출고 이력', debt: '미수금 관리', expenses: '지출 관리' };
+  const PAGE_TITLES = { dashboard: '대시보드', calendar: '캘린더', orders: '주문 목록', customers: '거래처 관리', invoice: '거래명세서', history: '출고 이력', debt: '미수금 관리', expenses: '지출 관리', products: '제품 목록' };
   const PAGE_ORDER = ['dashboard', 'calendar', 'orders', 'customers', 'invoice', 'history', 'debt'];
 
   function showPage(id, skipPush = false, replace = false) {
@@ -4626,6 +5037,7 @@ END $$;
     }
     if (id === 'history') renderHistory();
     if (id === 'debt') renderDebt();
+    if (id === 'products') renderProducts();
 
     // Hide sidebar on mobile after selection
     document.body.classList.remove('sidebar-active');
@@ -4652,7 +5064,7 @@ END $$;
     }
   }
 
-  function customConfirm({ title, msg, icon, okText, okClass, onOk }) {
+  function customConfirm({ title, msg, icon, okText, okClass, onOk, hideCancel = false }) {
     document.getElementById('confirm-title').textContent = title || '확인';
     document.getElementById('confirm-msg').textContent = msg || '';
     document.getElementById('confirm-icon').textContent = icon || '⚠️';
@@ -4663,6 +5075,8 @@ END $$;
       closeModal('modal-confirm');
       if (onOk) onOk();
     };
+    const cancelBtn = document.querySelector('#modal-confirm .btn-ghost');
+    if (cancelBtn) cancelBtn.style.display = hideCancel ? 'none' : 'block';
     openModal('modal-confirm');
   }
   document.querySelectorAll('.modal-overlay').forEach(o => {
@@ -4683,7 +5097,7 @@ END $$;
       .reduce((s, o) => s + orderTotal(o), 0);
     const monthOrders = DB.orders.filter(o => String(o.order_date).startsWith(ym));
     const monthShipped = DB.orders.filter(o => o.status === 'shipped' && String(o.shipped_date || o.order_date).startsWith(ym));
-    const pendingCount = DB.orders.filter(o => o.status === 'pending').length;
+    const pendingCount = DB.orders.filter(o => effectiveOrderStatus(o) !== 'shipped').length;
     const totalCusts = DB.customers.length;
 
     // 2. Display Stats
@@ -4755,9 +5169,9 @@ END $$;
       <td class="td-name">${c?.name || '—'}</td>
       <td style="font-size:12px">${(o.items || []).map(i => i.name).join(', ')}</td>
       <td class="td-amount">${fmt(orderTotal(o))}원</td>
-      <td>${statusBadge(o.status)} ${paidBadgeToggle(o)}</td>
+      <td>${orderStatusBadge(o)} ${paidBadgeToggle(o)}</td>
     </tr>`;
-    }).join('');
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8">주문 내역 없음</td></tr>';
 
     // 5. Unshipped Orders (Pending Action)
     const unshipped = DB.orders
@@ -4781,10 +5195,45 @@ END $$;
         </div>
         <div class="order-mini-right">
           <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
-          <div style="margin-top:4px">${statusBadge(o.status)}</div>
+          <div style="margin-top:4px">${orderStatusBadge(o)}</div>
         </div>
       </div>`;
       }).join('');
+    }
+
+    // Top 5 customers by revenue
+    const custRevenue = {};
+    DB.orders.forEach(o => {
+      if (!custRevenue[o.customer_id]) custRevenue[o.customer_id] = 0;
+      custRevenue[o.customer_id] += orderTotal(o);
+    });
+    const topCusts = Object.entries(custRevenue)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, total]) => ({ cust: getCust(id), total }))
+      .filter(x => x.cust);
+
+    const maxRev = topCusts[0]?.total || 1;
+    const topEl = document.getElementById('db-top-customers');
+    if (topEl) {
+      topEl.innerHTML = topCusts.length === 0
+        ? '<div style="color:var(--ink-muted);font-size:13px">데이터가 없습니다</div>'
+        : topCusts.map((x, i) => {
+            const pct = Math.round((x.total / maxRev) * 100);
+            const col = custColor(x.cust);
+            return `<div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:20px;height:20px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">${i+1}</div>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink)">${x.cust.name}</span>
+                </div>
+                <span style="font-size:13px;font-weight:700;color:var(--blue)">${UI.privacyMode ? '••••원' : fmt(x.total)+'원'}</span>
+              </div>
+              <div style="height:6px;background:var(--parchment2);border-radius:99px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${col};border-radius:99px;transition:width 0.5s ease"></div>
+              </div>
+            </div>`;
+          }).join('');
     }
   }
 
@@ -4793,7 +5242,7 @@ END $$;
     if (UI.currentUser?.role === 'staff') return;
     UI.privacyMode = !UI.privacyMode;
     const btn = document.getElementById('privacy-btn');
-    if (btn) { btn.classList.toggle('active', UI.privacyMode); btn.innerHTML = UI.privacyMode ? '🙈' : '🐵'; }
+    if (btn) { btn.classList.toggle('active', UI.privacyMode); btn.innerHTML = UI.privacyMode ? '🔒' : '🔓'; }
     renderDashboard();
     renderOrders();
     renderCustomers();  // 거래처 관리 금액도 갱신
@@ -5300,7 +5749,7 @@ END $$;
           </div>
           <div class="order-mini-right">
             <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
-            <div style="margin-top:4px">${statusBadge(o.status)}</div>
+            <div style="margin-top:4px">${orderStatusBadge(o)}</div>
           </div>
         </div>`;
     }).join('')}
@@ -5327,10 +5776,20 @@ END $$;
       // Secondary: id DESC (newest created first)
       return (b.id || 0) - (a.id || 0);
     });
-    if (UI.orderFilter !== 'all') list = list.filter(o => o.status === UI.orderFilter);
+    if (UI.orderFilter !== 'all') {
+      list = list.filter(o =>
+        UI.orderFilter === 'pending'
+          ? effectiveOrderStatus(o) !== 'shipped'
+          : effectiveOrderStatus(o) === UI.orderFilter
+      );
+    }
+    const dateFrom = document.getElementById('order-date-from')?.value;
+    const dateTo   = document.getElementById('order-date-to')?.value;
+    if (dateFrom) list = list.filter(o => (o.order_date || '') >= dateFrom);
+    if (dateTo)   list = list.filter(o => (o.order_date || '') <= dateTo);
     if (q) list = list.filter(o => {
       const c = getCust(o.customer_id);
-      return (c?.name || '').toLowerCase().includes(q) || (o.items || []).some(i => i.name.toLowerCase().includes(q)) || (o.tracking || '').includes(q);
+      return (c?.name || '').toLowerCase().includes(q) || orderItems(o).some(i => (i.name || '').toLowerCase().includes(q)) || (shipmentTracking(o) || '').includes(q);
     });
     const rangeInfo = DB.loadedFrom ? ` · ${DB.loadedFrom} 이후` : '';
     document.getElementById('orders-count').textContent = `총 ${list.length}건${rangeInfo}`;
@@ -5340,6 +5799,7 @@ END $$;
       const c = getCust(o.customer_id);
       const col = custColor(c);
       const dt = fmtOrderDateTime(o);
+      const shipDt = (o.status === 'shipped' || isPartialOrder(o)) ? partialShipDate(o) : '';
       return `<tr onclick="openDetail(${o.id})" style="cursor:pointer">
       <td class="td-mono" style="white-space:nowrap">
         <div>${dt.slice(0, 10)}</div>
@@ -5351,13 +5811,13 @@ END $$;
           <span class="td-name">${c?.name || '—'}</span>
         </div>
       </td>
-      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(o.items || []).map(i => i.name).join(', ')}</td>
-      <td class="td-mono" style="font-size:11px;color:var(--ink-muted)">${o.tracking || '—'}</td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${orderItems(o).map(i => i.name).join(', ')}</td>
+      <td class="td-mono" style="font-size:11px;color:var(--ink-muted)">${shipmentTracking(o) || '—'}</td>
       <td class="td-amount">${fmt(orderTotal(o))}</td>
-      <td>${statusBadge(o.status)} ${paidBadgeToggle(o)}</td>
+      <td>${orderStatusBadge(o)} ${paidBadgeToggle(o)}</td>
       <td class="td-mono" style="white-space:nowrap">
-        <div style="font-size:11px">${(o.shipped_date || '').slice(0, 10) || '—'}</div>
-        <div style="font-size:10px;color:var(--ink-muted)">${(o.shipped_date || '').length > 10 ? (o.shipped_date || '').slice(11, 16) : ''}</div>
+        <div style="font-size:11px">${(shipDt || '').slice(0, 10) || '—'}</div>
+        <div style="font-size:10px;color:var(--ink-muted)">${(shipDt || '').length > 10 ? (shipDt || '').slice(11, 16) : ''}</div>
       </td>
       <td style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openDetail(${o.id})">보기</button>
@@ -5366,6 +5826,26 @@ END $$;
       </td>
     </tr>`;
     }).join('') || '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--ink-muted)">주문이 없습니다</td></tr>';
+  }
+
+  function clearOrderDateFilter() {
+    const f = document.getElementById('order-date-from');
+    const t = document.getElementById('order-date-to');
+    if (f) f.value = '';
+    if (t) t.value = '';
+    renderOrders();
+  }
+  function setOrderDateFilterMonth(offset) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + offset);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(y, d.getMonth() + 1, 0).getDate();
+    const from = document.getElementById('order-date-from');
+    const to   = document.getElementById('order-date-to');
+    if (from) from.value = `${y}-${m}-01`;
+    if (to)   to.value   = `${y}-${m}-${String(lastDay).padStart(2,'0')}`;
+    renderOrders();
   }
 
   /* ════════════════════════════════════════════
@@ -5483,15 +5963,30 @@ END $$;
     const seen = new Set();
     _addrPickList = [];
 
-    // 1. 기본 주소 (거래처에 등록된 주소)
-    if (c?.addr?.trim()) {
-      _addrPickList.push({ addr: c.addr.trim(), tel: c.tel || '', isDefault: true, date: '' });
-      seen.add(c.addr.trim());
-    }
+    // ── 같은 이름의 모든 customer_id 수집 (mobile app 방식) ──
+    const sameName = c?.name?.trim();
+    const allIds = sameName
+      ? DB.customers.filter(x => x.name?.trim() === sameName).map(x => x.id)
+      : [custId];
 
-    // 2. 이전 배송 주소 (주문 이력, 최신순)
+    // 1. 기본 주소 — 같은 이름의 모든 거래처 주소
+    allIds.forEach(id => {
+      const cx = getCust(id);
+      if (cx?.addr?.trim() && !seen.has(cx.addr.trim())) {
+        seen.add(cx.addr.trim());
+        _addrPickList.push({
+          addr: cx.addr.trim(),
+          tel: cx.tel || '',
+          isDefault: id == custId, // 선택한 거래처 주소만 "기본"
+          date: '',
+          label: allIds.length > 1 ? `📞 ${cx.tel || '번호 없음'}` : null,
+        });
+      }
+    });
+
+    // 2. 이전 배송 주소 — 같은 이름 모든 거래처의 주문 이력 (최신순)
     DB.orders
-      .filter(o => o.customer_id == custId && o.addr?.trim())
+      .filter(o => allIds.includes(o.customer_id) && o.addr?.trim())
       .sort((a, b) => (b.order_date || '').localeCompare(a.order_date || ''))
       .forEach(o => {
         const addr = o.addr.trim();
@@ -5501,26 +5996,38 @@ END $$;
         }
       });
 
-    // 목록 렌더링
-    const listEl = document.getElementById('addr-pick-list');
-    if (_addrPickList.length === 0) {
-      listEl.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--ink-muted);font-size:13px">등록된 주소가 없습니다<br><span style="font-size:11px">아래에 직접 입력해 주세요</span></div>`;
-    } else {
-      listEl.innerHTML = _addrPickList.map((item, i) => `
-        <div onclick="selectAddr(${i})"
-          style="cursor:pointer;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--hairline);margin-bottom:8px;transition:all .15s"
-          onmouseover="this.style.borderColor='var(--blue)';this.style.background='#f0f6ff'"
-          onmouseout="this.style.borderColor='var(--hairline)';this.style.background=''">
-          <div style="font-size:11px;font-weight:600;color:${item.isDefault ? 'var(--blue)' : 'var(--ink-muted)'};margin-bottom:4px">
-            ${item.isDefault ? '🏠 기본 주소' : `📦 이전 배송지${item.date ? ' · ' + item.date : ''}`}
-          </div>
-          <div style="font-size:13px;font-weight:500;color:var(--ink)">${item.addr}</div>
-          ${item.tel ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:3px">📞 ${item.tel}</div>` : ''}
-        </div>`).join('');
+    // ── 주소 0개: 팝업 없이 빈 채로 (직접 입력) ──
+    if (_addrPickList.length === 0) return;
+
+    // ── 주소 1개: 바로 자동 채움, 팝업 없음 ──
+    if (_addrPickList.length === 1) {
+      document.getElementById('o-addr').value = _addrPickList[0].addr;
+      if (_addrPickList[0].tel) document.getElementById('o-tel').value = _addrPickList[0].tel;
+      return;
     }
 
+    // ── 주소 2개 이상: 팝업으로 선택 ──
+    const listEl = document.getElementById('addr-pick-list');
+    listEl.innerHTML = _addrPickList.map((item, i) => `
+      <div onclick="selectAddr(${i})"
+        style="cursor:pointer;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--hairline);margin-bottom:8px;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--blue)';this.style.background='#f0f6ff'"
+        onmouseout="this.style.borderColor='var(--hairline)';this.style.background=''">
+        <div style="font-size:11px;font-weight:600;color:${item.isDefault ? 'var(--blue)' : 'var(--ink-muted)'};margin-bottom:4px">
+          ${item.isDefault ? '🏠 기본 주소' : `📦 이전 배송지${item.date ? ' · ' + item.date : ''}`}
+        </div>
+        <div style="font-size:13px;font-weight:500;color:var(--ink)">${item.addr}</div>
+        ${item.tel ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:3px">📞 ${item.tel}</div>` : ''}
+      </div>`).join('');
+
     document.getElementById('addr-pick-new').value = '';
-    openModal('modal-addr-pick');
+    document.getElementById('modal-addr-pick').classList.add('open');
+  }
+
+  // closeAddrPicker: 주소 선택 모달만 닫음 (history.back 없이)
+  // closeModal()을 쓰면 history.back() → popstate → modal-order까지 닫혀버리는 버그
+  function closeAddrPicker() {
+    document.getElementById('modal-addr-pick').classList.remove('open');
   }
 
   function selectAddr(idx) {
@@ -5528,14 +6035,15 @@ END $$;
     if (!item) return;
     document.getElementById('o-addr').value = item.addr;
     if (item.tel) document.getElementById('o-tel').value = item.tel;
-    closeModal('modal-addr-pick');
+    closeAddrPicker();
+    showToast('주소가 적용되었습니다 ✓', 'success');
   }
 
   function applyNewAddr() {
     const addr = document.getElementById('addr-pick-new').value.trim();
     if (!addr) { showToast('주소를 입력하세요', 'error'); return; }
     document.getElementById('o-addr').value = addr;
-    closeModal('modal-addr-pick');
+    closeAddrPicker();
     showToast('새 주소가 적용됐습니다. 주문 저장 시 이력에 자동 추가됩니다 ✓', 'success');
   }
 
@@ -5606,9 +6114,9 @@ END $$;
   function addOItem() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-    <td><input type="text" placeholder="품목명" oninput="calcOTotal()"></td>
+    <td><input type="text" class="o-item-name" list="product-datalist" placeholder="품목명" oninput="calcOTotal()" onchange="autofillItemPrice(this)"></td>
     <td><input type="number" value="1" min="1" style="width:100%" oninput="calcOTotal()"></td>
-    <td><input type="number" value="0" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
+    <td><input type="number" class="o-item-price" value="0" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
     <td class="item-total-cell">0</td>
     <td><button class="btn btn-danger btn-xs" onclick="this.closest('tr').remove();calcOTotal()">✕</button></td>`;
     document.getElementById('o-items-tb').appendChild(tr);
@@ -5703,26 +6211,32 @@ END $$;
     const o = getOrder(id); if (!o) return;
     const c = getCust(o.customer_id);
     const col = custColor(c);
+    const detailTracking = shipmentTracking(o);
+    const detailImg = shipmentImage(o);
     document.getElementById('detail-title').innerHTML = `<span style="color:${col};margin-right:8px">●</span>${c?.name || '—'} 주문 상세`;
     document.getElementById('detail-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">거래처</div><div style="font-weight:600">${c?.name || '—'}</div></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주문일</div><div class="td-mono">${o.order_date}</div></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">연락처</div><div>${o.tel || c?.tel || '—'}</div></div>
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">상태</div><div>${statusBadge(o.status)}</div></div>
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">상태</div><div>${orderStatusBadge(o)}</div></div>
       <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주소</div><div style="font-size:13px">${o.addr || '—'}</div></div>
-      ${o.tracking ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">송장번호</div><div class="td-mono">${o.tracking}</div></div>` : ''}
+      ${detailTracking ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">송장번호</div><div class="td-mono">${detailTracking}</div></div>` : ''}
       ${o.memo ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">메모</div><div style="color:var(--amber)">${o.memo}</div></div>` : ''}
     </div>
     <hr class="div">
     <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">품목</div>
-    ${(o.items || []).map(i => `
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hairline);font-size:13px">
-        <span>${i.name}${i.spec ? ' (' + i.spec + ')' : ''} <span style="color:var(--ink-muted)">× ${i.qty}</span></span>
+    ${orderItems(o).map(i => {
+      const shipped = itemIsShipped(i);
+      const itemTracking = i.shipped_tracking ? `<span style="margin-left:6px;color:#15803d;font-size:11px">송장 ${i.shipped_tracking}</span>` : '';
+      return `
+      <div class="order-detail-item ${shipped ? 'is-shipped' : ''}" style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--hairline);font-size:13px">
+        <span class="order-detail-item-name"><span class="order-detail-item-label">${i.name}${i.spec ? ' (' + i.spec + ')' : ''} <span style="color:var(--ink-muted)">× ${i.qty}</span></span>${shipped ? '<span style="margin-left:6px;color:#15803d;font-size:11px;font-weight:700">출고</span>' : ''}${itemTracking}</span>
         <span>단가 : ${fmt(i.price)} = <strong style="color:var(--blue)">${fmt(i.qty * i.price)}원</strong></span>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
     <div style="text-align:right;margin-top:10px;font-weight:700;font-size:15px;color:var(--blue)">합계: ${fmt(orderTotal(o))}원</div>
-    ${o.img_url ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><img src="${o.img_url}" style="max-width:100%;border-radius:var(--r-md);max-height:150px;object-fit:cover"></div>` : ''}
+    ${detailImg ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><img src="${detailImg}" style="max-width:100%;border-radius:var(--r-md);max-height:150px;object-fit:cover"></div>` : ''}
     
     ${o.status === 'shipped' ? `
       <div style="margin-top:20px; padding: 12px; background: var(--blue-tint); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
@@ -5906,7 +6420,15 @@ ${pdfLink}
     renderDebt();
   }
 
-  async function markPaid(orderId, newPaid) {
+  async function markPaid(orderId, newPaid, opts = {}) {
+    if (!opts.skipRoleCheck && UI.currentUser?.role !== 'admin') {
+      if (newPaid) {
+        await requestPaymentApproval(orderId);
+      } else {
+        showToast('관리자만 결제 상태를 변경할 수 있습니다', 'error');
+      }
+      return;
+    }
     const o = DB.orders.find(o => o.id == orderId);
     if (!o) return;
     const prev = o.paid;
@@ -5931,7 +6453,203 @@ ${pdfLink}
     }
   }
 
+  function paymentRequesterName() {
+    const u = UI.currentUser || {};
+    return u.nickname || u.username || u.email || '직원';
+  }
+
+  function pendingPaymentRequests() {
+    return (UI.paymentRequests || []).filter(r => r.status === 'pending');
+  }
+
+  async function loadPaymentRequests({ notify = false } = {}) {
+    const requests = await loadSettingValue('payment_requests', []);
+    UI.paymentRequests = Array.isArray(requests) ? requests : [];
+    renderPaymentRequestButton(notify);
+    if (document.getElementById('modal-pay-requests')?.classList.contains('open')) {
+      renderPaymentRequests();
+    }
+  }
+
+  async function savePaymentRequests() {
+    await saveSettingValue('payment_requests', UI.paymentRequests || []);
+    renderPaymentRequestButton(false);
+  }
+
+  function renderPaymentRequestButton(notify = false) {
+    const btn = document.getElementById('pay-req-btn');
+    const cnt = document.getElementById('pay-req-count');
+    if (!btn || !cnt) return;
+    if (UI.currentUser?.role !== 'admin') {
+      btn.style.display = 'none';
+      btn.classList.remove('has-items');
+      cnt.textContent = '0';
+      return;
+    }
+    const count = pendingPaymentRequests().length;
+    cnt.textContent = String(count);
+    btn.style.display = 'inline-flex';
+    btn.classList.toggle('has-items', count > 0);
+    if (notify && count > (UI.paymentRequestCount || 0)) {
+      showToast(`새 결제 승인 요청 ${count - (UI.paymentRequestCount || 0)}건`, 'info');
+      sendNotification('결제 승인 요청', `새 결제 승인 요청이 ${count}건 있습니다.`, 'payment-requests');
+    }
+    UI.paymentRequestCount = count;
+  }
+
+  function stopPaymentRequestPolling() {
+    if (UI.paymentRequestTimer) clearInterval(UI.paymentRequestTimer);
+    UI.paymentRequestTimer = null;
+    UI.paymentRequests = [];
+    UI.paymentRequestCount = 0;
+    renderPaymentRequestButton(false);
+  }
+
+  function startPaymentRequestPolling() {
+    if (UI.paymentRequestTimer) clearInterval(UI.paymentRequestTimer);
+    UI.paymentRequestTimer = null;
+
+    if (UI.currentUser?.role !== 'admin') {
+      renderPaymentRequestButton(false);
+      return;
+    }
+
+    loadPaymentRequests({ notify: false }).catch(e => console.warn('payment request load failed:', e.message));
+    UI.paymentRequestTimer = setInterval(() => {
+      if (!document.hidden) {
+        loadPaymentRequests({ notify: true }).catch(e => console.warn('payment request poll failed:', e.message));
+      }
+    }, 5000);
+  }
+
+  async function requestPaymentApproval(orderId) {
+    const o = getOrder(orderId);
+    if (!o || o.paid) return;
+
+    const c = getCust(o.customer_id);
+
+    // 1. Check if already requested first (to avoid asking for permission if we know it's already sent)
+    await loadPaymentRequests();
+    const existing = pendingPaymentRequests().find(r => String(r.orderId) === String(orderId));
+    if (existing) {
+      customConfirm({
+        title: '이미 요청됨',
+        msg: '이 주문은 이미 관리자에게 결제 승인 요청이 전달되었습니다.',
+        icon: '🔔',
+        okText: '확인',
+        hideCancel: true, // No need for cancel button on info modal
+        onOk: null,
+      });
+      return;
+    }
+
+    // 2. Ask for permission BEFORE sending
+    customConfirm({
+      title: '결제 승인 요청',
+      msg: `"${c?.name || '—'}" 주문(${o.order_date})에 대해 사장님께 결제 승인을 요청하시겠습니까?`,
+      icon: '🔔',
+      okText: '요청하기',
+      onOk: async () => {
+        showLoading(true);
+        try {
+          // Double check again after user clicked OK (race condition)
+          await loadPaymentRequests();
+          if (pendingPaymentRequests().find(r => String(r.orderId) === String(orderId))) {
+            showToast('이미 요청된 주문입니다', 'info');
+            showLoading(false);
+            return;
+          }
+
+          UI.paymentRequests.unshift({
+            id: `${Date.now()}-${orderId}`,
+            orderId,
+            customerId: o.customer_id,
+            customerName: c?.name || '—',
+            orderDate: o.order_date || '',
+            amount: orderTotal(o),
+            requestedBy: paymentRequesterName(),
+            requestedAt: new Date().toISOString(),
+            status: 'pending',
+          });
+
+          await savePaymentRequests();
+          showToast('사장님께 결제 승인 요청을 보냈습니다 ✓', 'success');
+          logAction('request_pay', 'order', orderId, `결제 승인 요청 — ${c?.name || '—'} (${paymentRequesterName()})`);
+        } catch (e) {
+          showToast('요청 저장 실패', 'error');
+        } finally {
+          showLoading(false);
+        }
+      }
+    });
+  }
+
+  function renderPaymentRequests() {
+    const body = document.getElementById('pay-requests-body');
+    if (!body) return;
+    const requests = pendingPaymentRequests();
+    if (!requests.length) {
+      body.innerHTML = '<div class="empty" style="padding:34px 0"><div class="empty-icon">🔔</div><div class="empty-text">대기 중인 결제 승인 요청이 없습니다</div></div>';
+      return;
+    }
+    body.innerHTML = requests.map(r => {
+      const o = getOrder(r.orderId);
+      const c = getCust(r.customerId) || getCust(o?.customer_id);
+      const requestedAt = r.requestedAt ? new Date(r.requestedAt).toLocaleString('ko-KR') : '';
+      return `<div class="pay-request-row">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <b style="font-size:14px;color:var(--ink)">${c?.name || r.customerName || '—'}</b>
+            <span class="badge s-unpaid">미결제</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink-muted);margin-top:4px">${r.orderDate || o?.order_date || ''} · ${r.requestedBy || '직원'} 요청</div>
+          <div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${requestedAt}</div>
+        </div>
+        <div style="font-weight:800;color:var(--blue);white-space:nowrap">${fmt(r.amount || orderTotal(o))}원</div>
+        <button class="btn btn-primary btn-sm" onclick="approvePaymentRequest('${r.id}')">승인</button>
+        <button class="btn btn-ghost btn-sm" onclick="rejectPaymentRequest('${r.id}')">거절</button>
+      </div>`;
+    }).join('');
+  }
+
+  async function openPaymentRequests() {
+    if (UI.currentUser?.role !== 'admin') return;
+    openModal('modal-pay-requests');
+    const body = document.getElementById('pay-requests-body');
+    if (body) body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink-muted)">불러오는 중...</div>';
+    await loadPaymentRequests();
+    renderPaymentRequests();
+  }
+
+  async function approvePaymentRequest(requestId) {
+    const req = (UI.paymentRequests || []).find(r => r.id === requestId);
+    if (!req) return;
+    await markPaid(req.orderId, true, { skipRoleCheck: true });
+    if (!getOrder(req.orderId)?.paid) return;
+    req.status = 'approved';
+    req.reviewedBy = paymentRequesterName();
+    req.reviewedAt = new Date().toISOString();
+    await savePaymentRequests();
+    renderPaymentRequests();
+    showToast('결제 승인 완료 ✓', 'success');
+  }
+
+  async function rejectPaymentRequest(requestId) {
+    const req = (UI.paymentRequests || []).find(r => r.id === requestId);
+    if (!req) return;
+    req.status = 'rejected';
+    req.reviewedBy = paymentRequesterName();
+    req.reviewedAt = new Date().toISOString();
+    await savePaymentRequests();
+    renderPaymentRequests();
+    showToast('요청을 거절했습니다', 'info');
+  }
+
   async function markAllPaid(custId) {
+    if (UI.currentUser?.role !== 'admin') {
+      showToast('관리자만 전체 결제를 처리할 수 있습니다', 'error');
+      return;
+    }
     const unpaid = DB.orders.filter(o => o.customer_id == custId && o.status === 'shipped' && !o.paid);
     if (!unpaid.length) return;
     const c = getCust(custId);
@@ -5997,6 +6715,7 @@ ${pdfLink}
       const custUnpaid = orders.filter(o => !o.paid);
       const custUnpaidAmt = custUnpaid.reduce((s, o) => s + orderTotal(o), 0);
       const hasUnpaid = custUnpaid.length > 0;
+      const isAdmin = UI.currentUser?.role === 'admin';
 
       const orderRows = orders
         .sort((a, b) => (b.order_date || '').localeCompare(a.order_date || ''))
@@ -6013,11 +6732,11 @@ ${pdfLink}
             </div>
             <div style="text-align:right;margin-right:10px;flex-shrink:0">
               <div style="font-size:13px;font-weight:700;color:${o.paid ? 'var(--green)' : 'var(--red)'}">${UI.privacyMode ? '••••원' : fmt(tot) + '원'}</div>
-              ${paidBadge(o.paid)}
+              ${paidBadge(o.paid, o.id)}
             </div>
             <button class="mark-paid-btn ${o.paid ? 'paid' : 'unpaid'}"
-              onclick="event.stopPropagation();${o.paid ? `confirmUnpaid(${o.id})` : `confirmMarkPaid(${o.id})`}">
-              ${o.paid ? '결제취소' : '결제완료'}
+              onclick="event.stopPropagation();${o.paid ? (isAdmin ? `confirmUnpaid(${o.id})` : `showToast('관리자만 결제 상태를 변경할 수 있습니다','error')`) : (isAdmin ? `confirmMarkPaid(${o.id})` : `requestPaymentApproval(${o.id})`)}">
+              ${o.paid ? '결제취소' : (isAdmin ? '결제완료' : '결제요청')}
             </button>
             <button class="btn btn-ghost btn-sm"
               onclick="event.stopPropagation();makeInvoiceFromDebt(${o.id})"
@@ -6039,7 +6758,7 @@ ${pdfLink}
             <div style="font-size:10px;color:var(--ink-muted)">미결제</div>` :
           `<div style="font-size:13px;color:var(--green);font-weight:700">✓ 완납</div>`}
           </div>
-          ${hasUnpaid ? `
+          ${hasUnpaid && isAdmin ? `
             <button class="btn btn-sm"
               style="background:var(--blue);color:#fff;border-color:var(--blue);font-size:11px;padding:4px 10px;flex-shrink:0"
               onclick="event.stopPropagation();markAllPaid(${cid})">전체결제</button>
@@ -6102,6 +6821,7 @@ ${pdfLink}
       <div style="flex:1;min-width:0">
         <div class="cust-name" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})" style="cursor:pointer">${c.name}</div>
         <div class="cust-tel">${c.tel}</div>
+        ${c.notes ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">📝 ${c.notes}</div>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total) + '원'}</div>
@@ -6161,7 +6881,7 @@ ${pdfLink}
           </div>
           <div class="order-mini-right">
             <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
-            <div style="margin-top:4px">${statusBadge(o.status)}</div>
+            <div style="margin-top:4px">${orderStatusBadge(o)}</div>
           </div>
         </div>`).join('') || '<div class="empty" style="padding:14px"><div class="empty-text">주문 없음</div></div>'}
     </div>`;
@@ -6180,6 +6900,7 @@ ${pdfLink}
     document.getElementById('c-addr').value    = c.addr    || '';
     document.getElementById('c-biz').value     = c.biz_no  || '';
     document.getElementById('c-kakao').value   = c.kakao   || '';
+    document.getElementById('c-notes').value   = c.notes   || '';
     openModal('modal-cust');
   }
 
@@ -6218,7 +6939,7 @@ ${pdfLink}
   function openQuickAddCust() {
     const typed = (document.getElementById('o-cust-search')?.value || '').trim();
     // Clear cust form
-    ['c-name','c-rep','c-contact','c-tel','c-addr','c-biz','c-kakao'].forEach(id => {
+    ['c-name','c-rep','c-contact','c-tel','c-addr','c-biz','c-kakao','c-notes'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -6227,6 +6948,8 @@ ${pdfLink}
     UI.custSavedForOrder = true;   // flag: after save, auto-select in order modal
     openModal('modal-cust');
   }
+
+  const CUSTOMER_OPTIONAL_COLS = ['rep', 'contact', 'tel', 'addr', 'biz_no', 'kakao', 'notes', 'color'];
 
   async function saveCustomer() {
     const name = document.getElementById('c-name').value.trim();
@@ -6241,6 +6964,7 @@ ${pdfLink}
       addr:    document.getElementById('c-addr').value,
       biz_no:  document.getElementById('c-biz').value,
       kakao:   document.getElementById('c-kakao').value,
+      notes:   document.getElementById('c-notes').value,
     };
 
     showLoading(true);
@@ -6250,30 +6974,38 @@ ${pdfLink}
       // ── UPDATE existing customer ────────────────
       const id = UI.editCustId;
       try {
-        await supa('PATCH', 'customers', data, `?id=eq.${id}`);
+        const saved = await supaResilient('PATCH', 'customers', data, `?id=eq.${id}`, CUSTOMER_OPTIONAL_COLS);
+        const remote = Array.isArray(saved) ? saved[0] : saved;
+        if (!remote?.id) throw new Error('No customer row updated');
         const idx = DB.customers.findIndex(c => c.id == id);
-        if (idx !== -1) { DB.customers[idx] = { ...DB.customers[idx], ...data }; resultCust = DB.customers[idx]; }
+        if (idx !== -1) {
+          DB.customers[idx] = { ...DB.customers[idx], ...remote };
+          resultCust = DB.customers[idx];
+        } else {
+          resultCust = remote;
+        }
         showToast('거래처 수정 완료 ✓');
         logAction('edit', 'customer', id, `거래처 수정 — ${name}`);
       } catch (e) {
-        const idx = DB.customers.findIndex(c => c.id == id);
-        if (idx !== -1) { DB.customers[idx] = { ...DB.customers[idx], ...data }; resultCust = DB.customers[idx]; }
-        showToast('저장됨 (오프라인)', 'info');
+        showLoading(false);
+        showToast('거래처 저장 실패: ' + (e.message || '').slice(0, 80), 'error');
+        return;
       }
       UI.editCustId = null;
     } else {
       // ── INSERT new customer ─────────────────────
       const newData = { ...data, color: COLORS[Math.floor(Math.random() * COLORS.length)] };
       try {
-        const saved = await supa('POST', 'customers', newData);
+        const saved = await supaResilient('POST', 'customers', newData, '', CUSTOMER_OPTIONAL_COLS);
         resultCust = Array.isArray(saved) ? saved[0] : saved;
+        if (!resultCust?.id) throw new Error('Customer was not created');
         DB.customers.push(resultCust);
         showToast('거래처 추가 완료 ✓');
         logAction('create', 'customer', null, `거래처 추가 — ${name}`);
       } catch (e) {
-        newData.id = Date.now(); DB.customers.push(newData);
-        resultCust = newData;
-        showToast('저장됨 (오프라인)', 'info');
+        showLoading(false);
+        showToast('거래처 저장 실패: ' + (e.message || '').slice(0, 80), 'error');
+        return;
       }
     }
 
@@ -6295,9 +7027,142 @@ ${pdfLink}
   }
 
   /* ════════════════════════════════════════════
+     PRODUCTS (제품 목록)
+     ════════════════════════════════════════════ */
+  function renderProducts() {
+    const q = (document.getElementById('product-q')?.value || '').toLowerCase();
+    const list = DB.products
+      .filter(p => (p.name || '').toLowerCase().includes(q) || (p.spec || '').toLowerCase().includes(q))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    document.getElementById('products-count').textContent = `총 ${list.length}개 제품`;
+    document.getElementById('products-tb').innerHTML = list.map(p => `
+      <tr>
+        <td style="font-weight:600">${p.name}</td>
+        <td style="color:var(--ink-muted);font-size:12px">${p.spec || '—'}</td>
+        <td style="text-align:right;font-weight:700;color:var(--blue)">${fmt(p.price)}원</td>
+        <td style="font-size:12px;color:var(--ink-muted)">${p.memo || '—'}</td>
+        <td style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-xs" style="color:var(--blue)" onclick="editProduct(${p.id})">✏️</button>
+          <button class="btn btn-ghost btn-xs" style="color:var(--red)" onclick="deleteProduct(${p.id})">🗑️</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--ink-muted)">제품이 없습니다. 제품을 추가하세요.</td></tr>';
+    updateProductDatalist();
+  }
+
+  function updateProductDatalist() {
+    const dl = document.getElementById('product-datalist');
+    if (!dl) return;
+    dl.innerHTML = DB.products.map(p =>
+      `<option value="${p.name}">${p.name}${p.spec ? ' (' + p.spec + ')' : ''} — ${fmt(p.price)}원</option>`
+    ).join('');
+  }
+
+  let _editProductId = null;
+  function openProductModal(id) {
+    _editProductId = id || null;
+    document.getElementById('modal-product-title').textContent = id ? '제품 수정' : '제품 추가';
+    if (id) {
+      const p = DB.products.find(x => x.id == id);
+      if (p) {
+        document.getElementById('p-name').value  = p.name || '';
+        document.getElementById('p-spec').value  = p.spec || '';
+        document.getElementById('p-price').value = p.price || 0;
+        document.getElementById('p-memo').value  = p.memo || '';
+      }
+    } else {
+      ['p-name','p-spec','p-memo'].forEach(fid => document.getElementById(fid).value = '');
+      document.getElementById('p-price').value = 0;
+    }
+    openModal('modal-product');
+  }
+  function editProduct(id) { openProductModal(id); }
+
+  async function saveProduct() {
+    const name = document.getElementById('p-name').value.trim();
+    if (!name) { showToast('제품명을 입력하세요', 'error'); return; }
+    const data = {
+      name,
+      spec:  document.getElementById('p-spec').value.trim(),
+      price: parseInt(document.getElementById('p-price').value) || 0,
+      memo:  document.getElementById('p-memo').value.trim(),
+    };
+    showLoading(true);
+    try {
+      if (_editProductId) {
+        await supa('PATCH', 'products', data, `?id=eq.${_editProductId}`);
+        const idx = DB.products.findIndex(p => p.id == _editProductId);
+        if (idx !== -1) DB.products[idx] = { ...DB.products[idx], ...data };
+        showToast('제품 수정 완료 ✓');
+      } else {
+        const saved = await supa('POST', 'products', data);
+        DB.products.push(Array.isArray(saved) ? saved[0] : saved);
+        showToast('제품 추가 완료 ✓');
+      }
+    } catch (e) {
+      showToast('저장됨 (오프라인)', 'info');
+    }
+    showLoading(false);
+    closeModal('modal-product');
+    renderProducts();
+    refreshProductAutocomplete();
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm('제품을 삭제하시겠습니까?')) return;
+    try {
+      await supa('DELETE', 'products', null, `?id=eq.${id}`);
+      DB.products = DB.products.filter(p => p.id != id);
+      showToast('삭제 완료');
+    } catch (e) { showToast('삭제 실패', 'error'); }
+    renderProducts();
+  }
+
+  function refreshProductAutocomplete() {
+    document.querySelectorAll('.o-item-name').forEach(inp => {
+      inp.setAttribute('list', 'product-datalist');
+    });
+  }
+
+  function autofillItemPrice(inp) {
+    const name = inp.value.trim();
+    const product = DB.products.find(p => p.name === name);
+    if (product && product.price > 0) {
+      const row = inp.closest('tr');
+      if (row) {
+        const priceInp = row.querySelector('.o-item-price');
+        if (priceInp && (!priceInp.value || priceInp.value === '0')) {
+          priceInp.value = product.price;
+          calcOTotal();
+        }
+      }
+    }
+  }
+
+  /* ════════════════════════════════════════════
      EXPENSES (지출 관리)
      ════════════════════════════════════════════ */
   let _expTab = 'all';
+
+  // ── Month navigator state ─────────────────────────────
+  const _nowD = new Date();
+  let _expYear  = _nowD.getFullYear();
+  let _expMonth = _nowD.getMonth() + 1; // 1-12
+
+  function _expYM() {
+    return `${_expYear}-${String(_expMonth).padStart(2,'0')}`;
+  }
+
+  function shiftExpMonth(delta) {
+    _expMonth += delta;
+    if (_expMonth > 12) { _expMonth = 1;  _expYear++; }
+    if (_expMonth < 1)  { _expMonth = 12; _expYear--; }
+    // 미래 달은 이동 불가
+    const now = new Date();
+    const nextBtn = document.getElementById('exp-month-next');
+    if (nextBtn) nextBtn.disabled = (_expYear > now.getFullYear() || (_expYear === now.getFullYear() && _expMonth >= now.getMonth()+1));
+    renderExpenses();
+  }
 
   function setExpTab(tab, el) {
     _expTab = tab;
@@ -6473,24 +7338,35 @@ ${pdfLink}
   }
 
   function renderExpenses() {
-    const ym = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const ym  = _expYM();
     const all = DB.expenses || [];
 
-    // Stats (this month)
+    // ── Month label & next button state ──
+    const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const labelEl = document.getElementById('exp-month-label');
+    if (labelEl) labelEl.textContent = `${_expYear}년 ${monthNames[_expMonth-1]}`;
+    const nextBtn = document.getElementById('exp-month-next');
+    const now = new Date();
+    if (nextBtn) nextBtn.disabled = (_expYear > now.getFullYear() || (_expYear === now.getFullYear() && _expMonth >= now.getMonth()+1));
+
+    // ── Stats (선택한 달 기준) ──
     const thisMonth = all.filter(e => (e.date || '').startsWith(ym));
     const totalAmt   = thisMonth.reduce((s, e) => s + (e.amount || 0), 0);
     const dailyAmt   = thisMonth.filter(e => e.type === 'daily').reduce((s, e) => s + (e.amount || 0), 0);
-    const invoiceAmt = thisMonth.filter(e => e.type === 'invoice').reduce((s, e) => s + (e.amount || 0), 0);
-    const unpaidAmt  = all.filter(e => e.type === 'invoice' && !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
-    const fv = v => fmt(v) + '원'; // 지출 금액은 직원도 항상 표시
-    const s = id => document.getElementById(id);
+    // 수취 명세서: 해당 달의 invoice 중 미지급만 (결제완료 제외)
+    const invoiceAmt = thisMonth.filter(e => e.type === 'invoice' && !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
+    // 미지급 금액: 해당 달 전체 미지급 (타입 무관)
+    const unpaidAmt  = thisMonth.filter(e => !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
+
+    const fv = v => fmt(v) + '원';
+    const s  = id => document.getElementById(id);
     if (s('exp-s-total'))   s('exp-s-total').textContent   = fv(totalAmt);
     if (s('exp-s-daily'))   s('exp-s-daily').textContent   = fv(dailyAmt);
     if (s('exp-s-invoice')) s('exp-s-invoice').textContent = fv(invoiceAmt);
     if (s('exp-s-unpaid'))  s('exp-s-unpaid').textContent  = fv(unpaidAmt);
 
-    // Filter list
-    let list = [...all].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    // ── Filter list (선택한 달만 표시) ──
+    let list = [...thisMonth].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     if (_expTab === 'daily')   list = list.filter(e => e.type === 'daily');
     if (_expTab === 'invoice') list = list.filter(e => e.type === 'invoice');
     if (_expTab === 'unpaid')  list = list.filter(e => !e.paid);
@@ -6690,7 +7566,7 @@ ${pdfLink}
     const mo = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
 
-    const ROWS = 14;
+    const ROWS = Math.max(20, items.length);
     let itemRows = '';
     for (let i = 0; i < ROWS; i++) {
       const it = items[i];
@@ -6769,16 +7645,17 @@ ${pdfLink}
   function buildInvoicePreview() {
     const inv = getInvoiceData();
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #1a6b3a;width:100%;background:#fff';
-    wrap.innerHTML = buildInvoiceHTML(inv, '공급받는자용') + buildInvoiceHTML(inv, '공급자용');
+    wrap.style.cssText = 'display:block;border:1.5px solid #1a6b3a;width:100%;background:#fff';
+    wrap.innerHTML = buildInvoiceHTML(inv, '공급받는자용');
     const container = document.getElementById('inv-preview');
     container.innerHTML = '';
     container.appendChild(wrap);
+    // 항상 컨테이너 너비에 맞게 스케일 조정
     setTimeout(() => {
-      const cardW = container.clientWidth - 2;
-      const docW = wrap.scrollWidth;
-      if (docW > cardW) {
-        const scale = cardW / docW;
+      const cardW = container.clientWidth - 4;
+      const docW  = wrap.scrollWidth;
+      if (docW > 0) {
+        const scale = Math.min(1, cardW / docW);
         wrap.style.transform = `scale(${scale})`;
         wrap.style.transformOrigin = 'top left';
         container.style.height = (wrap.scrollHeight * scale + 10) + 'px';
@@ -6806,26 +7683,25 @@ ${pdfLink}
 
     const win = iframe.contentWindow;
     const css = `
-      @page { size: A4 landscape; margin: 8mm; }
+      @page { size: A4 portrait; margin: 10mm; }
       * { box-sizing: border-box; margin:0; padding:0; }
       body { font-family:'Noto Sans KR',Arial,sans-serif; font-size:9pt; background:#fff; color:#111; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .wrap { display:grid; grid-template-columns:1fr 1fr; border:1.5px solid #1a6b3a; width:100%; min-width:270mm; }
-      .inv-copy { padding:6px 8px; border-right:1.5px solid #1a6b3a; position:relative; min-width:0; display:flex; flex-direction:column; }
-      .inv-copy:last-child { border-right:none; }
-      .inv-party-title { background:#e8f5e8; color:#1a6b3a; font-weight:700; text-align:center; font-size:8pt; padding:2px 0; border-bottom:1px solid #1a6b3a; letter-spacing:2px; }
-      .inv-party-label { padding:2px 4px; border-right:1px solid #ccc; border-bottom:1px solid #eee; color:#555; white-space:nowrap; font-size:7pt; background:#f9fdf9; }
-      .inv-party-val { padding:2px 5px; border-bottom:1px solid #eee; font-size:7.5pt; }
+      .wrap { display:block; width:100%; border:1.5px solid #1a6b3a; }
+      .inv-copy { padding:8px 10px; position:relative; display:flex; flex-direction:column; }
+      .inv-party-title { background:#e8f5e8; color:#1a6b3a; font-weight:700; text-align:center; font-size:9pt; padding:3px 0; border-bottom:1px solid #1a6b3a; letter-spacing:2px; }
+      .inv-party-label { padding:3px 5px; border-right:1px solid #ccc; border-bottom:1px solid #eee; color:#555; white-space:nowrap; font-size:8pt; background:#f9fdf9; }
+      .inv-party-val { padding:3px 6px; border-bottom:1px solid #eee; font-size:8.5pt; }
       .inv-party-row:last-child .inv-party-label, .inv-party-row:last-child .inv-party-val { border-bottom:none; }
-      .inv-table-wrap { margin-right:28px; margin-bottom:4px; }
+      .inv-table-wrap { margin-right:28px; margin-bottom:6px; }
       .inv-tbl { width:100%; border-collapse:collapse; }
-      .inv-tbl th { background:#e8f5e8; color:#1a6b3a; border:1px solid #1a6b3a; padding:3px 4px; text-align:center; font-weight:600; font-size:7pt; }
-      .inv-tbl td { border:1px solid #bbb; padding:2.5px 4px; text-align:center; font-size:7.5pt; }
+      .inv-tbl th { background:#e8f5e8; color:#1a6b3a; border:1px solid #1a6b3a; padding:4px 5px; text-align:center; font-weight:600; font-size:8pt; }
+      .inv-tbl td { border:1px solid #bbb; padding:3.5px 5px; text-align:center; font-size:8.5pt; }
       .td-left { text-align:left; } .td-right { text-align:right; }
       .inv-page-no { position:absolute; top:4px; left:4px; font-size:7pt; color:#555; }
-      .inv-date-issued { font-size:7pt; color:#555; text-align:right; margin-right:28px; margin-bottom:2px; }
+      .inv-date-issued { font-size:8pt; color:#555; text-align:right; margin-right:28px; margin-bottom:4px; }
     `;
 
-    const body = buildInvoiceHTML(inv, '공급받는자용') + buildInvoiceHTML(inv, '공급자용');
+    const body = buildInvoiceHTML(inv, '공급받는자용');
 
     win.document.open();
     win.document.write(`<!DOCTYPE html>
@@ -6854,7 +7730,9 @@ ${pdfLink}
 
     const cust = getCust(custId);
     const pendingOrders = DB.orders.filter(o =>
-      o.customer_id == custId && (o.status === 'new' || o.status === 'pending')
+      o.customer_id == custId &&
+      o.status !== 'shipped' &&
+      orderItems(o).some(item => !itemIsShipped(item))
     );
 
     if (!pendingOrders.length) {
@@ -6870,18 +7748,11 @@ ${pdfLink}
       try {
         const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
-        // Aggressive item extraction
-        let itemsArr = [];
-        const raw = o.items;
-        if (Array.isArray(raw)) {
-          itemsArr = raw;
-        } else if (typeof raw === 'string' && raw.trim().startsWith('[')) {
-          try { itemsArr = JSON.parse(raw); } catch (e) { }
-        } else if (raw && typeof raw === 'object') {
-          itemsArr = Object.values(raw);
-        }
+        const itemsArr = orderItems(o);
 
-        const badge = o.status === 'pending'
+        const badge = isPartialOrder(o)
+          ? '<span style="font-size:10px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd8fe;border-radius:99px;padding:1px 8px;font-weight:700">부분출고</span>'
+          : o.status === 'pending'
           ? '<span style="font-size:10px;background:#e1f0ff;color:#007aff;border:1px solid #c2e0ff;border-radius:99px;padding:1px 8px;font-weight:700">출고대기</span>'
           : '<span style="font-size:10px;background:#e1f0ff;color:#007aff;border:1px solid #c2e0ff;border-radius:99px;padding:1px 8px;font-weight:700">신규</span>';
 
@@ -6889,6 +7760,7 @@ ${pdfLink}
         if (itemsArr && itemsArr.length > 0) {
           itemsArr.forEach((item, idx) => {
             if (!item) return;
+            if (itemIsShipped(item)) return;
             const name = esc(item.name || item.product_name || '품목명 없음');
             const spec = esc(item.spec || '');
             const qty = parseInt(item.qty || item.quantity) || 0;
@@ -6976,37 +7848,139 @@ ${pdfLink}
     return { label: `${dk} (${days[d.getDay()]})`, isToday: false };
   }
 
-  function renderHistoryCard(o) {
+  // 부분출고 감지: status 컬럼 대신 items JSON으로 판단
+  // (mobile은 'pending' status + item.shipped=true 사용 → constraint 우회)
+  function isPartialOrder(o) {
+    return effectiveOrderStatus(o) === 'partial';
+  }
+
+  // 부분출고 날짜: shipped item의 shipped_date에서 가져옴
+  function partialShipDate(o) {
+    if (o.shipped_date) return o.shipped_date;
+    const dates = orderItems(o)
+      .filter(itemIsShipped)
+      .map(i => i.shipped_date || '')
+      .filter(Boolean)
+      .sort()
+      .reverse();
+    return dates[0] || o.partial_shipped_date || o.order_date || '';
+  }
+
+  function itemImageUrls(i) {
+    return uniqueValues([
+      ...asArray(i.shipped_img_urls),
+      ...asArray(i.shipped_img_url),
+      ...asArray(i.img_urls),
+      ...asArray(i.img_url),
+    ]);
+  }
+
+  function buildHistoryShipments() {
+    const events = [];
+    DB.orders.forEach(o => {
+      const status = effectiveOrderStatus(o);
+      if (status === 'new' || status === 'pending') return;
+
+      const allItems = orderItems(o).map((item, idx) => ({ ...item, _idx: idx }));
+      const shippedItems = allItems.filter(itemIsShipped);
+
+      if (!shippedItems.length) {
+        if (status === 'shipped') {
+          events.push({
+            order: o,
+            status: 'shipped',
+            date: o.shipped_date || o.order_date || '',
+            tracking: o.tracking || '',
+            images: shipmentImages(o),
+            pdfUrl: shipmentPdf(o),
+            itemIndexes: new Set(allItems.map(i => i._idx)),
+            eventItems: allItems,
+            allItems,
+            amount: orderTotal(o),
+          });
+        }
+        return;
+      }
+
+      const groups = {};
+      shippedItems.forEach(item => {
+        const date = item.shipped_date || o.partial_shipped_date || o.shipped_date || o.order_date || '';
+        const tracking = item.shipped_tracking || '';
+        const key = `${date}__${tracking || 'no-tracking'}__${itemImageUrls(item).join('|')}`;
+        if (!groups[key]) groups[key] = { date, tracking, items: [] };
+        groups[key].items.push(item);
+      });
+
+      const groupList = Object.values(groups);
+      groupList.forEach(group => {
+        const groupImages = uniqueValues(group.items.flatMap(itemImageUrls));
+        const groupPdfs = uniqueValues(group.items.flatMap(itemPdfUrls));
+        const isSingleFullShipment = status === 'shipped' && groupList.length === 1 && group.items.length === allItems.length;
+        const eventStatus = isSingleFullShipment ? 'shipped' : 'partial';
+        events.push({
+          order: o,
+          status: eventStatus,
+          date: group.date,
+          tracking: group.tracking || (isSingleFullShipment ? o.tracking || '' : ''),
+          images: groupImages.length ? groupImages : (isSingleFullShipment ? shipmentImages(o) : []),
+          pdfUrl: groupPdfs[0] || (isSingleFullShipment ? shipmentPdf(o) : ''),
+          itemIndexes: new Set(group.items.map(i => i._idx)),
+          eventItems: group.items,
+          allItems,
+          amount: group.items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0),
+        });
+      });
+    });
+
+    return events.sort((a, b) =>
+      (b.date || '').localeCompare(a.date || '') || (b.order?.id || 0) - (a.order?.id || 0)
+    );
+  }
+
+  function renderHistoryCard(event) {
+    const o = event.order;
     const c = getCust(o.customer_id);
     const col = custColor(c);
-    const total = orderTotal(o);
-    const itemStr = (o.items || []).map(i =>
-      `<span class="history-item-chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`
-    ).join('');
-    const hasImg = !!o.img_url;
-    const pdfUrl = o.pdf_url || '';
-    const sd = o.shipped_date || o.order_date || '';
+    const isPartial = event.status === 'partial';
+
+    const itemStr = event.allItems.map(i => {
+      const inThisShipment = event.itemIndexes.has(i._idx);
+      if (isPartial) {
+        return inThisShipment
+          ? `<span class="history-item-chip" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty} ✓</span>`
+          : `<span class="history-item-chip" style="text-decoration:line-through;opacity:0.4;background:#f9f9f9">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`;
+      }
+      return `<span class="history-item-chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`;
+    }).join('');
+
+    const imgUrls = event.images || [];
+    const hasImg = imgUrls.length > 0;
+    const pdfUrl = event.pdfUrl || '';
+    const sd = event.date || '';
     const timeStr = sd.length > 10 ? sd.slice(11, 16) : '';
+    const statusBadge = isPartial
+      ? `<span class="badge s-partial">부분출고</span>`
+      : `<span class="badge s-shipped">출고완료</span>`;
 
     return `
     <div class="history-card">
       <div class="history-card-header">
-        ${hasImg
-        ? `<img src="${o.img_url}" class="history-thumb" onclick="openFullImg('${o.img_url}')" title="클릭하여 확대" loading="lazy">`
-        : `<div style="width:54px;height:54px;border-radius:8px;background:var(--parchment2);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--border)">📦</div>`}
-        <div style="flex:1;min-width:0">
+        <div class="history-card-main">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <div style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0"></div>
             <span style="font-size:15px;font-weight:700;color:var(--ink)">${c?.name || '—'}</span>
-            <span class="badge s-shipped">출고완료</span>
+            ${statusBadge}
           </div>
           <div style="font-size:12px;color:var(--ink-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             ${timeStr ? `<span style="font-weight:700;color:var(--ink);background:var(--parchment2);border-radius:6px;padding:1px 7px;border:1px solid var(--border)">🕐 ${timeStr}</span>` : ''}
-            ${o.tracking ? `<span>📦 ${o.tracking}</span>` : ''}
+            ${event.tracking ? `<span>📦 ${event.tracking}</span>` : ''}
           </div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:16px;font-weight:700;color:var(--blue)">${fmt(total)}원</div>
+        ${hasImg
+        ? `<div class="history-photo-stack">${imgUrls.map((url, idx) => `<div><img src="${url}" class="history-thumb" onclick="openFullImg('${url}')" title="클릭하여 확대" loading="lazy"></div>`).join('')}</div>`
+        : `<div class="history-photo-stack"><div style="width:54px;height:54px;border-radius:8px;background:var(--parchment2);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--border)">📦</div></div>`}
+        <div class="history-amount-box">
+          <div style="font-size:16px;font-weight:700;color:var(--blue)">${fmt(event.amount)}원</div>
           ${pdfUrl ? `<a href="${pdfUrl}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;margin-top:2px;display:block">📄 명세서</a>` : ''}
         </div>
       </div>
@@ -7017,31 +7991,54 @@ ${pdfLink}
     </div>`;
   }
 
+  function groupHistoryEventsByShipment(events) {
+    const grouped = [];
+    const indexByShipment = {};
+    events.forEach(event => {
+      const timeKey = (event.date || '').slice(0, 16);
+      const customerKey = event.order?.customer_id || 'unknown';
+      const trackingKey = event.tracking || 'no-tracking';
+      const key = `${timeKey}__${customerKey}__${trackingKey}`;
+      if (indexByShipment[key] === undefined) {
+        indexByShipment[key] = grouped.length;
+        grouped.push({ key, events: [] });
+      }
+      grouped[indexByShipment[key]].events.push(event);
+    });
+    return grouped;
+  }
+
+  function renderHistoryOrderGroup(events) {
+    const hasPartial = events.some(event => event.status === 'partial');
+    return `<div class="history-order-group ${hasPartial ? 'is-partial' : ''}">
+      ${events.map(event => renderHistoryCard(event)).join('')}
+    </div>`;
+  }
+
   function renderHistory() {
     const q = (document.getElementById('history-q')?.value || '').toLowerCase().trim();
     const t = today();
     const f = UI.histFilter || 'all';
 
-    // 1. Sort newest first (supports "YYYY-MM-DD HH:mm")
-    let shipped = DB.orders
-      .filter(o => o.status === 'shipped')
-      .sort((a, b) => (b.shipped_date || b.order_date || '').localeCompare(a.shipped_date || a.order_date || ''));
+    // 1. 출고 이력 대상: 주문이 아니라 실제 출고 이벤트 단위
+    let shipped = buildHistoryShipments();
 
-    // 2. Period filter
+    // 2. 기간 필터 (부분출고는 item 레벨 shipped_date 기준)
+    const getEventDate = event => event.date || '';
     if (f === 'today') {
-      shipped = shipped.filter(o => (o.shipped_date || o.order_date || '').startsWith(t));
+      shipped = shipped.filter(event => getEventDate(event).startsWith(t));
     } else if (f === 'week') {
       const ago = new Date(t + 'T00:00:00'); ago.setDate(ago.getDate() - 6);
       const wStr = ago.toISOString().slice(0, 10);
-      shipped = shipped.filter(o => (o.shipped_date || o.order_date || '').slice(0, 10) >= wStr);
+      shipped = shipped.filter(event => getEventDate(event).slice(0, 10) >= wStr);
     } else if (f === 'month') {
       const ym = t.slice(0, 7);
-      shipped = shipped.filter(o => (o.shipped_date || o.order_date || '').startsWith(ym));
+      shipped = shipped.filter(event => getEventDate(event).startsWith(ym));
     }
 
     // 3. Search filter
     const filtered = q
-      ? shipped.filter(o => (getCust(o.customer_id)?.name || '').toLowerCase().includes(q))
+      ? shipped.filter(event => (getCust(event.order.customer_id)?.name || '').toLowerCase().includes(q))
       : shipped;
 
     const countEl = document.getElementById('history-count');
@@ -7057,10 +8054,10 @@ ${pdfLink}
 
     // 4. Group by date (YYYY-MM-DD), newest date first
     const groups = {};
-    filtered.forEach(o => {
-      const dk = (o.shipped_date || o.order_date || '').slice(0, 10);
+    filtered.forEach(event => {
+      const dk = (event.date || '').slice(0, 10) || event.order.order_date?.slice(0, 10) || '';
       if (!groups[dk]) groups[dk] = [];
-      groups[dk].push(o);
+      groups[dk].push(event);
     });
 
     el.innerHTML = Object.keys(groups).sort().reverse().map(dk => {
@@ -7074,7 +8071,7 @@ ${pdfLink}
           <span class="hist-date-count">${groups[dk].length}건</span>
         </div>
         <div class="hist-cards-group">
-          ${groups[dk].map(o => renderHistoryCard(o)).join('')}
+          ${groupHistoryEventsByShipment(groups[dk]).map(group => renderHistoryOrderGroup(group.events)).join('')}
         </div>
       </div>`;
     }).join('');
@@ -7103,21 +8100,56 @@ ${pdfLink}
     renderCalendar();
   }
 
+  function ordersSignature(orders) {
+    return JSON.stringify((orders || []).map(o => [
+      o.id, o.status, o.tracking, o.shipped_date, o.partial_shipped_date,
+      o.img_url, o.pdf_url, JSON.stringify(o.items || [])
+    ]));
+  }
+
+  async function refreshOrdersOnly() {
+    if (document.hidden || UI.ordersRefreshing) return;
+    UI.ordersRefreshing = true;
+    try {
+      const from = DB.loadedFrom || getDateFrom(LOAD_DAYS);
+      const ords = await supa('GET', 'orders', null, `?order=order_date.desc&order_date=gte.${from}&limit=1000`);
+      const nextSig = ordersSignature(ords);
+      if (nextSig !== UI.ordersSignature) {
+        DB.orders = ords || [];
+        UI.ordersSignature = nextSig;
+        renderAll();
+        const dot = document.getElementById('db-dot');
+        if (dot) { dot.style.transform = 'scale(1.4)'; setTimeout(() => dot.style.transform = '', 400); }
+      }
+    } catch (e) {
+      console.warn('orders auto-refresh failed:', e.message);
+    } finally {
+      UI.ordersRefreshing = false;
+    }
+  }
+
   /* ════════════════════════════════════════════
      REALTIME — Auto-refresh when app updates orders
      ════════════════════════════════════════════ */
   function startAutoRefresh() {
-    // ✅ Realtime WebSocket이 실시간 변경을 처리하므로 30초 폴링 불필요
-    // 탭이 다시 활성화될 때만 조용히 새로고침 (장시간 자리 비운 후 동기화)
+    UI.ordersSignature = ordersSignature(DB.orders);
+    if (UI.orderRefreshTimer) clearInterval(UI.orderRefreshTimer);
+    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 8000);
+    startPaymentRequestPolling();
+
+    // Realtime WebSocket이 꺼져 있어도 위의 lightweight polling으로 모바일 출고 변경을 따라잡음
+    // 탭이 다시 활성화될 때는 즉시 한 번 더 동기화
     let lastRefresh = Date.now();
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         const elapsed = Date.now() - lastRefresh;
-        // 5분 이상 탭 비활성 상태였을 때만 새로고침
+        refreshOrdersOnly();
+        // 5분 이상 탭 비활성 상태였을 때는 전체 데이터도 새로고침
         if (elapsed > 5 * 60 * 1000) {
           lastRefresh = Date.now();
           loadAll().then(() => {
+            UI.ordersSignature = ordersSignature(DB.orders);
             renderAll();
             const dot = document.getElementById('db-dot');
             if (dot) { dot.style.transform = 'scale(1.4)'; setTimeout(() => dot.style.transform = '', 400); }
@@ -7215,6 +8247,12 @@ ${pdfLink}
     }
 
     // 알림 권한 요청
+    if (role === 'admin') {
+      renderPaymentRequestButton(false);
+    } else {
+      stopPaymentRequestPolling();
+    }
+
     requestNotifPermission();
   }
 
@@ -7287,8 +8325,13 @@ ${pdfLink}
       onOk: async () => {
         logAction('login', 'system', null, '로그아웃');
         try { await _supa.auth.signOut(); } catch (e) { /* ignore */ }
+        if (UI.orderRefreshTimer) {
+          clearInterval(UI.orderRefreshTimer);
+          UI.orderRefreshTimer = null;
+        }
         UI.currentUser = null;
         UI.privacyMode = false;
+        stopPaymentRequestPolling();
         const lu = document.getElementById('l-user'); if (lu) lu.value = '';
         const lp = document.getElementById('l-pass'); if (lp) lp.value = '';
         const le = document.getElementById('login-err'); if (le) le.style.display = 'none';
@@ -7333,26 +8376,38 @@ ${pdfLink}
     openModal('modal-report');
   }
 
-  function getReportOrders() {
-    // 출고 완료된 주문만
+  function reportDateInPeriod(dateValue) {
+    const d = (dateValue || '').slice(0, 10);
     const t = today();
     const p = UI.reportPeriod;
-    let orders = DB.orders.filter(o => o.status === 'shipped');
-    if (p === 'today') {
-      orders = orders.filter(o => (o.shipped_date || o.order_date || '').startsWith(t));
-    } else if (p === 'month') {
-      orders = orders.filter(o => (o.shipped_date || o.order_date || '').startsWith(t.slice(0, 7)));
-    } else if (p === 'custom') {
+    if (p === 'today') return d === t;
+    if (p === 'month') return d.startsWith(t.slice(0, 7));
+    if (p === 'custom') {
       const from = document.getElementById('rp-from')?.value || '';
       const to = document.getElementById('rp-to')?.value || '';
-      orders = orders.filter(o => {
-        const d = (o.shipped_date || o.order_date || '').slice(0, 10);
-        return (!from || d >= from) && (!to || d <= to);
-      });
+      return (!from || d >= from) && (!to || d <= to);
     }
-    return orders.sort((a, b) =>
-      (b.shipped_date || b.order_date || '').localeCompare(a.shipped_date || a.order_date || '')
-    );
+    return true;
+  }
+
+  function getReportShipments() {
+    return buildHistoryShipments()
+      .filter(event => reportDateInPeriod(event.date))
+      .map(event => ({
+        order: event.order,
+        customer_id: event.order.customer_id,
+        customerName: getCust(event.order.customer_id)?.name || '—',
+        date: event.date,
+        status: event.status,
+        items: event.eventItems,
+        tracking: event.tracking,
+        pdfUrl: event.pdfUrl,
+        amount: event.amount,
+      }));
+  }
+
+  function getReportOrders() {
+    return getReportShipments().map(line => line.order);
   }
 
   function getReportAllOrders() {
@@ -7378,15 +8433,13 @@ ${pdfLink}
   }
 
   function updateReportPreview() {
-    const shipped = getReportOrders();
+    const shipments = getReportShipments();
     const allOrds = getReportAllOrders();
-    const pending = allOrds.filter(o => o.status !== 'shipped');
-    const total = shipped.reduce((s, o) => s + orderTotal(o), 0);
-    const allTotal = allOrds.reduce((s, o) => s + orderTotal(o), 0);
-    const custSet = new Set(allOrds.map(o => o.customer_id));
+    const pending = allOrds.filter(o => effectiveOrderStatus(o) !== 'shipped');
+    const custSet = new Set([...allOrds.map(o => o.customer_id), ...shipments.map(line => line.customer_id)]);
 
-    const STATUS_LABEL = { new: '신규', pending: '출고대기', shipped: '출고완료' };
-    const STATUS_COLOR = { new: '#2563eb', pending: '#d97706', shipped: '#16a34a' };
+    const STATUS_LABEL = { new: '신규', pending: '출고대기', partial: '부분출고', shipped: '출고완료' };
+    const STATUS_COLOR = { new: '#2563eb', pending: '#d97706', partial: '#7c3aed', shipped: '#16a34a' };
 
     document.getElementById('report-stats').innerHTML = `
       <div class="report-stat">
@@ -7394,8 +8447,8 @@ ${pdfLink}
         <div class="report-stat-lbl">총 주문</div>
       </div>
       <div class="report-stat">
-        <div class="report-stat-val green">${shipped.length}</div>
-        <div class="report-stat-lbl">출고 완료</div>
+        <div class="report-stat-val green">${shipments.length}</div>
+        <div class="report-stat-lbl">출고 건수</div>
       </div>
       <div class="report-stat">
         <div class="report-stat-val amber">${pending.length}</div>
@@ -7410,10 +8463,10 @@ ${pdfLink}
     const rows = allOrds.slice(0, 25).map(o => {
       const c = getCust(o.customer_id);
       const d = (o.order_date || '').slice(0, 10);
-      const items = (o.items || []).map(i =>
+      const items = orderItems(o).map(i =>
         `<span class="report-item-chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`
       ).join('');
-      const st = o.status || 'new';
+      const st = effectiveOrderStatus(o);
       const stLbl = STATUS_LABEL[st] || st;
       const stClr = STATUS_COLOR[st] || '#888';
       return `<div class="report-order-row">
@@ -7433,9 +8486,9 @@ ${pdfLink}
   }
 
   function exportReportPDF() {
-    const shipped = getReportOrders();
+    const shipments = getReportShipments();
     const allOrds = getReportAllOrders();
-    if (!allOrds.length) { showToast('해당 기간에 주문 내역이 없습니다', 'error'); return; }
+    if (!allOrds.length && !shipments.length) { showToast('해당 기간에 주문/출고 내역이 없습니다', 'error'); return; }
 
     const t = today();
     const p = UI.reportPeriod;
@@ -7443,35 +8496,35 @@ ${pdfLink}
       p === 'month' ? `${t.slice(0, 7)} (이번 달)` :
         `${document.getElementById('rp-from')?.value || ''} ~ ${document.getElementById('rp-to')?.value || ''}`;
 
-    const shippedTotal = shipped.reduce((s, o) => s + orderTotal(o), 0);
+    const shippedTotal = shipments.reduce((s, line) => s + line.amount, 0);
     const allTotal = allOrds.reduce((s, o) => s + orderTotal(o), 0);
-    const pending = allOrds.filter(o => o.status !== 'shipped');
-    const custSet = new Set(allOrds.map(o => o.customer_id));
+    const pending = allOrds.filter(o => effectiveOrderStatus(o) !== 'shipped');
+    const custSet = new Set([...allOrds.map(o => o.customer_id), ...shipments.map(line => line.customer_id)]);
 
-    const ST_LABEL = { new: '신규', pending: '출고대기', shipped: '출고완료' };
-    const ST_COLOR = { new: '#2563eb', pending: '#d97706', shipped: '#16a34a' };
-    const ST_BG = { new: '#eff6ff', pending: '#fffbeb', shipped: '#f0fdf4' };
+    const ST_LABEL = { new: '신규', pending: '출고대기', partial: '부분출고', shipped: '출고완료' };
+    const ST_COLOR = { new: '#2563eb', pending: '#d97706', partial: '#7c3aed', shipped: '#16a34a' };
+    const ST_BG = { new: '#eff6ff', pending: '#fffbeb', partial: '#f5f3ff', shipped: '#f0fdf4' };
 
     // 거래처별 집계 (출고 완료 기준)
     const byCustomer = {};
-    shipped.forEach(o => {
-      const cid = o.customer_id;
-      if (!byCustomer[cid]) byCustomer[cid] = { name: getCust(cid)?.name || '—', total: 0, count: 0 };
-      byCustomer[cid].total += orderTotal(o);
+    shipments.forEach(line => {
+      const cid = line.customer_id;
+      if (!byCustomer[cid]) byCustomer[cid] = { name: line.customerName, total: 0, count: 0 };
+      byCustomer[cid].total += line.amount;
       byCustomer[cid].count++;
     });
     const custSummaryRows = Object.values(byCustomer)
       .sort((a, b) => b.total - a.total)
       .map(c => `<tr><td>${c.name}</td><td style="text-align:center">${c.count}건</td><td style="text-align:right;font-weight:700;color:#2563eb">${fmt(c.total)}원</td></tr>`)
-      .join('') || '<tr><td colspan="3" style="text-align:center;color:#94a3b8">출고 완료 내역 없음</td></tr>';
+      .join('') || '<tr><td colspan="3" style="text-align:center;color:#94a3b8">출고 내역 없음</td></tr>';
 
     // 전체 주문 현황 (신규+대기+완료)
     const allOrderRows = allOrds.map((o, idx) => {
       const c = getCust(o.customer_id);
       const d = (o.order_date || '').slice(0, 10);
-      const st = o.status || 'new';
-      const itms = (o.items || []).map(i =>
-        `<span class="chip" style="background:${ST_BG[st] || '#eff6ff'};color:${ST_COLOR[st] || '#2563eb'}">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}${i.price ? ` · ${fmt(i.price)}원` : ''}</span>`
+      const st = effectiveOrderStatus(o);
+      const itms = orderItems(o).map(i =>
+        `<span class="chip" style="background:${itemIsShipped(i) ? '#f0fdf4' : (ST_BG[st] || '#eff6ff')};color:${itemIsShipped(i) ? '#16a34a' : (ST_COLOR[st] || '#2563eb')}">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}${i.price ? ` · ${fmt(i.price)}원` : ''}${itemIsShipped(i) ? ' ✓' : ''}</span>`
       ).join(' ');
       const amt = orderTotal(o);
       return `<tr class="${idx % 2 === 0 ? 'even' : ''}">
@@ -7481,21 +8534,21 @@ ${pdfLink}
         <td>${itms}</td>
         <td class="money">${fmt(amt)}원</td>
       </tr>`;
-    }).join('');
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8">주문 내역 없음</td></tr>';
 
-    // 출고 완료 상세 (송장 포함) — 날짜만 표시
-    const shippedRows = shipped.map((o, idx) => {
-      const c = getCust(o.customer_id);
-      const d = (o.shipped_date || o.order_date || '').slice(0, 10);
-      const itms = (o.items || []).map(i => `<span class="chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`).join(' ');
-      const amt = orderTotal(o);
+    // 출고 상세 (송장 포함) — 부분출고는 출고된 품목/금액만 표시
+    const shippedRows = shipments.map((line, idx) => {
+      const d = (line.date || '').slice(0, 10);
+      const t = (line.date || '').length > 10 ? (line.date || '').slice(11, 16) : '';
+      const itms = line.items.map(i => `<span class="chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`).join(' ');
       return `<tr class="${idx % 2 === 0 ? 'even' : ''}">
-        <td>${d}</td>
-        <td><b>${c?.name || '—'}</b></td>
-        <td>${itms}</td>
-        <td class="money">${fmt(amt)}원</td>
+        <td>${d}${t ? `<br><span style="color:#64748b;font-size:8pt">${t}</span>` : ''}</td>
+        <td><b>${line.customerName}</b></td>
+        <td class="nowrap"><span class="status-badge" style="color:${ST_COLOR[line.status]};background:${ST_BG[line.status]}">${ST_LABEL[line.status]}</span></td>
+        <td>${itms}${line.tracking ? `<div style="margin-top:3px;color:#64748b;font-size:8pt">송장 ${line.tracking}</div>` : ''}</td>
+        <td class="money">${fmt(line.amount)}원</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="4" style="text-align:center;color:#94a3b8">출고 완료 내역 없음</td></tr>';
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8">출고 내역 없음</td></tr>';
 
     const generatedAt = new Date().toLocaleString('ko-KR');
 
@@ -7557,16 +8610,16 @@ ${pdfLink}
 
   <div class="stats">
     <div class="stat"><div class="stat-val">${allOrds.length}</div><div class="stat-lbl">총 주문</div></div>
-    <div class="stat"><div class="stat-val green">${shipped.length}</div><div class="stat-lbl">출고 완료</div></div>
+    <div class="stat"><div class="stat-val green">${shipments.length}</div><div class="stat-lbl">출고 건수</div></div>
     <div class="stat"><div class="stat-val amber">${pending.length}</div><div class="stat-lbl">미출고</div></div>
     <div class="stat"><div class="stat-val">${custSet.size}</div><div class="stat-lbl">거래처 수</div></div>
   </div>
 
-  <div class="section-title">📊 거래처별 집계 <span style="font-size:8pt;font-weight:400;color:#64748b">(출고 완료 기준)</span></div>
+  <div class="section-title">📊 거래처별 집계 <span style="font-size:8pt;font-weight:400;color:#64748b">(출고/부분출고 기준)</span></div>
   <table>
     <thead><tr><th>거래처</th><th style="text-align:center">출고 건수</th><th style="text-align:right">출고 금액</th></tr></thead>
     <tbody>${custSummaryRows}</tbody>
-    <tr class="total-row"><td>합 계</td><td style="text-align:center">${shipped.length}건</td><td class="money">${fmt(shippedTotal)}원</td></tr>
+    <tr class="total-row"><td>합 계</td><td style="text-align:center">${shipments.length}건</td><td class="money">${fmt(shippedTotal)}원</td></tr>
   </table>
 
   <div class="section-title">📋 전체 주문 현황 <span style="font-size:8pt;font-weight:400;color:#64748b">(신규·출고대기·완료 포함)</span></div>
@@ -7576,11 +8629,11 @@ ${pdfLink}
     <tr class="total-row"><td colspan="4">총 주문 금액</td><td class="money">${fmt(allTotal)}원</td></tr>
   </table>
 
-  <div class="section-title">✅ 출고 완료 상세</div>
+  <div class="section-title">✅ 출고 상세</div>
   <table>
-    <thead><tr><th style="width:130px">출고일시</th><th style="width:90px">거래처</th><th>출고 품목</th><th style="width:90px;text-align:right">금액</th></tr></thead>
+    <thead><tr><th style="width:76px">출고일시</th><th style="width:80px">거래처</th><th style="width:68px">상태</th><th>출고 품목</th><th style="width:90px;text-align:right">금액</th></tr></thead>
     <tbody>${shippedRows}</tbody>
-    <tr class="total-row"><td colspan="3">출고 합계</td><td class="money">${fmt(shippedTotal)}원</td></tr>
+    <tr class="total-row"><td colspan="4">출고 합계</td><td class="money">${fmt(shippedTotal)}원</td></tr>
   </table>
 
   <div class="footer">생성일시: ${generatedAt} &nbsp;|&nbsp; 진일 라벨 주문관리 시스템</div>

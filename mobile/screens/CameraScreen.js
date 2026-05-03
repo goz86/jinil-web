@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet, Image, ScrollView,
   Alert, Dimensions, Vibration, Modal, TextInput,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
@@ -11,9 +11,10 @@ import { supabase, C } from '../lib/supabase';
 const { width: SCREEN_W } = Dimensions.get('window');
 const SCAN_BOX_W = SCREEN_W * 0.78;
 const SCAN_BOX_H = 110;
+const THUMB_SIZE = 64;
 
 export default function CameraScreen({ route, navigation }) {
-  const { customer, items, orderIds, fullyChecked, mode: initialMode } = route.params || {};
+  const { customer, items, orderIds, fullyChecked, partialDetails, mode: initialMode } = route.params || {};
 
   const [permission,      requestPermission]     = useCameraPermissions();
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
@@ -21,10 +22,11 @@ export default function CameraScreen({ route, navigation }) {
   const [trackingNo,  setTrackingNo]  = useState('');
   const [scanned,     setScanned]     = useState(false);
   const [searching,   setSearching]   = useState(false);
-  const [photoUri,    setPhotoUri]    = useState(null);
+  const [photos,      setPhotos]      = useState([]); // 📷 Multiple photos
   const [mode,        setMode]        = useState(
     initialMode === 'quickScan' ? 'quickScan' : 'scan'
   );
+  const [shooting,    setShooting]    = useState(false); // prevent double-tap
 
   const [modalVisible, setModalVisible] = useState(false);
   const [manualInput,  setManualInput]  = useState('');
@@ -40,19 +42,14 @@ export default function CameraScreen({ route, navigation }) {
   // ── Barcode scanned ───────────────────────────────────
   const onBarcodeScanned = async ({ data }) => {
     if (scanned || searching) return;
-
-    // Support Alphanumeric & extract last 16 chars if long
     let clean = data.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (clean.length > 16) {
-      clean = clean.slice(-16);
-    }
-    if (clean.length < 5) return;           // too short — ignore
+    if (clean.length > 16) clean = clean.slice(-16);
+    if (clean.length < 5) return;
 
     setScanned(true);
     Vibration.vibrate(200);
 
     if (isQuickScan) {
-      // quickScan: look up the tracking number in DB
       setSearching(true);
       try {
         const { data: ord, error } = await supabase
@@ -61,7 +58,6 @@ export default function CameraScreen({ route, navigation }) {
           .or(`tracking.eq.${clean},tracking.eq.${data}`)
           .maybeSingle();
         if (error) throw error;
-
         if (ord) {
           Alert.alert(
             '📦 주문 발견',
@@ -92,18 +88,23 @@ export default function CameraScreen({ route, navigation }) {
     }
   };
 
-  // ── Take photo ────────────────────────────────────────
+  // ── Take photo — appends to photos array ──────────────
   const takePhoto = async () => {
-    if (!cameraRef.current) return;
+    if (!cameraRef.current || shooting) return;
+    setShooting(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
       if (mediaPermission?.granted) await MediaLibrary.saveToLibraryAsync(photo.uri);
-      setPhotoUri(photo.uri);
-      setMode('done');
+      setPhotos(prev => [...prev, photo.uri]);
+      Vibration.vibrate([0, 40, 60, 40]); // double-pulse = success
     } catch (e) {
       Alert.alert('오류', '사진 촬영 실패: ' + e.message);
+    } finally {
+      setShooting(false);
     }
   };
+
+  const removePhoto = (idx) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
   // ── Manual entry modal ────────────────────────────────
   const openManualModal = () => { setManualInput(''); setModalVisible(true); };
@@ -119,11 +120,16 @@ export default function CameraScreen({ route, navigation }) {
   const handleContinue = () => {
     const d = new Date();
     const shipDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    navigation.navigate('Message', { customer, items, orderIds, fullyChecked, trackingNo, photoUri, shipDate });
+    navigation.navigate('Message', {
+      customer, items, orderIds, fullyChecked, partialDetails, trackingNo,
+      photos: photos.length > 0 ? photos : null,
+      photoUri: photos[0] || null,
+      shipDate,
+    });
   };
 
   // ── Reset ─────────────────────────────────────────────
-  const reset = () => { setMode('scan'); setScanned(false); setPhotoUri(null); setTrackingNo(''); };
+  const reset = () => { setMode('scan'); setScanned(false); setPhotos([]); setTrackingNo(''); };
 
   // ── Permission screens ────────────────────────────────
   if (!permission) {
@@ -169,8 +175,8 @@ export default function CameraScreen({ route, navigation }) {
             </View>
             <View style={styles.doneRow}>
               <Text style={styles.doneLabel}>사진</Text>
-              <Text style={[styles.doneValue, { color: photoUri ? '#1a7f2a' : C.inkMuted }]}>
-                {photoUri ? '촬영 완료 ✓' : '건너뜀'}
+              <Text style={[styles.doneValue, { color: photos.length > 0 ? '#1a7f2a' : C.inkMuted }]}>
+                {photos.length > 0 ? `${photos.length}장 촬영 ✓` : '건너뜀'}
               </Text>
             </View>
             <View style={[styles.doneRow, { borderBottomWidth: 0 }]}>
@@ -178,6 +184,16 @@ export default function CameraScreen({ route, navigation }) {
               <Text style={styles.doneValue}>{items?.length ?? 0}개</Text>
             </View>
           </View>
+
+          {/* Photo thumbnail preview on done screen */}
+          {photos.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}
+              style={styles.donePhotoStrip} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              {photos.map((uri, idx) => (
+                <Image key={idx} source={{ uri }} style={styles.doneThumb} />
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         <View style={styles.doneButtons}>
@@ -204,11 +220,9 @@ export default function CameraScreen({ route, navigation }) {
           ? onBarcodeScanned : undefined}
       />
 
-      {/* Dark gradient overlay top & bottom */}
       <View style={styles.overlayTop} />
       <View style={styles.overlayBottom} />
 
-      {/* Content overlay */}
       <View style={styles.overlay}>
 
         {/* Top info */}
@@ -239,7 +253,7 @@ export default function CameraScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* Scan box */}
+        {/* Scan box (scan mode only) */}
         {(mode === 'scan' || mode === 'quickScan') && (
           <View style={styles.scanBoxWrap}>
             <View style={styles.scanBox}>
@@ -253,29 +267,53 @@ export default function CameraScreen({ route, navigation }) {
           </View>
         )}
 
+        {/* Photo thumbnail strip (photo mode) */}
+        {mode === 'photo' && photos.length > 0 && (
+          <View style={styles.thumbStrip}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+              {photos.map((uri, idx) => (
+                <View key={idx} style={styles.thumbWrap}>
+                  <Image source={{ uri }} style={styles.thumbImg} />
+                  {/* Delete button */}
+                  <TouchableOpacity style={styles.thumbDel} onPress={() => removePhoto(idx)}>
+                    <Text style={styles.thumbDelText}>✕</Text>
+                  </TouchableOpacity>
+                  {/* Index badge */}
+                  <View style={styles.thumbBadge}>
+                    <Text style={styles.thumbBadgeText}>{idx + 1}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            <Text style={styles.thumbHint}>{photos.length}장 촬영됨 · 탭하면 삭제</Text>
+          </View>
+        )}
+
         {/* Bottom controls */}
         <View style={styles.bottomControls}>
+
+          {/* ── SCAN mode ── */}
           {mode === 'scan' && (
             <>
               <TouchableOpacity style={styles.sideBtn} onPress={openManualModal}>
                 <Text style={styles.sideBtnEmoji}>⌨️</Text>
                 <Text style={styles.sideBtnText}>번호 입력</Text>
               </TouchableOpacity>
-              {/* Center shutter: skip barcode and go straight to photo mode */}
               <TouchableOpacity
                 style={styles.shutter}
-                onPress={() => { setScanned(true); setMode('photo'); }}
-              >
+                onPress={() => { setScanned(true); setMode('photo'); }}>
                 <View style={styles.shutterInner} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.sideBtn}
-                onPress={() => { setPhotoUri(null); setTrackingNo(''); setMode('done'); }}>
+                onPress={() => { setTrackingNo(''); setMode('done'); }}>
                 <Text style={styles.sideBtnEmoji}>⏭</Text>
                 <Text style={styles.sideBtnText}>사진 없이</Text>
               </TouchableOpacity>
             </>
           )}
 
+          {/* ── PHOTO mode ── */}
           {mode === 'photo' && (
             <>
               <TouchableOpacity style={styles.sideBtn}
@@ -283,17 +321,36 @@ export default function CameraScreen({ route, navigation }) {
                 <Text style={styles.sideBtnEmoji}>←</Text>
                 <Text style={styles.sideBtnText}>다시 스캔</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.shutter} onPress={takePhoto}>
-                <View style={styles.shutterInner} />
-              </TouchableOpacity>
+
+              {/* Shutter — with shooting lock & photo count badge */}
+              <View>
+                <TouchableOpacity
+                  style={[styles.shutter, shooting && { opacity: 0.5 }]}
+                  onPress={takePhoto}
+                  disabled={shooting}>
+                  <View style={styles.shutterInner} />
+                </TouchableOpacity>
+                {photos.length > 0 && (
+                  <View style={styles.photoBadge}>
+                    <Text style={styles.photoBadgeText}>{photos.length}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* 완료 — green when at least 1 photo taken */}
               <TouchableOpacity style={styles.sideBtn}
-                onPress={() => { setPhotoUri(null); setMode('done'); }}>
-                <Text style={styles.sideBtnEmoji}>⏭</Text>
-                <Text style={styles.sideBtnText}>사진 없이</Text>
+                onPress={() => setMode('done')}>
+                <Text style={[styles.sideBtnEmoji, photos.length > 0 && { color: '#28cd41' }]}>
+                  {photos.length > 0 ? '✓' : '⏭'}
+                </Text>
+                <Text style={[styles.sideBtnText, photos.length > 0 && { color: '#28cd41', fontWeight: '700' }]}>
+                  {photos.length > 0 ? `완료(${photos.length})` : '사진 없이'}
+                </Text>
               </TouchableOpacity>
             </>
           )}
 
+          {/* ── QUICK SCAN mode ── */}
           {mode === 'quickScan' && (
             <>
               <TouchableOpacity style={styles.sideBtn} onPress={openManualModal}>
@@ -301,8 +358,7 @@ export default function CameraScreen({ route, navigation }) {
                 <Text style={styles.sideBtnText}>직접 입력</Text>
               </TouchableOpacity>
               <View style={styles.shutterPlaceholder} />
-              <TouchableOpacity style={styles.sideBtn}
-                onPress={() => navigation.goBack()}>
+              <TouchableOpacity style={styles.sideBtn} onPress={() => navigation.goBack()}>
                 <Text style={styles.sideBtnEmoji}>✕</Text>
                 <Text style={styles.sideBtnText}>닫기</Text>
               </TouchableOpacity>
@@ -360,68 +416,75 @@ const styles = StyleSheet.create({
   permBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   // ── Camera root
-  cameraRoot: { flex: 1, backgroundColor: '#000' },
-  overlayTop: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: 200,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  overlayBottom: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 180,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  overlay: { flex: 1, justifyContent: 'space-between' },
+  cameraRoot:    { flex: 1, backgroundColor: '#000' },
+  overlayTop:    { position: 'absolute', top: 0, left: 0, right: 0, height: 200, backgroundColor: 'rgba(0,0,0,0.55)' },
+  overlayBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, backgroundColor: 'rgba(0,0,0,0.55)' },
+  overlay:       { flex: 1, justifyContent: 'space-between' },
 
   // ── Top info
   topInfo: { alignItems: 'center', paddingTop: 56, paddingHorizontal: 24, gap: 8 },
-  modeBadge: {
-    backgroundColor: C.blue, borderRadius: 99,
-    paddingHorizontal: 12, paddingVertical: 4,
-  },
+  modeBadge:     { backgroundColor: C.blue, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4 },
   modeBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   topTitle: {
     color: '#fff', fontSize: 20, fontWeight: '700', textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4,
   },
-  topSub: { color: 'rgba(255,255,255,0.65)', fontSize: 13 },
-  trackBadge: {
-    backgroundColor: 'rgba(40,205,65,0.25)', borderRadius: 8,
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderWidth: 1, borderColor: 'rgba(40,205,65,0.5)',
-  },
-  trackText: { color: '#7fff8a', fontSize: 13, fontWeight: '600' },
+  topSub:       { color: 'rgba(255,255,255,0.65)', fontSize: 13 },
+  trackBadge:   { backgroundColor: 'rgba(40,205,65,0.25)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(40,205,65,0.5)' },
+  trackText:    { color: '#7fff8a', fontSize: 13, fontWeight: '600' },
   searchingBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   searchingText:  { color: '#fff', fontSize: 13 },
 
   // ── Scan box
   scanBoxWrap: { alignItems: 'center', gap: 16 },
-  scanBox: { width: SCAN_BOX_W, height: SCAN_BOX_H, position: 'relative' },
-  corner: { position: 'absolute', width: CORNER_SIZE, height: CORNER_SIZE, borderColor: '#fff', borderWidth: 3 },
-  cornerTL: { top: 0, left: 0,  borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 4 },
-  cornerTR: { top: 0, right: 0, borderLeftWidth: 0,  borderBottomWidth: 0, borderTopRightRadius: 4 },
+  scanBox:     { width: SCAN_BOX_W, height: SCAN_BOX_H, position: 'relative' },
+  corner:      { position: 'absolute', width: CORNER_SIZE, height: CORNER_SIZE, borderColor: '#fff', borderWidth: 3 },
+  cornerTL: { top: 0, left: 0,    borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 4 },
+  cornerTR: { top: 0, right: 0,   borderLeftWidth: 0,  borderBottomWidth: 0, borderTopRightRadius: 4 },
   cornerBL: { bottom: 0, left: 0,  borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 4 },
   cornerBR: { bottom: 0, right: 0, borderLeftWidth: 0,  borderTopWidth: 0, borderBottomRightRadius: 4 },
-  scanLine: {
-    position: 'absolute', top: '50%', left: 8, right: 8,
-    height: 2, backgroundColor: C.blue, borderRadius: 2, opacity: 0.85,
+  scanLine: { position: 'absolute', top: '50%', left: 8, right: 8, height: 2, backgroundColor: C.blue, borderRadius: 2, opacity: 0.85 },
+  scanHint: { color: 'rgba(255,255,255,0.6)', fontSize: 12, letterSpacing: 0.2, textAlign: 'center', paddingHorizontal: 20 },
+
+  // ── Photo thumbnail strip (photo mode)
+  thumbStrip: { alignItems: 'center', gap: 6 },
+  thumbHint:  { color: 'rgba(255,255,255,0.5)', fontSize: 11 },
+  thumbWrap:  { position: 'relative' },
+  thumbImg:   { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 10, borderWidth: 2, borderColor: '#fff' },
+  thumbDel:   {
+    position: 'absolute', top: -6, right: -6,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: 'rgba(255,59,48,0.9)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  scanHint: { color: 'rgba(255,255,255,0.6)', fontSize: 12, letterSpacing: 0.2 },
+  thumbDelText:  { color: '#fff', fontSize: 10, fontWeight: '800' },
+  thumbBadge:    { position: 'absolute', bottom: -4, left: -4, backgroundColor: C.blue, borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 },
+  thumbBadgeText:{ color: '#fff', fontSize: 9, fontWeight: '700' },
 
   // ── Bottom controls
   bottomControls: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 28, paddingBottom: 52, paddingTop: 16,
   },
-  sideBtn: { alignItems: 'center', justifyContent: 'center', width: 80, gap: 4 },
+  sideBtn:      { alignItems: 'center', justifyContent: 'center', width: 80, gap: 4 },
   sideBtnEmoji: { fontSize: 20 },
   sideBtnText:  { color: 'rgba(255,255,255,0.7)', fontSize: 11, textAlign: 'center', fontWeight: '500' },
-  shutter: {
+  shutter:      {
     width: 76, height: 76, borderRadius: 38,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 3.5, borderColor: '#fff',
   },
-  shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#fff' },
-  shutterPlaceholder: { width: 76, height: 76 },
+  shutterInner:      { width: 58, height: 58, borderRadius: 29, backgroundColor: '#fff' },
+  shutterPlaceholder:{ width: 76, height: 76 },
+  // Badge on shutter showing photo count
+  photoBadge:    {
+    position: 'absolute', top: -4, right: -4,
+    backgroundColor: '#28cd41', borderRadius: 12,
+    minWidth: 22, height: 22, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  photoBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
 
   // ── Done screen
   doneRoot: { flex: 1, backgroundColor: C.bg, justifyContent: 'center', padding: 24 },
@@ -432,57 +495,32 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  doneIconWrap: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center',
-    marginBottom: 12,
-  },
-  doneEmoji:  { fontSize: 38 },
-  doneTitle:  { fontSize: 22, fontWeight: '700', color: C.ink, letterSpacing: -0.3 },
-  doneSub:    { fontSize: 13, color: C.inkMuted, marginTop: 4, marginBottom: 20 },
+  doneIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  doneEmoji:   { fontSize: 38 },
+  doneTitle:   { fontSize: 22, fontWeight: '700', color: C.ink, letterSpacing: -0.3 },
+  doneSub:     { fontSize: 13, color: C.inkMuted, marginTop: 4, marginBottom: 20 },
   doneInfoBox: { width: '100%', borderRadius: 12, borderWidth: 1, borderColor: C.hairline, overflow: 'hidden' },
-  doneRow:    {
-    flexDirection: 'row', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: C.hairline,
-  },
-  doneLabel:  { fontSize: 13, color: C.inkMuted, fontWeight: '500' },
-  doneValue:  { fontSize: 13, fontWeight: '700', color: C.ink },
-  doneButtons: { flexDirection: 'row', gap: 10 },
-  retakeBtn: {
-    flex: 1, paddingVertical: 15, borderRadius: 99,
-    borderWidth: 1.5, borderColor: C.border, alignItems: 'center',
-  },
+  doneRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.hairline },
+  doneLabel:   { fontSize: 13, color: C.inkMuted, fontWeight: '500' },
+  doneValue:   { fontSize: 13, fontWeight: '700', color: C.ink },
+  donePhotoStrip: { marginTop: 14, width: '100%' },
+  doneThumb:   { width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 10, borderWidth: 1, borderColor: C.hairline },
+
+  doneButtons:     { flexDirection: 'row', gap: 10 },
+  retakeBtn:       { flex: 1, paddingVertical: 15, borderRadius: 99, borderWidth: 1.5, borderColor: C.border, alignItems: 'center' },
   retakeBtnText:   { color: C.ink, fontWeight: '600', fontSize: 14 },
   continueBtn:     { flex: 2, paddingVertical: 15, borderRadius: 99, backgroundColor: C.blue, alignItems: 'center' },
   continueBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   // ── Manual entry modal
-  modalOverlay: {
-    flex: 1, justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalBox: {
-    backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 40, gap: 14,
-  },
-  modalHandle: {
-    width: 36, height: 4, backgroundColor: '#ddd', borderRadius: 2,
-    alignSelf: 'center', marginBottom: 8,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.ink, textAlign: 'center' },
-  modalSub:   { fontSize: 13, color: C.inkMuted, textAlign: 'center' },
-  modalInput: {
-    borderWidth: 1.5, borderColor: C.blue, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 16, color: C.ink, backgroundColor: '#f5f8ff',
-    letterSpacing: 1,
-  },
-  modalButtons: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  modalBtnGhost: {
-    flex: 1, paddingVertical: 14, borderRadius: 99,
-    borderWidth: 1.5, borderColor: C.border, alignItems: 'center',
-  },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalBox: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, gap: 14 },
+  modalHandle:    { width: 36, height: 4, backgroundColor: '#ddd', borderRadius: 2, alignSelf: 'center', marginBottom: 8 },
+  modalTitle:     { fontSize: 18, fontWeight: '700', color: C.ink, textAlign: 'center' },
+  modalSub:       { fontSize: 13, color: C.inkMuted, textAlign: 'center' },
+  modalInput:     { borderWidth: 1.5, borderColor: C.blue, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: C.ink, backgroundColor: '#f5f8ff', letterSpacing: 1 },
+  modalButtons:   { flexDirection: 'row', gap: 10, marginTop: 4 },
+  modalBtnGhost:  { flex: 1, paddingVertical: 14, borderRadius: 99, borderWidth: 1.5, borderColor: C.border, alignItems: 'center' },
   modalBtnGhostText:   { color: C.inkMuted, fontWeight: '600', fontSize: 14 },
   modalBtnPrimary:     { flex: 1.5, paddingVertical: 14, borderRadius: 99, backgroundColor: C.blue, alignItems: 'center' },
   modalBtnPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 14 },

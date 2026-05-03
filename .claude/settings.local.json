@@ -17,7 +17,8 @@
       "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\" /b /ad)",
       "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\screens\" /b)",
       "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\components\" /b)",
-      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\lib\" /b)"
+      "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\lib\" /b)",
+      "Bash(powershell -command \"\\(Get-Content 'C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\index.html'\\).Count\")"
     ]
   }
 }

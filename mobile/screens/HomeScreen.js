@@ -331,11 +331,13 @@ export default function HomeScreen({ navigation }) {
     const matchCust = customers.find(c => c.id == customerId) || selCust?.cust;
     // Always pass ALL orders for the entire name-group so user can see
     // pending orders from every customer_id with the same name
-    const allGroupOrders = orders.filter(o => selCust?.allIds?.includes(o.customer_id));
+    const allIds = selCust?.allIds || [matchCust?.id].filter(Boolean);
+    const allGroupOrders = orders.filter(o => allIds.includes(o.customer_id));
     setSelCust(null);
     navigation.navigate('Order', {
       customer: { ...matchCust, addr, tel }, // selected address used for PDF & message
       orders: allGroupOrders,               // all pending orders across all records
+      allIds,                               // all customer_ids with this name → for realtime
     });
   };
 
