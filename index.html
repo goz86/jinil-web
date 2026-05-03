@@ -2832,6 +2832,9 @@
       z-index: 2;
       transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    .stepper-progress.partial {
+      background: linear-gradient(90deg, var(--blue), #a78bfa, #7c3aed);
+    }
     .step {
       position: relative;
       z-index: 3;
@@ -2878,6 +2881,14 @@
     }
     .step.active .step-label, .step.completed .step-label {
       color: var(--blue);
+    }
+    .step.partial .step-dot {
+      border-color: #7c3aed;
+      background: #7c3aed;
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+    }
+    .step.partial .step-label {
+      color: #7c3aed !important;
     }
     @keyframes pulse {
       0% { transform: scale(1); opacity: 1; }
@@ -2958,6 +2969,16 @@
     }
     .mini-step.active .mini-step-label {
       color: var(--blue);
+    }
+    .mini-step.partial .mini-step-dot {
+      background: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+    }
+    .mini-step.partial .mini-step-label {
+      color: #7c3aed;
+    }
+    .mini-stepper-progress.partial {
+      background: linear-gradient(90deg, var(--blue), #a78bfa, #7c3aed);
     }
 
     /* ── Amount privacy (staff role) ── */
@@ -6894,28 +6915,35 @@ END $$;
 
   function getStepperStatus(o) {
     if (!o) return 0;
-    if (o.paid && o.status === 'shipped') return 4; // 결제완료
-    if (o.status === 'shipped' && !o.paid) return 3; // 미결제
-    if (isPartialOrder(o) || o.status === 'shipped') return 2; // 출고완료
-    if (o.status === 'pending') return 1; // 출고대기
-    return 0; // 신규
+    const status = effectiveOrderStatus(o);
+    if (o.paid && status === 'shipped') return 5; // 결제완료
+    if (status === 'shipped' && !o.paid) return 4; // 미납 (출고완료)
+    if (status === 'shipped') return 3;            // 출고완료
+    if (status === 'partial') return 2;            // 부분출고
+    if (o.status === 'pending') return 1;          // 출고대기
+    return 0;                                      // 신규
   }
 
   function renderStepper(o) {
     const status = getStepperStatus(o);
-    const labels = ['신규', '출고대기', '출고완료', '미결제', '결제완료'];
+    const labels = ['신규', '대기', '부분', '출고', '미납', '완료'];
     const progressWidth = (status / (labels.length - 1)) * 100;
+    const isPartial = status === 2;
 
     let html = `
       <div class="stepper-container">
         <div class="stepper">
-          <div class="stepper-progress" style="width: ${progressWidth}%"></div>
-          ${labels.map((label, i) => `
-            <div class="step ${i === status ? 'active' : ''} ${i < status ? 'completed' : ''}">
-              <div class="step-dot"></div>
-              <div class="step-label">${label}</div>
-            </div>
-          `).join('')}
+          <div class="stepper-progress ${isPartial ? 'partial' : ''}" style="width: ${progressWidth}%"></div>
+          ${labels.map((label, i) => {
+            const activeClass = i === status ? 'active' : '';
+            const completedClass = i < status ? 'completed' : '';
+            const partialClass = (i === status && isPartial) ? 'partial' : '';
+            return `
+              <div class="step ${activeClass} ${completedClass} ${partialClass}">
+                <div class="step-dot"></div>
+                <div class="step-label">${label}</div>
+              </div>`;
+          }).join('')}
         </div>
       </div>
     `;
@@ -6924,19 +6952,24 @@ END $$;
 
   function renderMiniStepper(o) {
     const status = getStepperStatus(o);
-    const steps = 5;
-    const labels = ['신규', '대기', '출고', '미납', '완료'];
+    const steps = 6;
+    const labels = ['신규', '대기', '부분', '출고', '미납', '완료'];
     const progressWidth = (status / (steps - 1)) * 100;
+    const isPartial = status === 2;
     
-    let html = `<div class="mini-stepper" title="상태: ${['신규', '출고대기', '출고완료', '미결제', '결제완료'][status]}">`;
+    let html = `<div class="mini-stepper" style="width: 160px" title="상태: ${['신규', '출고대기', '부분출고', '출고완료', '미결제', '결제완료'][status]}">`;
     
     // Background Progress
-    html += `<div class="mini-stepper-progress" style="--p: ${progressWidth}"></div>`;
+    html += `<div class="mini-stepper-progress ${isPartial ? 'partial' : ''}" style="--p: ${progressWidth}"></div>`;
     
     for (let i = 0; i < steps; i++) {
+      const activeClass = i === status ? 'active' : '';
+      const completedClass = i < status ? 'completed' : '';
+      const partialClass = (i === status && isPartial) ? 'partial' : '';
+      
       html += `
-        <div class="mini-step ${i === status ? 'active' : ''} ${i < status ? 'completed' : ''}">
-          <div class="mini-step-dot ${i === status ? 'active' : ''} ${i < status ? 'completed' : ''}"></div>
+        <div class="mini-step ${activeClass} ${completedClass} ${partialClass}">
+          <div class="mini-step-dot ${activeClass} ${completedClass} ${partialClass}"></div>
           <div class="mini-step-label">${labels[i]}</div>
         </div>`;
     }
