@@ -13,6 +13,12 @@ const ROLE_MAP = {
 
 const AuthContext = createContext(null);
 
+const syncRealtimeAuth = (session) => {
+  if (session?.access_token && supabase.realtime?.setAuth) {
+    supabase.realtime.setAuth(session.access_token);
+  }
+};
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,11 +26,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Load existing session (persisted via AsyncStorage)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      syncRealtimeAuth(session);
       setSession(session);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      syncRealtimeAuth(session);
       setSession(session);
     });
 

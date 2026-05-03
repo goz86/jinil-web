@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Alert,
 } from 'react-native';
 import { fmt, orderTotal, C, supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import OrderStepper from '../components/OrderStepper';
 
 const STATUS = {
   new:     { label: '신규',     color: C.blue,    bg: C.blueLight  },
@@ -132,6 +133,21 @@ export default function OrderScreen({ route, navigation }) {
   }, [localOrders]);
 
   // ── Real-time Sync ────────────────────────────────────
+  const idsKey = allIds.join(',');
+  const refreshGroupOrders = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .in('customer_id', allIds)
+      .order('order_date', { ascending: false });
+
+    if (error) {
+      console.warn('Group order refresh error:', error.message);
+      return;
+    }
+    if (data) setLocalOrders(data);
+  }, [idsKey]);
+
   useEffect(() => {
     console.log(`🔌 Subscribing to orders for group: ${customer.name} (ids: ${allIds.join(',')})`);
 
@@ -150,22 +166,30 @@ export default function OrderScreen({ route, navigation }) {
         filter: realtimeFilter,
       }, async () => {
         console.log('🔔 Real-time order update — refreshing all group orders');
-        // Fetch ALL orders for ALL customer_ids in this name-group
-        const { data } = await supabase
-          .from('orders')
-          .select('*')
-          .in('customer_id', allIds)
-          .order('order_date', { ascending: false });
-
-        if (data) setLocalOrders(data);
+        await refreshGroupOrders();
       })
       .subscribe();
 
+    const broadcastChannel = supabase.channel('jinil-sync')
+      .on('broadcast', { event: 'orders_changed' }, async () => {
+        console.log('Order broadcast detected, refreshing group orders...');
+        await refreshGroupOrders();
+      })
+      .on('broadcast', { event: 'data_changed' }, async () => {
+        console.log('Data broadcast detected, refreshing group orders...');
+        await refreshGroupOrders();
+      })
+      .subscribe();
+
+    const timer = setInterval(refreshGroupOrders, 3000);
+
     return () => {
       console.log('📴 Unsubscribing from orders group');
+      clearInterval(timer);
       supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
     };
-  }, [allIds.join(',')]);
+  }, [idsKey, refreshGroupOrders]);
 
   const pending = localOrders.filter(o => o.status !== 'shipped');
   const shipped = localOrders.filter(o => o.status === 'shipped');
@@ -175,6 +199,12 @@ export default function OrderScreen({ route, navigation }) {
       ...prev,
       [`${orderId}_${itemIdx}`]: !prev[`${orderId}_${itemIdx}`],
     }));
+
+  // Determine overall status for the group stepper
+  const groupStatus = localOrders.length === 0 ? 'new' :
+                     localOrders.every(o => o.status === 'shipped') ? 'shipped' : 
+                     localOrders.some(o => o.status === 'pending' || o.status === 'partial') ? 'pending' : 'new';
+  const groupIsPaid = localOrders.length > 0 && localOrders.every(o => !!o.paid);
 
   // Only toggle non-shipped order items
   const toggleAll = () => {
@@ -278,6 +308,9 @@ export default function OrderScreen({ route, navigation }) {
 
       {/* ── Order list ── */}
       <ScrollView contentContainerStyle={styles.scroll}>
+        
+        {/* Pro VIP Stepper (Minimalist) */}
+        <OrderStepper status={groupStatus} isPaid={groupIsPaid} />
 
         {pending.length === 0 && (
           <View style={styles.emptySection}>

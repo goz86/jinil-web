@@ -42,6 +42,44 @@ async function fetchSupplier() {
   return {}; // fallback: empty supplier
 }
 
+let jinilSyncChannel = null;
+let jinilSyncReady = false;
+
+function getJinilSyncChannel() {
+  if (jinilSyncChannel) return jinilSyncChannel;
+  jinilSyncChannel = supabase.channel('jinil-sync', { config: { broadcast: { self: false } } });
+  jinilSyncChannel.subscribe((status) => {
+    jinilSyncReady = status === 'SUBSCRIBED';
+  });
+  return jinilSyncChannel;
+}
+
+function broadcastOrdersChanged(payload = {}) {
+  const channel = getJinilSyncChannel();
+  const message = {
+    ...payload,
+    source: 'mobile',
+    at: new Date().toISOString(),
+  };
+  const send = () => {
+    try {
+      const result = channel.send({
+        type: 'broadcast',
+        event: 'orders_changed',
+        payload: message,
+      });
+      if (result?.catch) result.catch(e => console.warn('Mobile broadcast failed:', e.message));
+    } catch (e) {
+      console.warn('Mobile broadcast failed:', e.message);
+    }
+  };
+  send();
+  if (!jinilSyncReady) {
+    setTimeout(send, 350);
+    setTimeout(send, 1200);
+  }
+}
+
 // ── Message builder ───────────────────────────────────
 function buildMessage({ customer, items, trackingNo, pdfUrl, shipDate }) {
   // Auto-detect carrier: Kyunggi Express for 16 chars, Lotte otherwise
@@ -385,6 +423,7 @@ export default function MessageScreen({ route, navigation }) {
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const shippedDateTime = `${shipDate} ${hh}:${mm}`;
+    const changedOrderIds = [];
 
     if (fullyChecked && fullyChecked.length > 0) {
       for (const orderId of fullyChecked) {
@@ -406,6 +445,7 @@ export default function MessageScreen({ route, navigation }) {
           addr: customer.addr || '',
           tel: customer.tel || '',
         }, q => q.eq('id', orderId));
+        changedOrderIds.push(orderId);
       }
     }
 
@@ -434,8 +474,14 @@ export default function MessageScreen({ route, navigation }) {
           tel: customer.tel || '',
           ...(allNowShipped ? { shipped_date: shippedDateTime, pdf_url: pdfUrl || '' } : {}),
         }, q => q.eq('id', pd.orderId));
+        changedOrderIds.push(pd.orderId);
       }
     }
+    broadcastOrdersChanged({
+      action: 'mobile_ship',
+      ids: [...new Set(changedOrderIds)],
+      tracking: trackingNo || '',
+    });
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 

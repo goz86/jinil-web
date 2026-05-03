@@ -266,9 +266,24 @@ export default function HomeScreen({ navigation }) {
       })
       .subscribe();
 
+    const broadcastChannel = supabase.channel('jinil-sync')
+      .on('broadcast', { event: 'orders_changed' }, () => {
+        console.log('Order broadcast detected, refreshing Home...');
+        loadData();
+      })
+      .on('broadcast', { event: 'data_changed' }, () => {
+        console.log('Data broadcast detected, refreshing Home...');
+        loadData();
+      })
+      .subscribe();
+
+    const timer = setInterval(loadData, 3000);
+
     return () => {
       console.log('📴 Unsubscribing Home sync');
+      clearInterval(timer);
       supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
     };
   }, [loadData]);
 
