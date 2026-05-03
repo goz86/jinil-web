@@ -2798,6 +2798,157 @@
       margin-top: 2px;
     }
 
+    /* ── Order Status Stepper ── */
+    .stepper-container {
+      padding: 24px 10px;
+      background: #fff;
+      border-radius: var(--r-lg);
+      margin-bottom: 20px;
+      border: 1px solid var(--hairline);
+      box-shadow: var(--shadow-sm);
+    }
+    .stepper {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      padding: 0 10px;
+    }
+    .stepper::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      left: 30px;
+      right: 30px;
+      height: 2px;
+      background: #e5e7eb;
+      z-index: 1;
+    }
+    .stepper-progress {
+      position: absolute;
+      top: 10px;
+      left: 30px;
+      height: 2px;
+      background: var(--blue);
+      z-index: 2;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .step {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 60px;
+    }
+    .step-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      margin-bottom: 8px;
+    }
+    .step.active .step-dot {
+      border-color: var(--blue);
+      background: var(--blue);
+      box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+    }
+    .step.completed .step-dot {
+      border-color: var(--blue);
+      background: var(--blue);
+    }
+    .step.active .step-dot::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      animation: pulse 2s infinite;
+    }
+    .step-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+    .step.active .step-label, .step.completed .step-label {
+      color: var(--blue);
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ── Mini Stepper (List View) ── */
+    .mini-stepper {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 8px;
+      width: 140px;
+      position: relative;
+    }
+    .mini-stepper::before {
+      content: "";
+      position: absolute;
+      top: 3.5px;
+      left: 12px;
+      right: 12px;
+      height: 2px;
+      background: #e5e7eb;
+      z-index: 1;
+    }
+    .mini-stepper-progress {
+      position: absolute;
+      top: 3.5px;
+      left: 12px;
+      height: 2px;
+      background: var(--blue);
+      z-index: 2;
+      transition: width 0.4s;
+      width: calc((100% - 24px) * var(--p) / 100);
+    }
+    .mini-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 24px;
+      position: relative;
+      z-index: 3;
+    }
+    .mini-step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      transition: all 0.3s;
+      border: 1.5px solid #fff;
+    }
+    .mini-step-dot.active {
+      background: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+      transform: scale(1.2);
+    }
+    .mini-step-dot.completed {
+      background: var(--blue);
+    }
+    .mini-step-label {
+      font-size: 8px;
+      font-weight: 700;
+      color: #a2aab8;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+    .mini-step.active .mini-step-label {
+      color: var(--blue);
+    }
+
     /* ── Amount privacy (staff role) ── */
     .amount-blur {
       filter: blur(4px);
@@ -4193,8 +4344,15 @@
   // Authorization dùng user JWT khi đã đăng nhập → RLS nhận diện được user
   let _jwtToken = null; // null = chưa login → dùng anon key
 
+  function syncRealtimeAuth() {
+    if (_jwtToken && _supa.realtime?.setAuth) {
+      _supa.realtime.setAuth(_jwtToken);
+    }
+  }
+
   _supa.auth.onAuthStateChange((event, session) => {
     _jwtToken = session?.access_token || null;
+    syncRealtimeAuth();
     // Sau khi đăng nhập xong, JWT mới có → reload supplier info từ cloud
     if (event === 'SIGNED_IN' && _jwtToken) {
       loadSupplierInfoFromCloud().catch(() => { });
@@ -4264,12 +4422,13 @@
   }
 
   async function saveSettingValue(key, value) {
-    const res = await fetch(`${SUPA_URL}/rest/v1/settings`, {
+    const res = await fetch(`${SUPA_URL}/rest/v1/settings?on_conflict=key`, {
       method: 'POST',
-      headers: getHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
+      headers: getHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
       body: JSON.stringify({ key, value })
     });
     if (!res.ok) throw new Error(await res.text());
+    broadcastChange('settings_changed', { key });
   }
 
   /* ════════════════════════════════════════════
@@ -4291,6 +4450,9 @@
     paymentRequests: [],
     paymentRequestCount: 0,
     paymentRequestTimer: null,
+    realtimeChannel: null,
+    realtimeReady: false,
+    fullRefreshTimer: null,
     pinEnabled: false,
     adminPin: '',
     pinVerified: sessionStorage.getItem('pinVerified') === 'true',
@@ -4319,7 +4481,34 @@
 
   function initRealtime() {
     console.log('🔌 Initializing Real-time Sync...');
-    _supa.channel('db-changes')
+    syncRealtimeAuth();
+    UI.realtimeReady = false;
+    if (UI.realtimeChannel) {
+      _supa.removeChannel(UI.realtimeChannel);
+      UI.realtimeChannel = null;
+    }
+    const channel = _supa.channel('jinil-sync', { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'orders_changed' }, payload => {
+        console.log('📣 Broadcast orders_changed:', payload);
+        refreshOrdersOnly();
+      })
+      .on('broadcast', { event: 'data_changed' }, payload => {
+        console.log('📣 Broadcast data_changed:', payload);
+        refreshAllLight();
+      })
+      .on('broadcast', { event: 'settings_changed' }, payload => {
+        console.log('📣 Broadcast settings_changed:', payload);
+        handleSettingsBroadcast(payload);
+      })
+      .on('broadcast', { event: 'payment_requests_changed' }, payload => {
+        console.log('📣 Broadcast payment_requests_changed:', payload);
+        handlePaymentRequestBroadcast(payload);
+      })
+      .on('broadcast', { event: 'activity_changed' }, () => {
+        if (document.getElementById('modal-actlog')?.classList.contains('open')) {
+          openActivityLog();
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
         console.log('🔔 Realtime Change (Orders):', payload.eventType);
         // Pulse the DB indicator
@@ -4362,11 +4551,7 @@
         loadAll().then(renderAll);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
-        if (payload.new && payload.new.key === 'payment_requests') {
-          if (UI.currentUser?.role === 'admin') {
-            loadPaymentRequests({ notify: true }).catch(e => console.warn('payment request realtime failed:', e.message));
-          }
-        }
+        handleSettingsChange(payload.new?.key || payload.old?.key, payload.new?.value, true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, payload => {
         console.log('🔔 Realtime Change (Expenses):', payload.eventType);
@@ -4381,9 +4566,117 @@
         }
         renderExpenses(); renderDashboard();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
+        console.log('🔔 Realtime Change (Products):', payload.eventType);
+        if (payload.eventType === 'UPDATE' && payload.new?.id) {
+          const idx = DB.products.findIndex(p => p.id == payload.new.id);
+          if (idx !== -1) DB.products[idx] = { ...DB.products[idx], ...payload.new };
+          else DB.products.push(payload.new);
+        } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+          DB.products = DB.products.filter(p => p.id != payload.old.id);
+        } else if (payload.eventType === 'INSERT' && payload.new?.id) {
+          if (!DB.products.find(p => p.id == payload.new.id)) DB.products.push(payload.new);
+        }
+        renderProducts();
+        refreshProductAutocomplete();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
+        if (document.getElementById('modal-actlog')?.classList.contains('open')) {
+          openActivityLog();
+        }
+      })
       .subscribe((status) => {
+        UI.realtimeReady = status === 'SUBSCRIBED';
         console.log('📡 Realtime status:', status);
       });
+    UI.realtimeChannel = channel;
+  }
+
+  function broadcastChange(event, payload = {}) {
+    try {
+      if (!UI.realtimeChannel?.send) return;
+      const message = {
+        ...payload,
+        by: UI.currentUser?.email || UI.currentUser?.username || 'unknown',
+        at: new Date().toISOString(),
+      };
+      const send = () => {
+        if (!UI.realtimeChannel?.send) return;
+        try {
+          const result = UI.realtimeChannel.send({
+            type: 'broadcast',
+            event,
+            payload: message,
+          });
+          if (result?.catch) result.catch(e => console.warn('broadcast send failed:', e.message));
+        } catch (e) {
+          console.warn('broadcast send failed:', e.message);
+        }
+      };
+      send();
+      if (!UI.realtimeReady) {
+        setTimeout(send, 350);
+        setTimeout(send, 1200);
+      }
+    } catch (e) {
+      console.warn('broadcastChange failed:', e.message);
+    }
+  }
+
+  function applySupplierSetting(d) {
+    if (!d) return;
+    SUPPLIER_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && d[id] !== undefined) el.value = d[id];
+    });
+    localStorage.setItem('supplierInfo', JSON.stringify(d));
+    const invPreview = document.getElementById('inv-preview');
+    if (invPreview && invPreview.closest('.page')?.classList.contains('active')) {
+      buildInvoicePreview();
+    }
+  }
+
+  function applyAdminPinSetting(setting = {}) {
+    UI.pinEnabled = !!setting.enabled;
+    UI.adminPin = setting.pin || '';
+    const sw = document.getElementById('pin-switch');
+    if (sw) sw.checked = UI.pinEnabled;
+  }
+
+  function handleSettingsChange(key, value, notify = false) {
+    if (!key) return;
+    if (key === 'payment_requests') {
+      if (UI.currentUser?.role === 'admin') {
+        UI.paymentRequests = Array.isArray(value) ? value : [];
+        renderPaymentRequestButton(notify);
+        if (document.getElementById('modal-pay-requests')?.classList.contains('open')) {
+          renderPaymentRequests();
+        }
+        loadPaymentRequests({ notify }).catch(e => console.warn('payment request realtime failed:', e.message));
+      }
+      return;
+    }
+    if (key === USER_PROFILES_KEY) {
+      loadCurrentUserProfile().catch(() => { });
+      return;
+    }
+    if (key === 'supplier') {
+      if (value) applySupplierSetting(value);
+      else loadSupplierInfoFromCloud().catch(() => { });
+      return;
+    }
+    if (key === 'admin_pin') {
+      applyAdminPinSetting(value || {});
+    }
+  }
+
+  function handleSettingsBroadcast(message) {
+    const data = message?.payload || message || {};
+    if (data.key) {
+      loadSettingValue(data.key, null)
+        .then(value => handleSettingsChange(data.key, value, true))
+        .catch(() => { });
+    }
   }
 
   async function checkStaleOrders() {
@@ -4404,6 +4697,7 @@
         } catch (err) { console.error('Update stale error:', err); }
       }
       renderAll();
+      broadcastChange('orders_changed', { action: 'auto_pending', count: staleOrders.length });
     }
   }
 
@@ -4443,6 +4737,7 @@
           else { showToast('⚠ RLS 수동 수정 필요 — ☁ 동기화 버튼 클릭', 'error'); }
         }
       }
+      if (res.ok) broadcastChange('settings_changed', { key: 'supplier' });
       // success: no toast needed here (toggleSupplierLock shows its own toast)
     } catch (e) {
       console.warn('Supplier cloud save failed:', e.message);
@@ -4466,6 +4761,45 @@
       });
       return r.ok;
     } catch (e) {
+      return false;
+    }
+  }
+
+  async function ensureRealtimePublication() {
+    const sql = `
+      DO $$
+      DECLARE
+        tbl TEXT;
+      BEGIN
+        IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+          FOREACH tbl IN ARRAY ARRAY['customers','orders','settings','expenses','products','activity_logs'] LOOP
+            IF EXISTS (
+              SELECT 1 FROM information_schema.tables
+              WHERE table_schema = 'public' AND table_name = tbl
+            ) THEN
+              EXECUTE format('ALTER TABLE public.%I REPLICA IDENTITY FULL', tbl);
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_publication_tables
+                WHERE pubname = 'supabase_realtime'
+                  AND schemaname = 'public'
+                  AND tablename = tbl
+              ) THEN
+                EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', tbl);
+              END IF;
+            END IF;
+          END LOOP;
+        END IF;
+      END $$;
+    `;
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/rpc/exec_sql`, {
+        method: 'POST', headers: getHeaders(),
+        body: JSON.stringify({ sql })
+      });
+      if (!r.ok) console.warn('Realtime publication check failed:', await r.text());
+      return r.ok;
+    } catch (e) {
+      console.warn('Realtime publication check failed:', e.message);
       return false;
     }
   }
@@ -4496,7 +4830,11 @@
           });
           await fixSettingsRLS();
           res = await tryInsert();
-          if (res.ok) { showToast('☁ 동기화 완료 ✓', 'success'); return; }
+          if (res.ok) {
+            broadcastChange('settings_changed', { key: 'supplier' });
+            showToast('☁ 동기화 완료 ✓', 'success');
+            return;
+          }
         }
 
         // Case 2: RLS blocking (42501) → disable RLS then retry
@@ -4506,6 +4844,7 @@
           if (fixed) {
             res = await tryInsert();
             if (res.ok) {
+              broadcastChange('settings_changed', { key: 'supplier' });
               showToast('☁ 동기화 완료 ✓ — 앱을 재시작하면 반영됩니다', 'success');
               return;
             }
@@ -4518,6 +4857,7 @@
 
         showToast('동기화 실패: ' + err.substring(0, 100), 'error');
       } else {
+        broadcastChange('settings_changed', { key: 'supplier' });
         showToast('☁ 앱과 동기화 완료 ✓ — 앱을 재시작하면 반영됩니다', 'success');
       }
     } catch (e) {
@@ -4841,6 +5181,7 @@
     } catch (e) {
       console.warn('settings table check failed:', e.message);
     }
+    await ensureRealtimePublication();
   }
 
   const SCHEMA_SQL = `
@@ -5627,10 +5968,60 @@ END $$;
   /* ════════════════════════════════════════════
      NICKNAME
      ════════════════════════════════════════════ */
+  const USER_PROFILES_KEY = 'user_profiles';
+
+  function nicknameLocalKey(email) {
+    return 'nickname_' + (email || '');
+  }
+
+  function applyNicknameToUI(nick) {
+    const u = UI.currentUser;
+    if (!u) return;
+    u.nickname = nick || '';
+    if (u.email) localStorage.setItem(nicknameLocalKey(u.email), u.nickname);
+    const displayName = u.nickname || u.username || u.email?.split('@')[0] || '—';
+    const su = document.getElementById('sidebar-username');
+    if (su) su.textContent = displayName;
+  }
+
+  async function loadCurrentUserProfile() {
+    const u = UI.currentUser;
+    if (!u?.email) return;
+    const localNick = localStorage.getItem(nicknameLocalKey(u.email)) || '';
+    try {
+      const profiles = await loadSettingValue(USER_PROFILES_KEY, {});
+      const cloudNick = profiles?.[u.email]?.nickname || '';
+      const nick = cloudNick || localNick;
+      applyNicknameToUI(nick);
+      if (localNick && !cloudNick) {
+        await saveCurrentUserProfile(localNick, { silent: true });
+      }
+    } catch (e) {
+      applyNicknameToUI(localNick);
+    }
+  }
+
+  async function saveCurrentUserProfile(nick, { silent = false } = {}) {
+    const u = UI.currentUser;
+    if (!u?.email) throw new Error('No current user');
+    const profiles = await loadSettingValue(USER_PROFILES_KEY, {});
+    profiles[u.email] = {
+      ...(profiles[u.email] || {}),
+      email: u.email,
+      username: u.username || '',
+      role: u.role || 'staff',
+      nickname: nick || '',
+      updatedAt: new Date().toISOString(),
+    };
+    await saveSettingValue(USER_PROFILES_KEY, profiles);
+    applyNicknameToUI(nick);
+    if (!silent) logAction('edit', 'profile', null, `닉네임 변경: ${nick || '(없음)'}`);
+  }
+
   function openNicknameModal() {
     const u = UI.currentUser;
     if (!u) return;
-    const nick = localStorage.getItem('nickname_' + u.email) || '';
+    const nick = u.nickname || localStorage.getItem(nicknameLocalKey(u.email)) || '';
     const inp = document.getElementById('nick-input');
     if (inp) inp.value = nick;
     const al = document.getElementById('nick-avatar-letter');
@@ -5643,17 +6034,19 @@ END $$;
     setTimeout(() => document.getElementById('nick-input')?.focus(), 100);
   }
 
-  function saveNickname() {
+  async function saveNickname() {
     const u = UI.currentUser; if (!u) return;
     const nick = (document.getElementById('nick-input')?.value || '').trim();
-    localStorage.setItem('nickname_' + u.email, nick);
-    u.nickname = nick;
-    const displayName = nick || u.username || u.email?.split('@')[0] || '—';
-    const su = document.getElementById('sidebar-username');
-    if (su) su.textContent = displayName;
-    closeModal('modal-nickname');
-    showToast('닉네임이 저장되었습니다 ✓');
-    logAction('edit', 'profile', null, `닉네임 변경: ${nick || '(없음)'}`);
+    showLoading(true);
+    try {
+      await saveCurrentUserProfile(nick);
+      closeModal('modal-nickname');
+      showToast('닉네임이 저장되었습니다 ✓');
+    } catch (e) {
+      showToast('닉네임 저장 실패: ' + (e.message || '').slice(0, 80), 'error');
+    } finally {
+      showLoading(false);
+    }
   }
 
   /* ════════════════════════════════════════════
@@ -5682,7 +6075,9 @@ END $$;
       entity,
       entity_id: entityId ? String(entityId) : null,
       detail,
-    }).catch(() => { });
+    })
+      .then(() => broadcastChange('activity_changed', { action: type, entity, entityId }))
+      .catch(() => { });
   }
 
   async function openActivityLog() {
@@ -6014,9 +6409,10 @@ END $$;
             <div class="order-mini-goods">${(o.items || []).map(i => i.name + '×' + i.qty).join(' / ')}</div>
             ${o.tracking ? `<div style="font-size:10px;color:var(--ink-muted);font-family:var(--mono)">송장 ${o.tracking}</div>` : ''}
           </div>
-          <div class="order-mini-right">
-            <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
-            <div style="margin-top:4px">${orderStatusBadge(o)}</div>
+            <div style="margin-top:4px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              ${orderStatusBadge(o)}
+              ${renderMiniStepper(o)}
+            </div>
           </div>
         </div>`;
     }).join('')}
@@ -6081,7 +6477,12 @@ END $$;
       <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${orderItems(o).map(i => i.name).join(', ')}</td>
       <td class="td-mono" style="font-size:11px;color:var(--ink-muted)">${shipmentTracking(o) || '—'}</td>
       <td class="td-amount">${fmt(orderTotal(o))}</td>
-      <td>${orderStatusBadge(o)} ${paidBadgeToggle(o)}</td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div>${orderStatusBadge(o)} ${paidBadgeToggle(o)}</div>
+          ${renderMiniStepper(o)}
+        </div>
+      </td>
       <td class="td-mono" style="white-space:nowrap">
         <div style="font-size:11px">${(shipDt || '').slice(0, 10) || '—'}</div>
         <div style="font-size:10px;color:var(--ink-muted)">${(shipDt || '').length > 10 ? (shipDt || '').slice(11, 16) : ''}</div>
@@ -6368,6 +6769,7 @@ END $$;
         try {
           await supa('DELETE', 'orders', null, `?id=eq.${id}`);
           DB.orders = DB.orders.filter(o => o.id != id);
+          broadcastChange('orders_changed', { action: 'delete', id });
           showToast('주문 삭제 완료');
           renderAll();
         } catch (e) {
@@ -6453,11 +6855,14 @@ END $$;
         await supaResilient('PATCH', 'orders', order, `?id=eq.${UI.editOrderId}`, OPTIONAL_ORDER_COLS);
         const idx = DB.orders.findIndex(o => o.id == UI.editOrderId);
         if (idx !== -1) DB.orders[idx] = { ...DB.orders[idx], ...order };
+        broadcastChange('orders_changed', { action: 'update', id: UI.editOrderId });
         showToast('주문 수정 완료 ✓');
         logAction('edit', 'order', UI.editOrderId, `주문 수정 — ${c?.name || '—'} (${itms})`);
       } else {
         const saved = await supaResilient('POST', 'orders', order, '', OPTIONAL_ORDER_COLS);
-        DB.orders.unshift(Array.isArray(saved) ? saved[0] : saved);
+        const savedOrder = Array.isArray(saved) ? saved[0] : saved;
+        DB.orders.unshift(savedOrder);
+        broadcastChange('orders_changed', { action: 'insert', id: savedOrder?.id || null });
         showToast('주문 저장 완료 ✓');
         logAction('create', 'order', null, `신규 주문 — ${c?.name || '—'} (${itms})`);
       }
@@ -6476,6 +6881,59 @@ END $$;
     showLoading(false);
   }
 
+  function getStepperStatus(o) {
+    if (!o) return 0;
+    if (o.paid && o.status === 'shipped') return 4; // 결제완료
+    if (o.status === 'shipped' && !o.paid) return 3; // 미결제
+    if (isPartialOrder(o) || o.status === 'shipped') return 2; // 출고완료
+    if (o.status === 'pending') return 1; // 출고대기
+    return 0; // 신규
+  }
+
+  function renderStepper(o) {
+    const status = getStepperStatus(o);
+    const labels = ['신규', '출고대기', '출고완료', '미결제', '결제완료'];
+    const progressWidth = (status / (labels.length - 1)) * 100;
+
+    let html = `
+      <div class="stepper-container">
+        <div class="stepper">
+          <div class="stepper-progress" style="width: ${progressWidth}%"></div>
+          ${labels.map((label, i) => `
+            <div class="step ${i === status ? 'active' : ''} ${i < status ? 'completed' : ''}">
+              <div class="step-dot"></div>
+              <div class="step-label">${label}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    return html;
+  }
+
+  function renderMiniStepper(o) {
+    const status = getStepperStatus(o);
+    const steps = 5;
+    const labels = ['신규', '대기', '출고', '미납', '완료'];
+    const progressWidth = (status / (steps - 1)) * 100;
+    
+    let html = `<div class="mini-stepper" title="상태: ${['신규', '출고대기', '출고완료', '미결제', '결제완료'][status]}">`;
+    
+    // Background Progress
+    html += `<div class="mini-stepper-progress" style="--p: ${progressWidth}"></div>`;
+    
+    for (let i = 0; i < steps; i++) {
+      html += `
+        <div class="mini-step ${i === status ? 'active' : ''} ${i < status ? 'completed' : ''}">
+          <div class="mini-step-dot ${i === status ? 'active' : ''} ${i < status ? 'completed' : ''}"></div>
+          <div class="mini-step-label">${labels[i]}</div>
+        </div>`;
+    }
+    
+    html += `</div>`;
+    return html;
+  }
+
   /* ════════════════════════════════════════════
      ORDER DETAIL
      ════════════════════════════════════════════ */
@@ -6488,6 +6946,7 @@ END $$;
     const detailImg = shipmentImage(o);
     document.getElementById('detail-title').innerHTML = `<span style="color:${col};margin-right:8px">●</span>${c?.name || '—'} 주문 상세`;
     document.getElementById('detail-body').innerHTML = `
+    ${renderStepper(o)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">거래처</div><div style="font-weight:600">${c?.name || '—'}</div></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주문일</div><div class="td-mono">${o.order_date}</div></div>
@@ -6566,6 +7025,7 @@ END $$;
       );
       showToast('출고 처리 완료 ✓');
 
+      broadcastChange('orders_changed', { action: 'ship', id: o.id });
       const msg = getShippingMessage(o);
       sendNotification('🚚 출고 완료', `안녕하세요, ${c?.name || '—'} 고객님. 금일 주문 상품이 출고되었습니다.`, `ship-${o.id}`);
 
@@ -6715,6 +7175,7 @@ ${pdfLink}
         { paid: newPaid, paid_at: o.paid_at },
         `?id=eq.${orderId}`
       );
+      broadcastChange('orders_changed', { action: newPaid ? 'paid' : 'unpaid', id: orderId });
       const c = getCust(o.customer_id);
       logAction(newPaid ? 'pay' : 'unpay', 'order', orderId,
         `${newPaid ? '결제 완료' : '결제 취소'} — ${c?.name || '—'} ${o.order_date}`);
@@ -6771,6 +7232,24 @@ ${pdfLink}
     UI.paymentRequestCount = count;
   }
 
+  function handlePaymentRequestBroadcast(message) {
+    if (UI.currentUser?.role !== 'admin') return;
+    const data = message?.payload || message || {};
+    if (data.action === 'request' && data.request?.id) {
+      const exists = (UI.paymentRequests || []).some(r => r.id === data.request.id);
+      if (!exists) {
+        UI.paymentRequests = [data.request, ...(UI.paymentRequests || [])];
+        renderPaymentRequestButton(true);
+        if (document.getElementById('modal-pay-requests')?.classList.contains('open')) {
+          renderPaymentRequests();
+        }
+      }
+    }
+    loadPaymentRequests({ notify: data.action === 'request' }).catch(e =>
+      console.warn('payment request broadcast sync failed:', e.message)
+    );
+  }
+
   function stopPaymentRequestPolling() {
     if (UI.paymentRequestTimer) clearInterval(UI.paymentRequestTimer);
     UI.paymentRequestTimer = null;
@@ -6793,7 +7272,7 @@ ${pdfLink}
       if (!document.hidden) {
         loadPaymentRequests({ notify: true }).catch(e => console.warn('payment request poll failed:', e.message));
       }
-    }, 5000);
+    }, 2000);
   }
 
   async function requestPaymentApproval(orderId) {
@@ -6834,7 +7313,7 @@ ${pdfLink}
             return;
           }
 
-          UI.paymentRequests.unshift({
+          const request = {
             id: `${Date.now()}-${orderId}`,
             orderId,
             customerId: o.customer_id,
@@ -6844,9 +7323,11 @@ ${pdfLink}
             requestedBy: paymentRequesterName(),
             requestedAt: new Date().toISOString(),
             status: 'pending',
-          });
+          };
+          UI.paymentRequests.unshift(request);
 
           await savePaymentRequests();
+          broadcastChange('payment_requests_changed', { action: 'request', request });
           showToast('사장님께 결제 승인 요청을 보냈습니다 ✓', 'success');
           logAction('request_pay', 'order', orderId, `결제 승인 요청 — ${c?.name || '—'} (${paymentRequesterName()})`);
         } catch (e) {
@@ -6904,6 +7385,8 @@ ${pdfLink}
     req.reviewedBy = paymentRequesterName();
     req.reviewedAt = new Date().toISOString();
     await savePaymentRequests();
+    broadcastChange('payment_requests_changed', { action: 'approved', requestId });
+    broadcastChange('orders_changed', { action: 'paid', id: req.orderId });
     renderPaymentRequests();
     showToast('결제 승인 완료 ✓', 'success');
   }
@@ -6915,6 +7398,7 @@ ${pdfLink}
     req.reviewedBy = paymentRequesterName();
     req.reviewedAt = new Date().toISOString();
     await savePaymentRequests();
+    broadcastChange('payment_requests_changed', { action: 'rejected', requestId });
     renderPaymentRequests();
     showToast('요청을 거절했습니다', 'info');
   }
@@ -7195,11 +7679,13 @@ ${pdfLink}
           await supa('DELETE', 'customers', null, `?id=eq.${id}`);
           DB.orders = DB.orders.filter(o => o.customer_id != id);
           DB.customers = DB.customers.filter(c => c.id != id);
+          broadcastChange('data_changed', { table: 'customers', action: 'delete', id });
           showToast(`"${c.name}" 삭제 완료`);
           logAction('delete', 'customer', id, `거래처 삭제 — ${c.name}`);
         } catch (e) {
           DB.orders = DB.orders.filter(o => o.customer_id != id);
           DB.customers = DB.customers.filter(c => c.id != id);
+          broadcastChange('data_changed', { table: 'customers', action: 'delete_local', id });
           showToast('삭제됨 (오프라인)', 'info');
         }
         showLoading(false);
@@ -7265,6 +7751,7 @@ ${pdfLink}
         showToast('거래처 저장 실패: ' + (e.message || '').slice(0, 80), 'error');
         return;
       }
+      broadcastChange('data_changed', { table: 'customers', action: 'update', id });
       UI.editCustId = null;
     } else {
       // ── INSERT new customer ─────────────────────
@@ -7274,6 +7761,7 @@ ${pdfLink}
         resultCust = Array.isArray(saved) ? saved[0] : saved;
         if (!resultCust?.id) throw new Error('Customer was not created');
         DB.customers.push(resultCust);
+        broadcastChange('data_changed', { table: 'customers', action: 'insert', id: resultCust.id });
         showToast('거래처 추가 완료 ✓');
         logAction('create', 'customer', null, `거래처 추가 — ${name}`);
       } catch (e) {
@@ -7367,10 +7855,13 @@ ${pdfLink}
         await supa('PATCH', 'products', data, `?id=eq.${_editProductId}`);
         const idx = DB.products.findIndex(p => p.id == _editProductId);
         if (idx !== -1) DB.products[idx] = { ...DB.products[idx], ...data };
+        broadcastChange('data_changed', { table: 'products', action: 'update', id: _editProductId });
         showToast('제품 수정 완료 ✓');
       } else {
         const saved = await supa('POST', 'products', data);
-        DB.products.push(Array.isArray(saved) ? saved[0] : saved);
+        const savedProduct = Array.isArray(saved) ? saved[0] : saved;
+        DB.products.push(savedProduct);
+        broadcastChange('data_changed', { table: 'products', action: 'insert', id: savedProduct?.id || null });
         showToast('제품 추가 완료 ✓');
       }
     } catch (e) {
@@ -7387,6 +7878,7 @@ ${pdfLink}
     try {
       await supa('DELETE', 'products', null, `?id=eq.${id}`);
       DB.products = DB.products.filter(p => p.id != id);
+      broadcastChange('data_changed', { table: 'products', action: 'delete', id });
       showToast('삭제 완료');
     } catch (e) { showToast('삭제 실패', 'error'); }
     renderProducts();
@@ -7515,11 +8007,14 @@ ${pdfLink}
         await supaResilient('PATCH', 'expenses', exp, `?id=eq.${UI.editExpenseId}`, EXP_OPTIONAL);
         const idx = DB.expenses.findIndex(e => e.id == UI.editExpenseId);
         if (idx !== -1) DB.expenses[idx] = { ...DB.expenses[idx], ...exp };
+        broadcastChange('data_changed', { table: 'expenses', action: 'update', id: UI.editExpenseId });
         showToast('수정 완료 ✓');
         logAction('edit', 'expense', UI.editExpenseId, `지출 수정 — ${desc} (${byUser})`);
       } else {
         const saved = await supaResilient('POST', 'expenses', exp, '', EXP_OPTIONAL);
-        DB.expenses.unshift(Array.isArray(saved) ? saved[0] : saved);
+        const savedExpense = Array.isArray(saved) ? saved[0] : saved;
+        DB.expenses.unshift(savedExpense);
+        broadcastChange('data_changed', { table: 'expenses', action: 'insert', id: savedExpense?.id || null });
         showToast('지출 등록 완료 ✓');
         logAction('create', 'expense', null, `지출 등록 — ${desc} ${fmt(amount)}원 (${byUser})`);
       }
@@ -7589,6 +8084,7 @@ ${pdfLink}
     renderExpenses(); renderDashboard();
     try {
       await supa('PATCH', 'expenses', { paid: newPaid, paid_at: e.paid_at }, `?id=eq.${id}`);
+      broadcastChange('data_changed', { table: 'expenses', action: newPaid ? 'paid' : 'unpaid', id });
       showToast(newPaid ? '결제 완료 처리 ✓' : '미지급으로 변경됨', newPaid ? 'success' : 'info');
     } catch (err) {
       e.paid = prev; renderExpenses();
@@ -7605,6 +8101,7 @@ ${pdfLink}
       onOk: async () => {
         try { await supa('DELETE', 'expenses', null, `?id=eq.${id}`); } catch (_) {}
         DB.expenses = DB.expenses.filter(x => x.id != id);
+        broadcastChange('data_changed', { table: 'expenses', action: 'delete', id });
         renderExpenses(); renderDashboard();
         showToast('삭제 완료');
       }
@@ -8413,10 +8910,43 @@ ${pdfLink}
   /* ════════════════════════════════════════════
      REALTIME — Auto-refresh when app updates orders
      ════════════════════════════════════════════ */
+  function allDataSignature() {
+    return JSON.stringify({
+      customers: (DB.customers || []).map(c => [c.id, c.name, c.rep, c.contact, c.tel, c.addr, c.biz_no, c.kakao, c.notes]),
+      orders: ordersSignature(DB.orders),
+      expenses: (DB.expenses || []).map(e => [e.id, e.date, e.amount, e.paid, e.paid_at, e.updated_at]),
+      products: (DB.products || []).map(p => [p.id, p.name, p.spec, p.price, p.memo]),
+    });
+  }
+
+  async function refreshAllLight() {
+    if (document.hidden || UI.fullRefreshing) return;
+    UI.fullRefreshing = true;
+    const before = UI.dataSignature || allDataSignature();
+    try {
+      await loadAll();
+      const next = allDataSignature();
+      if (next !== before) {
+        UI.dataSignature = next;
+        UI.ordersSignature = ordersSignature(DB.orders);
+        renderAll();
+        const dot = document.getElementById('db-dot');
+        if (dot) { dot.style.transform = 'scale(1.4)'; setTimeout(() => dot.style.transform = '', 400); }
+      }
+    } catch (e) {
+      console.warn('full auto-refresh failed:', e.message);
+    } finally {
+      UI.fullRefreshing = false;
+    }
+  }
+
   function startAutoRefresh() {
     UI.ordersSignature = ordersSignature(DB.orders);
+    UI.dataSignature = allDataSignature();
     if (UI.orderRefreshTimer) clearInterval(UI.orderRefreshTimer);
-    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 8000);
+    if (UI.fullRefreshTimer) clearInterval(UI.fullRefreshTimer);
+    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 2000);
+    UI.fullRefreshTimer = setInterval(refreshAllLight, 8000);
     startPaymentRequestPolling();
 
     // Realtime WebSocket이 꺼져 있어도 위의 lightweight polling으로 모바일 출고 변경을 따라잡음
@@ -8507,7 +9037,7 @@ ${pdfLink}
 
   function applyUserRole(email, username) {
     const role = ROLE_MAP[email] || 'staff';
-    const nickname = localStorage.getItem('nickname_' + (email || username)) || '';
+    const nickname = localStorage.getItem(nicknameLocalKey(email || username)) || '';
     const displayName = nickname || username || email?.split('@')[0] || '—';
     const roleLabel = role === 'admin' ? '관리자' : '직원';
 
@@ -8542,6 +9072,7 @@ ${pdfLink}
     }
 
     requestNotifPermission();
+    loadCurrentUserProfile().catch(() => { });
   }
 
   async function checkLogin() {
@@ -8552,11 +9083,15 @@ ${pdfLink}
       if (session) {
         // ⚡ Set JWT FIRST — trước khi bất kỳ DB call nào (quan trọng cho RLS)
         _jwtToken = session.access_token;
+        syncRealtimeAuth();
         const email = session.user.email;
         const username = Object.entries(USER_EMAIL_MAP).find(([, v]) => v === email)?.[0] || email.split('@')[0];
         applyUserRole(email, username);
         // overlay đang ẩn → load data ngay (JWT đã sẵn sàng)
-        initDB().then(() => startAutoRefresh());
+        initDB().then(() => {
+          startAutoRefresh();
+          loadCurrentUserProfile().catch(() => { });
+        });
         return;
       }
     } catch (e) { console.warn('Auth check failed:', e.message); }
@@ -8589,11 +9124,15 @@ ${pdfLink}
       } else {
         // ⚡ Set JWT FIRST — trước khi bất kỳ DB call nào (quan trọng cho RLS)
         _jwtToken = data.session?.access_token || null;
+        syncRealtimeAuth();
         errEl.style.display = 'none';
         applyUserRole(email, username);
         hideLoginOverlay();
         logAction('login', 'system', null, `로그인`);
-        initDB().then(() => startAutoRefresh());
+        initDB().then(() => {
+          startAutoRefresh();
+          loadCurrentUserProfile().catch(() => { });
+        });
       }
     } catch (e) {
       errEl.textContent = '네트워크 오류: ' + e.message;
@@ -8619,6 +9158,15 @@ ${pdfLink}
           clearInterval(UI.orderRefreshTimer);
           UI.orderRefreshTimer = null;
         }
+        if (UI.fullRefreshTimer) {
+          clearInterval(UI.fullRefreshTimer);
+          UI.fullRefreshTimer = null;
+        }
+        if (UI.realtimeChannel) {
+          _supa.removeChannel(UI.realtimeChannel);
+          UI.realtimeChannel = null;
+        }
+        UI.realtimeReady = false;
         UI.currentUser = null;
         UI.privacyMode = false;
         stopPaymentRequestPolling();
