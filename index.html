@@ -2770,6 +2770,7 @@
       cursor: pointer;
       transition: all .15s;
       font-family: var(--font);
+      white-space: nowrap;
     }
 
     .chart-mode-tab:hover {
@@ -3174,6 +3175,11 @@
       /* ── Tabs ── */
       .tab { font-size: 11px; padding: 6px 6px; white-space: nowrap; }
       .tabs { gap: 2px; }
+
+      /* ── Chart header: wrap tabs to 2nd row on mobile ── */
+      .db-chart-card { padding: 12px 14px !important; }
+      .chart-mode-tabs { gap: 3px; }
+      .chart-mode-tab { padding: 3px 9px !important; }
 
       /* ── Debt customer header: wrap buttons to 2nd row ── */
       .debt-cust-hd { flex-wrap: wrap; }
