@@ -4591,7 +4591,7 @@
   /* ════════════════════════════════════════════
      STATE
      ════════════════════════════════════════════ */
-  let DB = { customers: [], orders: [], expenses: [], products: [] };
+  let DB = { customers: [], orders: [], expenses: [], products: [], notifications: [] };
   let UI = {
     orderFilter: 'all',
     calYear: new Date().getFullYear(),
@@ -4748,11 +4748,43 @@
           openActivityLog();
         }
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+        const row = payload.new;
+        if (!row) return;
+        // Only admins receive staff notifications
+        if (UI.currentUser?.role !== 'admin') return;
+        // Add to local cache
+        DB.notifications = [row, ...DB.notifications];
+        renderPaymentRequestButton(false);
+        // Show toast alert
+        const typeLabel = row.type === 'order_created' ? '📝 신규 주문' : row.type === 'order_shipped' ? '🚚 출고 처리' : '📦 부분 출고';
+        showToast(`${typeLabel} — ${row.customer_name || '—'} · ${row.actor}`, 'info');
+        // If notification panel is open, refresh it
+        if (document.getElementById('modal-ship-notifications')?.classList.contains('open')) {
+          renderShipmentNotifications();
+        }
+      })
       .subscribe((status) => {
         UI.realtimeReady = status === 'SUBSCRIBED';
         console.log('📡 Realtime status:', status);
       });
     UI.realtimeChannel = channel;
+  }
+
+  // ── Staff → Admin notification ────────────────────────
+  // Inserts a row into `notifications` table when staff performs actions.
+  // Real-time subscription above delivers it to admin immediately.
+  function saveStaffNotification(type, orderId, customerName, itemsText) {
+    if (UI.currentUser?.role !== 'staff') return; // only staff triggers admin notifications
+    const actor = UI.currentUser?.nickname || UI.currentUser?.username || '직원';
+    supa('POST', 'notifications', {
+      type,
+      order_id: orderId || null,
+      actor,
+      actor_role: 'staff',
+      customer_name: customerName || '',
+      items_text: itemsText || '',
+    }).catch(e => console.warn('saveStaffNotification failed:', e.message));
   }
 
   function broadcastChange(event, payload = {}) {
@@ -4935,7 +4967,7 @@
         tbl TEXT;
       BEGIN
         IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-          FOREACH tbl IN ARRAY ARRAY['customers','orders','settings','expenses','products','activity_logs'] LOOP
+          FOREACH tbl IN ARRAY ARRAY['customers','orders','settings','expenses','products','activity_logs','notifications'] LOOP
             IF EXISTS (
               SELECT 1 FROM information_schema.tables
               WHERE table_schema = 'public' AND table_name = tbl
@@ -5425,6 +5457,23 @@ DO $$ BEGIN
   ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK(status IN ('new','pending','shipped','partial'));
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT '';
+CREATE TABLE IF NOT EXISTS notifications (
+  id          BIGSERIAL PRIMARY KEY,
+  type        TEXT NOT NULL DEFAULT 'order_created',
+  order_id    BIGINT,
+  actor       TEXT DEFAULT '',
+  actor_role  TEXT DEFAULT '',
+  customer_name TEXT DEFAULT '',
+  items_text  TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='notifications' AND policyname='app_auth_all') THEN
+    CREATE POLICY "app_auth_all" ON notifications FOR ALL TO authenticated USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_date     ON orders(order_date DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_status   ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
@@ -5470,16 +5519,19 @@ END $$;
 
   async function loadAll(daysAgo = LOAD_DAYS) {
     const from = getDateFrom(daysAgo);
-    const [custs, ords, exps, prods] = await Promise.all([
+    const ago48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const [custs, ords, exps, prods, notifs] = await Promise.all([
       supa('GET', 'customers', null, '?order=name'),
       supa('GET', 'orders', null, `?order=order_date.desc&order_date=gte.${from}&limit=1000`),
       supa('GET', 'expenses', null, `?order=date.desc&date=gte.${from}&limit=1000`).catch(() => []),
       supa('GET', 'products', null, '?order=name').catch(() => []),
+      supa('GET', 'notifications', null, `?order=created_at.desc&created_at=gte.${ago48h}&limit=200`).catch(() => []),
     ]);
     DB.customers = custs || [];
     DB.orders = ords || [];
     DB.expenses = exps || [];
     DB.products = prods || [];
+    DB.notifications = notifs || [];
     DB.loadedFrom = from;
     DB.hasMore = ords?.length === 1000;
     updateLoadMoreBtn();
@@ -7038,6 +7090,8 @@ END $$;
         broadcastChange('orders_changed', { action: 'insert', id: savedOrder?.id || null });
         showToast('주문 저장 완료 ✓');
         logAction('create', 'order', null, `신규 주문 — ${c?.name || '—'} (${itms})`);
+        // 직원이 주문 추가 → 관리자에게 알림 저장
+        saveStaffNotification('order_created', savedOrder?.id || null, c?.name || '', itms);
       }
       closeModal('modal-order'); renderAll();
     } catch (e) {
@@ -7268,6 +7322,8 @@ END $$;
       showToast('📦 출고 안내 메시지가 클립보드에 복사되었습니다', 'info');
 
       logAction('ship', 'order', o.id, `${allShipped ? '출고' : '부분 출고'} 완료 — ${c?.name || '—'} (${itms})`);
+      // 직원이 웹에서 출고 처리 → 관리자에게 알림 저장
+      saveStaffNotification(allShipped ? 'order_shipped' : 'order_partial', o.id, c?.name || '', itms);
     } catch (e) {
       showToast('저장됨 (오프라인)', 'info');
       logAction('ship', 'order', o.id, `${allShipped ? '출고' : '부분 출고'} 완료 (오프라인) — ${c?.name || '—'}`);
@@ -7502,10 +7558,19 @@ ${pdfLink}
     const lastCheck = getShipNotiLastCheck();
     const ago24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const since = lastCheck > ago24h ? lastCheck : ago24h;
-    return (DB.orders || []).filter(o => {
+
+    // Mobile shipments (orders with recent ship date)
+    const mobileCount = (DB.orders || []).filter(o => {
       const d = getLatestShipDate(o);
       return d && d > since;
     }).length;
+
+    // Staff web notifications (order_created / order_shipped)
+    const staffCount = (DB.notifications || []).filter(n => {
+      return n.created_at && n.created_at > since;
+    }).length;
+
+    return mobileCount + staffCount;
   }
 
   function handleShipmentNotification(data) {
@@ -7709,20 +7774,57 @@ ${pdfLink}
     if (!body) return;
 
     const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const recent = [...(DB.orders || [])]
+    const lastCheck = getShipNotiLastCheck();
+
+    // ── 1. Staff web actions (created / shipped on web by staff) ──
+    const staffNotifs = (DB.notifications || [])
+      .filter(n => n.created_at && n.created_at >= cutoff48h)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+    // ── 2. Mobile shipments (orders shipped via mobile app) ──
+    const mobileShipped = [...(DB.orders || [])]
       .filter(o => {
         const d = getLatestShipDate(o);
         return d && d >= cutoff48h && (effectiveOrderStatus(o) === 'shipped' || isPartialOrder(o));
       })
       .sort((a, b) => getLatestShipDate(b).localeCompare(getLatestShipDate(a)));
 
-    if (!recent.length) {
-      body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="empty-icon">📦</div><div class="empty-text">최근 48시간 출고 내역이 없습니다</div></div>';
+    const hasStaff  = staffNotifs.length > 0;
+    const hasMobile = mobileShipped.length > 0;
+
+    if (!hasStaff && !hasMobile) {
+      body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="empty-icon">📦</div><div class="empty-text">최근 48시간 알림이 없습니다</div></div>';
       return;
     }
 
-    const lastCheck = getShipNotiLastCheck();
-    body.innerHTML = `<div class="ship-noti-list">${recent.map(o => {
+    // ── Render staff notifications ──
+    const staffHtml = staffNotifs.map(n => {
+      const isNew = n.created_at > lastCheck;
+      const typeMap = {
+        order_created: { label: '신규 주문', badge: 's-new',     icon: '📝' },
+        order_shipped: { label: '출고 처리', badge: 's-shipped',  icon: '🚚' },
+        order_partial: { label: '부분 출고', badge: 's-partial',  icon: '📦' },
+      };
+      const t = typeMap[n.type] || { label: n.type, badge: 's-new', icon: '📋' };
+      const dateStr = (n.created_at || '').slice(0, 10);
+      const timeStr = (n.created_at || '').length > 10 ? (n.created_at || '').slice(11, 16) : '';
+      const onclick = n.order_id ? `closeModal('modal-ship-notifications');openDetail(${n.order_id})` : '';
+      return `<div class="ship-noti-card${isNew ? ' is-new' : ''}" style="border-left-color:#7c3aed;cursor:${n.order_id ? 'pointer' : 'default'}" ${onclick ? `onclick="${onclick}"` : ''}>
+        <div class="ship-noti-card-top">
+          ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+          <span style="font-size:13px">${t.icon}</span>
+          <span class="ship-noti-name">${esc(n.customer_name || '—')}</span>
+          <span class="badge ${t.badge}">${t.label}</span>
+        </div>
+        <div class="ship-noti-meta">
+          👤 ${esc(n.actor || '직원')} &nbsp;·&nbsp; 🗓 ${dateStr}${timeStr ? ' ' + timeStr : ''}
+        </div>
+        ${n.items_text ? `<div class="ship-noti-items">${esc(n.items_text)}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // ── Render mobile/web full-ship cards ──
+    const mobileHtml = mobileShipped.map(o => {
       const c = getCust(o.customer_id);
       const tracking = shipmentTracking(o) || '';
       const latestDate = getLatestShipDate(o);
@@ -7742,11 +7844,18 @@ ${pdfLink}
           <span class="badge ${badgeClass}">${badgeLabel}</span>
         </div>
         <div class="ship-noti-meta">
-          🗓 ${dateStr}${timeStr ? ' · ' + timeStr : ''}${tracking ? ' &nbsp;·&nbsp; 📦 ' + esc(tracking) : ''}
+          📱 모바일 &nbsp;·&nbsp; 🗓 ${dateStr}${timeStr ? ' · ' + timeStr : ''}${tracking ? ' &nbsp;·&nbsp; 📦 ' + esc(tracking) : ''}
         </div>
         <div class="ship-noti-items">${itemsText}</div>
       </div>`;
-    }).join('')}</div>`;
+    }).join('');
+
+    body.innerHTML = `
+      ${hasStaff ? `<div style="font-size:11px;font-weight:700;color:#7c3aed;padding:10px 14px 4px;letter-spacing:.5px;text-transform:uppercase">직원 활동</div>
+        <div class="ship-noti-list">${staffHtml}</div>` : ''}
+      ${hasMobile ? `<div style="font-size:11px;font-weight:700;color:var(--ink-muted);padding:10px 14px 4px;letter-spacing:.5px;text-transform:uppercase">📱 모바일 출고</div>
+        <div class="ship-noti-list">${mobileHtml}</div>` : ''}
+    `;
   }
 
   async function openPaymentRequests() {
