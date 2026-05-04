@@ -7459,8 +7459,47 @@ ${pdfLink}
     return fromItems || o.shipped_date || '';
   }
 
+  // ── Notification read-state helpers ─────────────────
+  // Key is per-user so different accounts on same browser don't interfere
+  function _shipNotiLsKey() {
+    const email = UI.currentUser?.email || 'default';
+    return `shipNotiLastCheck_${email}`;
+  }
+
+  function getShipNotiLastCheck() {
+    return localStorage.getItem(_shipNotiLsKey()) || '';
+  }
+
+  function setShipNotiLastCheck(ts) {
+    // 1. Write to localStorage immediately (fast path)
+    localStorage.setItem(_shipNotiLsKey(), ts);
+    // 2. Persist to Supabase in background so it survives new sessions/devices
+    const email = UI.currentUser?.email;
+    if (email) {
+      const key = `ship_noti_last_check_${email}`;
+      saveSettingValue(key, ts).catch(() => {});
+    }
+  }
+
+  // Called after login — load last-check from Supabase, update localStorage
+  async function loadShipNotiLastCheck() {
+    const email = UI.currentUser?.email;
+    if (!email) return;
+    try {
+      const key = `ship_noti_last_check_${email}`;
+      const saved = await loadSettingValue(key, null);
+      if (saved) {
+        // Only update localStorage if Supabase value is newer
+        const local = localStorage.getItem(_shipNotiLsKey()) || '';
+        if (saved > local) localStorage.setItem(_shipNotiLsKey(), saved);
+      }
+    } catch (_) {}
+    // Refresh badge with the now-correct lastCheck
+    renderPaymentRequestButton(false);
+  }
+
   function countNewShipments() {
-    const lastCheck = localStorage.getItem('shipNotiLastCheck') || '';
+    const lastCheck = getShipNotiLastCheck();
     const ago24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const since = lastCheck > ago24h ? lastCheck : ago24h;
     return (DB.orders || []).filter(o => {
@@ -7481,7 +7520,7 @@ ${pdfLink}
   }
 
   function clearShipmentNotifications() {
-    localStorage.setItem('shipNotiLastCheck', new Date().toISOString());
+    setShipNotiLastCheck(new Date().toISOString());
     renderPaymentRequestButton(false);
     renderShipmentNotifications();
   }
@@ -7682,7 +7721,7 @@ ${pdfLink}
       return;
     }
 
-    const lastCheck = localStorage.getItem('shipNotiLastCheck') || '';
+    const lastCheck = getShipNotiLastCheck();
     body.innerHTML = `<div class="ship-noti-list">${recent.map(o => {
       const c = getCust(o.customer_id);
       const tracking = shipmentTracking(o) || '';
@@ -7725,8 +7764,8 @@ ${pdfLink}
     if (!isAdmin && !isStaff) return;
     openModal('modal-ship-notifications');
     renderShipmentNotifications();
-    // Mark all as seen — persist so badge resets even after page reload
-    localStorage.setItem('shipNotiLastCheck', new Date().toISOString());
+    // Mark all as seen — saved to Supabase so badge resets across all devices/sessions
+    setShipNotiLastCheck(new Date().toISOString());
     UI.shipmentNotiCount = 0;
     renderPaymentRequestButton(false);
   }
@@ -9436,6 +9475,8 @@ ${pdfLink}
 
     requestNotifPermission();
     loadCurrentUserProfile().catch(() => { });
+    // Load per-user notification read-state from Supabase (fixes badge after login)
+    loadShipNotiLastCheck().catch(() => {});
   }
 
   async function checkLogin() {
