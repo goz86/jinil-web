@@ -934,6 +934,71 @@
       border-bottom: 0;
     }
 
+    /* ── Ship notification cards ── */
+    .ship-noti-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+    }
+    .ship-noti-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--canvas);
+      border: 1.5px solid var(--hairline);
+      border-radius: var(--r-md);
+      padding: 12px 14px 12px 16px;
+      cursor: pointer;
+      position: relative;
+      transition: box-shadow 0.15s, background 0.15s;
+      overflow: hidden;
+    }
+    .ship-noti-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: var(--r-md) 0 0 var(--r-md);
+    }
+    .ship-noti-card.is-shipped::before { background: #28a745; }
+    .ship-noti-card.is-partial::before { background: #7c3aed; }
+    .ship-noti-card.is-new { background: #f0f7ff; border-color: #c2e0ff; }
+    .ship-noti-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .ship-noti-card:active { background: var(--parchment2); }
+    .ship-noti-card-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .ship-noti-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .ship-noti-meta {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+    .ship-noti-items {
+      font-size: 12px;
+      color: var(--ink-light);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .new-badge {
+      font-size: 9px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 99px;
+      padding: 2px 7px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
     .s-shipped {
       background: var(--green-tint);
       color: #1a7f2a;
@@ -3063,11 +3128,10 @@
       .content { padding: 14px !important; }
       .page { padding: 0 !important; }
 
-      /* ── Grid → single column ── */
+      /* ── Grid → single column (except stats which stays 2-col) ── */
       .db-grid,
       .db-bottom-row,
       .stats-row,
-      .db-stats-grid,
       .grid-2,
       .grid-3,
       .form-grid {
@@ -3075,9 +3139,11 @@
       }
       .form-group.full { grid-column: span 1 !important; }
 
-      /* ── Stats ── */
-      .stat-card-new { padding: 14px; }
-      .stat-value-new { font-size: 22px; }
+      /* ── Stats: keep 2-column on mobile ── */
+      .db-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+      .stat-card-new { padding: 12px 8px; }
+      .stat-value-new { font-size: 18px; }
+      .stat-label-new { font-size: 9px; }
       .stat-pill { padding: 10px 12px !important; }
 
       /* ── Section head: vertical stack ── */
@@ -3087,15 +3153,48 @@
         gap: 8px !important;
       }
 
-      /* ── Tables: horizontal scroll ── */
-      .tbl-wrap, .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .tbl-wrap table, table { min-width: 520px; }
+      /* ── Tables: horizontal scroll (only tbl-wrap, not all cards) ── */
+      .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .tbl-wrap table { min-width: 460px; }
       .data-table th, .data-table td { padding: 8px 8px !important; font-size: 11px !important; }
-      th, td { padding: 9px 8px; font-size: 12px; }
+      th, td { padding: 8px 6px; font-size: 11px; }
+
+      /* ── Hide less important columns on mobile ── */
+      .orders-col-tracking, .orders-col-shipdate { display: none !important; }
+
+      /* ── Mini-stepper: hidden on mobile (saves ~160px per row) ── */
+      .mini-stepper { display: none !important; }
+
+      /* ── Calendar: stack vertically on mobile ── */
+      .cal-split { grid-template-columns: 1fr !important; gap: 12px !important; }
+      .cal-cell { min-height: 60px !important; font-size: 11px !important; padding: 4px 1px 3px !important; }
+      .cal-cname { font-size: 8px !important; padding: 1px 4px !important; }
+      #cal-detail-panel { height: auto !important; max-height: 60vh !important; }
 
       /* ── Tabs ── */
       .tab { font-size: 11px; padding: 6px 6px; white-space: nowrap; }
       .tabs { gap: 2px; }
+
+      /* ── Debt customer header: wrap buttons to 2nd row ── */
+      .debt-cust-hd { flex-wrap: wrap; }
+      .debt-cust-btns {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        order: 10;
+        padding-top: 6px;
+        border-top: 1px solid var(--hairline);
+        margin-top: 2px;
+      }
+
+      /* ── Expenses stats: 2-col grid on mobile ── */
+      .exp-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+
+      /* ── Expenses table: scrollable + hide vendor col ── */
+      .exp-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .exp-tbl-wrap table { min-width: 380px; }
+      .exp-col-vendor { display: none !important; }
 
       /* ── Buttons ── */
       .btn-sm { padding: 6px 10px !important; font-size: 11px !important; }
@@ -3638,7 +3737,7 @@
             </div>
           </div>
 
-          <div class="card" id="cal-detail-panel" style="min-height: 500px;">
+          <div class="card" id="cal-detail-panel" style="align-self:stretch;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
             <div class="empty">
               <div class="empty-icon">📅</div>
               <div class="empty-text">날짜를 선택하세요</div>
@@ -3683,10 +3782,10 @@
                   <th>주문일</th>
                   <th>거래처</th>
                   <th>품목</th>
-                  <th>송장번호</th>
+                  <th class="orders-col-tracking">송장번호</th>
                   <th>금액</th>
                   <th>상태</th>
-                  <th>출고일</th>
+                  <th class="orders-col-shipdate">출고일</th>
                   <th></th>
                 </tr>
               </thead>
@@ -3940,7 +4039,7 @@
         </div>
 
         <!-- Stats -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="exp-stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
           <div class="card" style="padding:16px;text-align:center">
             <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">월 총 지출</div>
             <div style="font-size:20px;font-weight:700;color:var(--red)" id="exp-s-total">0원</div>
@@ -3969,13 +4068,14 @@
 
         <!-- List -->
         <div class="card" style="padding:0;overflow:hidden">
+          <div class="exp-tbl-wrap">
           <table style="width:100%;border-collapse:collapse">
             <thead>
               <tr style="background:#fafafa;border-bottom:1px solid var(--hairline)">
                 <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">날짜</th>
                 <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">구분</th>
                 <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">항목</th>
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">공급처</th>
+                <th class="exp-col-vendor" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">공급처</th>
                 <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--ink-muted);font-weight:600">금액</th>
                 <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--ink-muted);font-weight:600">결제</th>
                 <th style="padding:10px 14px;font-size:11px"></th>
@@ -3983,6 +4083,7 @@
             </thead>
             <tbody id="exp-list"></tbody>
           </table>
+          </div>
           <div id="exp-empty" style="text-align:center;padding:40px;color:var(--ink-muted);display:none">
             <div style="font-size:32px;margin-bottom:8px">💸</div>
             <div>지출 내역이 없습니다</div>
@@ -4364,12 +4465,12 @@
 </div>
 
 <div class="modal-overlay" id="modal-ship-notifications">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:min(560px,96vw);width:100%">
     <div class="modal-header">
       <div class="modal-title">📦 최근 출고 알림</div>
       <button class="modal-close" onclick="closeModal('modal-ship-notifications')">✕</button>
     </div>
-    <div id="ship-notifications-body" style="max-height:420px;overflow-y:auto"></div>
+    <div id="ship-notifications-body" style="max-height:min(480px,70vh);overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
     <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="clearShipmentNotifications()">알림 모두 지우기</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-ship-notifications')">닫기</button>
@@ -5144,6 +5245,7 @@
     // Khởi tạo Real-time và kiểm tra đơn hàng cũ
     initRealtime();
     checkStaleOrders();
+    window.addEventListener('resize', syncCalPanelHeight);
 
     // Check PIN Lock
     if (UI.currentUser?.role === 'admin' && UI.pinEnabled && !UI.pinVerified) {
@@ -5451,6 +5553,7 @@ END $$;
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
   const fmt = n => Number(n || 0).toLocaleString('ko-KR');
+  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const getCust = id => DB.customers.find(c => c.id == id);
   const getOrder = id => DB.orders.find(o => o.id == id);
   function orderItems(o) {
@@ -5830,8 +5933,8 @@ END $$;
         <div>${dt.slice(0, 10)}</div>
         <div style="font-size:10px;color:var(--ink-muted)">${dt.length > 10 ? dt.slice(11) : ''}</div>
       </td>
-      <td class="td-name">${c?.name || '—'}</td>
-      <td style="font-size:12px">${(o.items || []).map(i => i.name).join(', ')}</td>
+      <td class="td-name">${esc(c?.name || '—')}</td>
+      <td style="font-size:12px">${(o.items || []).map(i => esc(i.name)).join(', ')}</td>
       <td class="td-amount">${fmt(orderTotal(o))}원</td>
       <td>${orderStatusBadge(o)} ${paidBadgeToggle(o)}</td>
     </tr>`;
@@ -5853,8 +5956,8 @@ END $$;
         const c = getCust(o.customer_id);
         return `<div class="order-mini" onclick="openDetail(${o.id})" style="margin-bottom:7px">
         <div class="order-mini-left">
-          <div class="order-mini-name">${c?.name || '—'}</div>
-          <div class="order-mini-goods">${(o.items || []).map(i => i.name).join(', ')}</div>
+          <div class="order-mini-name">${esc(c?.name || '—')}</div>
+          <div class="order-mini-goods">${(o.items || []).map(i => esc(i.name)).join(', ')}</div>
           <div style="font-size:10px;color:var(--ink-muted);margin-top:2px">${o.order_date}</div>
         </div>
         <div class="order-mini-right">
@@ -5889,7 +5992,7 @@ END $$;
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
                 <div style="display:flex;align-items:center;gap:8px">
                   <div style="width:20px;height:20px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">${i+1}</div>
-                  <span style="font-size:13px;font-weight:600;color:var(--ink)">${x.cust.name}</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--ink)">${esc(x.cust.name)}</span>
                 </div>
                 <span style="font-size:13px;font-weight:700;color:var(--blue)">${UI.privacyMode ? '••••원' : fmt(x.total)+'원'}</span>
               </div>
@@ -5947,7 +6050,7 @@ END $$;
     }).slice(0, 5);
 
     if (!matchedCusts.length && !matchedOrders.length) {
-      box.innerHTML = `<div class="gsr-no-result">검색 결과 없음 "<b>${q}</b>"</div>`;
+      box.innerHTML = `<div class="gsr-no-result">검색 결과 없음 "<b>${esc(q)}</b>"</div>`;
       box.classList.add('open'); return;
     }
 
@@ -6137,6 +6240,7 @@ END $$;
   }
 
   async function openActivityLog() {
+    document.body.classList.remove('sidebar-active');
     openModal('modal-actlog');
     const body = document.getElementById('actlog-body');
     if (body) body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--ink-muted)">⏳ 불러오는 중...</div>`;
@@ -6355,6 +6459,12 @@ END $$;
   /* ════════════════════════════════════════════
      CALENDAR
      ════════════════════════════════════════════ */
+  function syncCalPanelHeight() {
+    const left = document.querySelector('#page-calendar .cal-split .card:not(#cal-detail-panel)');
+    const right = document.getElementById('cal-detail-panel');
+    if (left && right) right.style.height = left.offsetHeight + 'px';
+  }
+
   function calNav(d) {
     UI.calMonth += d;
     if (UI.calMonth > 11) { UI.calMonth = 0; UI.calYear++; }
@@ -6432,6 +6542,7 @@ END $$;
     }
 
     if (UI.selectedDate) renderDayDetail(UI.selectedDate);
+    setTimeout(syncCalPanelHeight, 0);
   }
 
   function selectCalDate(d) { UI.selectedDate = d; renderCalendar(); renderDayDetail(d); }
@@ -6450,30 +6561,30 @@ END $$;
       return;
     }
     panel.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--hairline)">
+    <div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--hairline)">
       <div style="font-size:14px;font-weight:700;color:var(--blue);letter-spacing:-0.2px">${d}</div>
       <div style="font-size:11px;color:var(--ink-muted)">${orders.length}건 · ${fmt(total)}원</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:7px;max-height:640px;overflow-y:auto;padding-right:4px;">
+    <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:4px;">
       ${orders.map(o => {
       const c = getCust(o.customer_id);
       const col = custColor(c);
       return `<div class="order-mini" onclick="openDetail(${o.id})">
           <div style="width:3px;border-radius:99px;align-self:stretch;flex-shrink:0;background:${col}"></div>
           <div class="order-mini-left">
-            <div class="order-mini-name">${c?.name || '—'}</div>
-            <div class="order-mini-goods">${(o.items || []).map(i => i.name + '×' + i.qty).join(' / ')}</div>
-            ${o.tracking ? `<div style="font-size:10px;color:var(--ink-muted);font-family:var(--mono)">송장 ${o.tracking}</div>` : ''}
+            <div class="order-mini-name">${esc(c?.name || '—')}</div>
+            <div class="order-mini-goods">${(o.items || []).map(i => esc(i.name) + '×' + i.qty).join(' / ')}</div>
+            ${o.tracking ? `<div style="font-size:10px;color:var(--ink-muted);font-family:var(--mono)">송장 ${esc(o.tracking)}</div>` : ''}
           </div>
-            <div style="margin-top:4px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-              ${orderStatusBadge(o)}
-              ${renderMiniStepper(o)}
-            </div>
+          <div style="margin-top:4px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            ${orderStatusBadge(o)}
+            ${renderMiniStepper(o)}
           </div>
         </div>`;
     }).join('')}
     </div>
-    <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="openNewOrderDate('${d}')">+ 이 날짜로 주문 추가</button></div>`;
+    <div style="flex-shrink:0;margin-top:12px"><button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="openNewOrderDate('${d}')">+ 이 날짜로 주문 추가</button></div>`;
+    setTimeout(syncCalPanelHeight, 0);
   }
 
   /* ════════════════════════════════════════════
@@ -6527,11 +6638,11 @@ END $$;
       <td>
         <div style="display:flex;align-items:center;gap:7px">
           <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></div>
-          <span class="td-name">${c?.name || '—'}</span>
+          <span class="td-name">${esc(c?.name || '—')}</span>
         </div>
       </td>
-      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${orderItems(o).map(i => i.name).join(', ')}</td>
-      <td class="td-mono" style="font-size:11px;color:var(--ink-muted)">${shipmentTracking(o) || '—'}</td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${orderItems(o).map(i => esc(i.name)).join(', ')}</td>
+      <td class="td-mono orders-col-tracking" style="font-size:11px;color:var(--ink-muted)">${shipmentTracking(o) || '—'}</td>
       <td class="td-amount">${fmt(orderTotal(o))}</td>
       <td>
         <div style="display:flex;flex-direction:column;gap:2px">
@@ -6539,7 +6650,7 @@ END $$;
           ${renderMiniStepper(o)}
         </div>
       </td>
-      <td class="td-mono" style="white-space:nowrap">
+      <td class="td-mono orders-col-shipdate" style="white-space:nowrap">
         <div style="font-size:11px">${(shipDt || '').slice(0, 10) || '—'}</div>
         <div style="font-size:10px;color:var(--ink-muted)">${(shipDt || '').length > 10 ? (shipDt || '').slice(11, 16) : ''}</div>
       </td>
@@ -6789,7 +6900,7 @@ END $$;
     (o.items || []).forEach(i => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" value="${i.name}" oninput="calcOTotal()"></td>
+        <td><input type="text" value="${esc(i.name)}" oninput="calcOTotal()"></td>
         <td><input type="number" value="${i.qty}" min="1" style="width:100%" oninput="calcOTotal()"></td>
         <td><input type="number" value="${i.price}" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
         <td class="item-total-cell">${fmt(i.qty * i.price)}</td>
@@ -7012,26 +7123,30 @@ END $$;
     const col = custColor(c);
     const detailTracking = shipmentTracking(o);
     const detailImg = shipmentImage(o);
-    document.getElementById('detail-title').innerHTML = `<span style="color:${col};margin-right:8px">●</span>${c?.name || '—'} 주문 상세`;
+    document.getElementById('detail-title').innerHTML = `<span style="color:${col};margin-right:8px">●</span>${esc(c?.name || '—')} 주문 상세`;
     document.getElementById('detail-body').innerHTML = `
     ${renderStepper(o)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">거래처</div><div style="font-weight:600">${c?.name || '—'}</div></div>
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주문일</div><div class="td-mono">${o.order_date}</div></div>
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">연락처</div><div>${o.tel || c?.tel || '—'}</div></div>
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">거래처</div><div style="font-weight:600">${esc(c?.name || '—')}</div></div>
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주문일</div><div class="td-mono">${esc(o.order_date)}</div></div>
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">연락처</div><div>${esc(o.tel || c?.tel || '—')}</div></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">상태</div><div>${orderStatusBadge(o)}</div></div>
-      <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주소</div><div style="font-size:13px">${o.addr || '—'}</div></div>
-      ${detailTracking ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">송장번호</div><div class="td-mono">${detailTracking}</div></div>` : ''}
-      ${o.memo ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">메모</div><div style="color:var(--amber)">${o.memo}</div></div>` : ''}
+      <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주소</div><div style="font-size:13px">${esc(o.addr || '—')}</div></div>
+      ${detailTracking ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">송장번호</div><div class="td-mono">${esc(detailTracking)}</div></div>` : ''}
+      ${o.memo ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">메모</div><div style="color:var(--amber)">${esc(o.memo)}</div></div>` : ''}
     </div>
     <hr class="div">
-    <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">품목</div>
-    ${orderItems(o).map(i => {
+    <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">품목 <span style="font-size:10px;color:var(--ink-muted);font-weight:400;text-transform:none">(체크된 품목만 출고됩니다)</span></div>
+    ${orderItems(o).map((i, idx) => {
       const shipped = itemIsShipped(i);
       const itemTracking = i.shipped_tracking ? `<span style="margin-left:6px;color:#15803d;font-size:11px">송장 ${i.shipped_tracking}</span>` : '';
+      const showCheckbox = !shipped && o.status !== 'shipped';
+      const checkbox = showCheckbox
+        ? `<input type="checkbox" class="ship-item-check" data-idx="${idx}" checked style="margin-right:8px;width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0">`
+        : '';
       return `
-      <div class="order-detail-item ${shipped ? 'is-shipped' : ''}" style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--hairline);font-size:13px">
-        <span class="order-detail-item-name"><span class="order-detail-item-label">${i.name}${i.spec ? ' (' + i.spec + ')' : ''} <span style="color:var(--ink-muted)">× ${i.qty}</span></span>${shipped ? '<span style="margin-left:6px;color:#15803d;font-size:11px;font-weight:700">출고</span>' : ''}${itemTracking}</span>
+      <div class="order-detail-item ${shipped ? 'is-shipped' : ''}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--hairline);font-size:13px">
+        <span class="order-detail-item-name" style="display:flex;align-items:center;flex:1;min-width:0">${checkbox}<span class="order-detail-item-label">${esc(i.name)}${i.spec ? ' (' + esc(i.spec) + ')' : ''} <span style="color:var(--ink-muted)">× ${i.qty}</span></span>${shipped ? '<span style="margin-left:6px;color:#15803d;font-size:11px;font-weight:700">출고</span>' : ''}${itemTracking}</span>
         <span>단가 : ${fmt(i.price)} = <strong style="color:var(--blue)">${fmt(i.qty * i.price)}원</strong></span>
       </div>`;
     }).join('')}
@@ -7052,10 +7167,8 @@ END $$;
           <label>택배사</label>
           <select id="detail-courier" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border);">
             <option value="롯데택배">롯데택배</option>
-            <option value="CJ대한통운">CJ대한통운</option>
-            <option value="한진택배">한진택배</option>
-            <option value="우체국택배">우체국택배</option>
-            <option value="로젠택배">로젠택배</option>
+            <option value="경기택배">경기택배</option>
+            <option value="천리퀵">천리퀵</option>
             <option value="직접배송">직접배송</option>
           </select>
         </div>
@@ -7069,42 +7182,89 @@ END $$;
   async function doShip() {
     const o = getOrder(UI.currentOrderId); if (!o) return;
     const track = document.getElementById('detail-track')?.value || '';
-    const courier = document.getElementById('detail-courier')?.value || '롯데택배';
+    const courier = document.getElementById('detail-courier')?.value || '롯데택배 경기택배';
     const dt = document.getElementById('detail-ship-dt')?.value || today();
     const now = new Date();
     const timeStr = ` ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     // Nếu chọn ngày hôm nay thì lấy giờ hiện tại, nếu chọn ngày khác thì mặc định 09:00 nếu chưa có giờ
     const finalDt = (dt === today()) ? (dt + timeStr) : (dt.includes(':') ? dt : dt + " 09:00");
 
+    // Read which items the user selected to ship via checkboxes
+    const checkboxes = document.querySelectorAll('.ship-item-check');
+    const selectedIdxs = new Set();
+    checkboxes.forEach(cb => { if (cb.checked) selectedIdxs.add(parseInt(cb.dataset.idx)); });
+
+    if (checkboxes.length > 0 && selectedIdxs.size === 0) {
+      showToast('출고할 품목을 선택하세요', 'error');
+      return;
+    }
+
+    const items = orderItems(o);
+    const unshippedIdxs = items.map((it, idx) => itemIsShipped(it) ? -1 : idx).filter(idx => idx >= 0);
+
+    // Mark selected items as shipped, leave others alone
+    const newItems = items.map((it, idx) => {
+      if (itemIsShipped(it)) return it;
+      if (selectedIdxs.has(idx)) {
+        return {
+          ...it,
+          shipped: true,
+          shipped_tracking: track,
+          shipped_date: finalDt,
+        };
+      }
+      return it;
+    });
+
+    const allShipped = newItems.length > 0 && newItems.every(it => itemIsShipped(it));
+    const newStatus = allShipped ? 'shipped' : 'pending';
+    const isPartial = !allShipped;
+
+    o.items = newItems;
     o.tracking = track;
     o.courier = courier;
-    o.shipped_date = finalDt;
-    o.status = 'shipped';
+    if (allShipped) o.shipped_date = finalDt;
+    else o.partial_shipped_date = finalDt;
+    o.status = newStatus;
 
     const c = getCust(o.customer_id);
-    const itms = (o.items || []).map(i => `${i.name} ×${i.qty}`).join(', ');
+    const shippedNow = newItems.filter((it, idx) => selectedIdxs.has(idx));
+    const itms = shippedNow.map(i => `${i.name} ×${i.qty}`).join(', ');
 
     showLoading(true);
     try {
-      await supaResilient('PATCH', 'orders',
-        { tracking: track, courier: courier, shipped_date: finalDt, status: 'shipped' },
-        `?id=eq.${o.id}`,
-        ['courier']   // courier column might not exist yet → retry without it
-      );
-      showToast('출고 처리 완료 ✓');
+      const payload = {
+        items: newItems,
+        tracking: track,
+        courier: courier,
+        status: newStatus,
+      };
+      if (allShipped) payload.shipped_date = finalDt;
+      else payload.partial_shipped_date = finalDt;
 
-      broadcastChange('orders_changed', { action: 'ship', id: o.id });
+      await supaResilient('PATCH', 'orders',
+        payload,
+        `?id=eq.${o.id}`,
+        ['courier', 'partial_shipped_date']   // optional columns
+      );
+      showToast(allShipped ? '출고 처리 완료 ✓' : '부분 출고 처리 완료 ✓');
+
+      broadcastChange('orders_changed', { action: allShipped ? 'ship' : 'partial', id: o.id });
       const msg = getShippingMessage(o);
-      sendNotification('🚚 출고 완료', `안녕하세요, ${c?.name || '—'} 고객님. 금일 주문 상품이 출고되었습니다.`, `ship-${o.id}`);
+      sendNotification(
+        allShipped ? '🚚 출고 완료' : '📦 부분 출고',
+        `안녕하세요, ${c?.name || '—'} 고객님. 금일 주문 상품이 ${allShipped ? '' : '부분 '}출고되었습니다.`,
+        `ship-${o.id}`
+      );
 
       // Auto-copy for convenience (optional, maybe just show toast)
       navigator.clipboard?.writeText(msg).catch(() => { });
       showToast('📦 출고 안내 메시지가 클립보드에 복사되었습니다', 'info');
 
-      logAction('ship', 'order', o.id, `출고 완료 — ${c?.name || '—'} (${itms})`);
+      logAction('ship', 'order', o.id, `${allShipped ? '출고' : '부분 출고'} 완료 — ${c?.name || '—'} (${itms})`);
     } catch (e) {
       showToast('저장됨 (오프라인)', 'info');
-      logAction('ship', 'order', o.id, `출고 완료 (오프라인) — ${c?.name || '—'}`);
+      logAction('ship', 'order', o.id, `${allShipped ? '출고' : '부분 출고'} 완료 (오프라인) — ${c?.name || '—'}`);
     }
     showLoading(false);
     closeModal('modal-detail'); renderAll();
@@ -7262,7 +7422,13 @@ ${pdfLink}
   }
 
   function pendingPaymentRequests() {
-    return (UI.paymentRequests || []).filter(r => r.status === 'pending');
+    return (UI.paymentRequests || []).filter(r => {
+      if (r.status !== 'pending') return false;
+      // Auto-exclude requests for orders already marked paid
+      const o = getOrder(r.orderId);
+      if (o?.paid) return false;
+      return true;
+    });
   }
 
   async function loadPaymentRequests({ notify = false } = {}) {
@@ -7279,34 +7445,29 @@ ${pdfLink}
     renderPaymentRequestButton(false);
   }
 
+  function getLatestShipDate(o) {
+    const fromItems = orderItems(o).reduce((max, i) => {
+      const d = i.shipped_date || '';
+      return d > max ? d : max;
+    }, '');
+    return fromItems || o.shipped_date || '';
+  }
+
+  function countNewShipments() {
+    const lastCheck = localStorage.getItem('shipNotiLastCheck') || '';
+    const ago24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const since = lastCheck > ago24h ? lastCheck : ago24h;
+    return (DB.orders || []).filter(o => {
+      const d = getLatestShipDate(o);
+      return d && d > since;
+    }).length;
+  }
+
   function handleShipmentNotification(data) {
     const ids = data.ids || [];
     const tracking = data.tracking || '';
-    const now = Date.now();
-
-    // Deduplication: Avoid duplicate notifications for same orders/tracking within 10 seconds
-    const isDup = (UI.shipmentNotifications || []).some(n => {
-      const diff = now - new Date(n.at).getTime();
-      if (diff > 10000) return false; // Not recent
-      
-      const sameTracking = (n.tracking === tracking);
-      const sameIds = (JSON.stringify(n.ids.slice().sort()) === JSON.stringify(ids.slice().sort()));
-      return sameTracking && sameIds;
-    });
-
-    if (isDup) {
-      console.log('🚫 Duplicate shipment notification ignored:', tracking);
-      return;
-    }
-
-    const at = new Date().toISOString();
-    
-    // Add to notification list
-    UI.shipmentNotifications = [{ ids, tracking, at }, ...(UI.shipmentNotifications || [])];
-    UI.shipmentNotiCount++;
-    
-    // UI Feedback
-    showToast(`📦 새 출고 알림: ${ids.length}건 (${tracking || '송장없음'})`, 'info');
+    // Show toast for real-time mobile shipment alerts
+    showToast(`📦 새 출고 알림: ${ids.length}건${tracking ? ' · ' + tracking : ''}`, 'info');
     renderPaymentRequestButton(false);
     if (document.getElementById('modal-ship-notifications')?.classList.contains('open')) {
       renderShipmentNotifications();
@@ -7314,8 +7475,7 @@ ${pdfLink}
   }
 
   function clearShipmentNotifications() {
-    UI.shipmentNotifications = [];
-    UI.shipmentNotiCount = 0;
+    localStorage.setItem('shipNotiLastCheck', new Date().toISOString());
     renderPaymentRequestButton(false);
     renderShipmentNotifications();
   }
@@ -7351,7 +7511,7 @@ ${pdfLink}
       if (!isAdmin && !isStaff) {
         shipBtn.style.display = 'none';
       } else {
-        const shipCount = UI.shipmentNotiCount || 0;
+        const shipCount = countNewShipments();
         shipCnt.textContent = String(shipCount);
         shipBtn.style.display = 'inline-flex';
         shipBtn.classList.toggle('has-items', shipCount > 0);
@@ -7486,7 +7646,7 @@ ${pdfLink}
       return `<div class="pay-request-row">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <b style="font-size:14px;color:var(--ink)">${c?.name || r.customerName || '—'}</b>
+            <b style="font-size:14px;color:var(--ink)">${esc(c?.name || r.customerName || '—')}</b>
             <span class="badge s-unpaid">미결제</span>
           </div>
           <div style="font-size:12px;color:var(--ink-muted);margin-top:4px">${r.orderDate || o?.order_date || ''} · ${r.requestedBy || '직원'} 요청</div>
@@ -7502,26 +7662,46 @@ ${pdfLink}
   function renderShipmentNotifications() {
     const body = document.getElementById('ship-notifications-body');
     if (!body) return;
-    const shipments = UI.shipmentNotifications || [];
-    if (!shipments.length) {
-      body.innerHTML = '<div class="empty" style="padding:34px 0"><div class="empty-icon">📦</div><div class="empty-text">표시할 출고 알림이 없습니다</div></div>';
+
+    const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const recent = [...(DB.orders || [])]
+      .filter(o => {
+        const d = getLatestShipDate(o);
+        return d && d >= cutoff48h && (effectiveOrderStatus(o) === 'shipped' || isPartialOrder(o));
+      })
+      .sort((a, b) => getLatestShipDate(b).localeCompare(getLatestShipDate(a)));
+
+    if (!recent.length) {
+      body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="empty-icon">📦</div><div class="empty-text">최근 48시간 출고 내역이 없습니다</div></div>';
       return;
     }
-    body.innerHTML = shipments.map(s => {
-      const firstOrder = getOrder(s.ids[0]);
-      const custName = getCust(firstOrder?.customer_id)?.name || '알 수 없음';
-      const atStr = new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-      return `<div class="pay-request-row" style="border-left: 3px solid #28a745">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px">
-            <b style="font-size:14px;color:var(--ink)">${custName}</b>
-            <span class="badge s-shipped">출고완료</span>
-          </div>
-          <div style="font-size:12px;color:var(--ink-muted);margin-top:4px">주문 ${s.ids.length}건 · 송장: ${s.tracking || '(없음)'}</div>
+
+    const lastCheck = localStorage.getItem('shipNotiLastCheck') || '';
+    body.innerHTML = `<div class="ship-noti-list">${recent.map(o => {
+      const c = getCust(o.customer_id);
+      const tracking = shipmentTracking(o) || '';
+      const latestDate = getLatestShipDate(o);
+      const dateStr = latestDate.slice(0, 10);
+      const timeStr = latestDate.length > 10 ? latestDate.slice(11, 16) : '';
+      const isPartial = isPartialOrder(o);
+      const cardType = isPartial ? 'is-partial' : 'is-shipped';
+      const badgeClass = isPartial ? 's-partial' : 's-shipped';
+      const badgeLabel = isPartial ? '부분출고' : '출고완료';
+      const shippedItems = orderItems(o).filter(i => itemIsShipped(i));
+      const itemsText = shippedItems.map(i => esc(i.name) + (i.spec ? ` (${esc(i.spec)})` : '') + ' ×' + i.qty).join(' · ') || '품목 없음';
+      const isNew = latestDate > lastCheck;
+      return `<div class="ship-noti-card ${cardType}${isNew ? ' is-new' : ''}" onclick="closeModal('modal-ship-notifications');openDetail(${o.id})">
+        <div class="ship-noti-card-top">
+          ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+          <span class="ship-noti-name">${esc(c?.name || '알 수 없음')}</span>
+          <span class="badge ${badgeClass}">${badgeLabel}</span>
         </div>
-        <div style="font-size:11px;color:var(--ink-muted)">${atStr}</div>
+        <div class="ship-noti-meta">
+          🗓 ${dateStr}${timeStr ? ' · ' + timeStr : ''}${tracking ? ' &nbsp;·&nbsp; 📦 ' + esc(tracking) : ''}
+        </div>
+        <div class="ship-noti-items">${itemsText}</div>
       </div>`;
-    }).join('');
+    }).join('')}</div>`;
   }
 
   async function openPaymentRequests() {
@@ -7539,7 +7719,8 @@ ${pdfLink}
     if (!isAdmin && !isStaff) return;
     openModal('modal-ship-notifications');
     renderShipmentNotifications();
-    // Reset counter when opened
+    // Mark all as seen — persist so badge resets even after page reload
+    localStorage.setItem('shipNotiLastCheck', new Date().toISOString());
     UI.shipmentNotiCount = 0;
     renderPaymentRequestButton(false);
   }
@@ -7647,7 +7828,7 @@ ${pdfLink}
         .sort((a, b) => (b.order_date || '').localeCompare(a.order_date || ''))
         .map(o => {
           const tot = orderTotal(o);
-          const items = (o.items || []).map(i => `${i.name}×${i.qty}`).join(', ');
+          const items = (o.items || []).map(i => `${esc(i.name)}×${i.qty}`).join(', ');
           const paidDate = o.paid_at ? new Date(o.paid_at).toLocaleDateString('ko-KR') : '';
           return `<div class="debt-order-row ${o.paid ? 'is-paid' : ''}"
             onclick="openDetail(${o.id})" style="cursor:pointer">
@@ -7674,9 +7855,9 @@ ${pdfLink}
 
       return `<div class="debt-cust-card">
         <div class="debt-cust-hd" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">
-          <div class="cust-avatar" style="background:${col}18;color:${col};width:36px;height:36px;font-size:15px;flex-shrink:0">${(c?.name || '?')[0]}</div>
+          <div class="cust-avatar" style="background:${col}18;color:${col};width:36px;height:36px;font-size:15px;flex-shrink:0">${esc((c?.name || '?')[0])}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:700;color:var(--ink)">${c?.name || '알 수 없음'}</div>
+            <div style="font-size:14px;font-weight:700;color:var(--ink)">${esc(c?.name || '알 수 없음')}</div>
             <div style="font-size:11px;color:var(--ink-muted);margin-top:1px">${orders.length}건 출고 · 미결제 ${custUnpaid.length}건</div>
           </div>
           <div style="text-align:right;margin-right:10px;flex-shrink:0">
@@ -7685,13 +7866,15 @@ ${pdfLink}
           `<div style="font-size:13px;color:var(--green);font-weight:700">✓ 완납</div>`}
           </div>
           ${hasUnpaid && isAdmin ? `
-            <button class="btn btn-sm"
-              style="background:var(--blue);color:#fff;border-color:var(--blue);font-size:11px;padding:4px 10px;flex-shrink:0"
-              onclick="event.stopPropagation();markAllPaid(${cid})">전체결제</button>
-            <button class="btn btn-ghost btn-sm"
-              style="font-size:11px;padding:4px 10px;flex-shrink:0;color:var(--blue);border-color:var(--blue)"
-              title="${custUnpaid.length}건 미결제 주문을 하나의 명세서로 합산"
-              onclick="event.stopPropagation();makeInvoiceFromDebtMerged(${cid})">📄 합산명세서</button>
+            <div class="debt-cust-btns" onclick="event.stopPropagation()">
+              <button class="btn btn-sm"
+                style="background:var(--blue);color:#fff;border-color:var(--blue);font-size:11px;padding:4px 10px"
+                onclick="markAllPaid(${cid})">전체결제</button>
+              <button class="btn btn-ghost btn-sm"
+                style="font-size:11px;padding:4px 10px;color:var(--blue);border-color:var(--blue)"
+                title="${custUnpaid.length}건 미결제 주문을 하나의 명세서로 합산"
+                onclick="makeInvoiceFromDebtMerged(${cid})">📄 합산명세서</button>
+            </div>
           ` : ''}
           <span style="color:var(--ink-muted);font-size:13px;margin-left:4px">▾</span>
         </div>
@@ -7743,11 +7926,11 @@ ${pdfLink}
       const ords = DB.orders.filter(o => o.customer_id == c.id);
       const total = ords.reduce((s, o) => s + orderTotal(o), 0);
       return `<div class="cust-item ${UI.currentCustId == c.id ? 'active' : ''}" onclick="selectCust(${c.id})">
-      <div class="cust-avatar" style="background:${col}18;color:${col}" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})">${c.name[0]}</div>
+      <div class="cust-avatar" style="background:${col}18;color:${col}" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})">${esc(c.name[0])}</div>
       <div style="flex:1;min-width:0">
-        <div class="cust-name" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})" style="cursor:pointer">${c.name}</div>
-        <div class="cust-tel">${c.tel}</div>
-        ${c.notes ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">📝 ${c.notes}</div>` : ''}
+        <div class="cust-name" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})" style="cursor:pointer">${esc(c.name)}</div>
+        <div class="cust-tel">${esc(c.tel)}</div>
+        ${c.notes ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">📝 ${esc(c.notes)}</div>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total) + '원'}</div>
@@ -7772,10 +7955,10 @@ ${pdfLink}
     document.getElementById('cust-detail').innerHTML = `
     <!-- Header: avatar + name + action buttons -->
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--hairline)">
-      <div class="cust-avatar" style="width:44px;height:44px;font-size:18px;background:${col}18;color:${col}">${c.name[0]}</div>
+      <div class="cust-avatar" style="width:44px;height:44px;font-size:18px;background:${col}18;color:${col}">${esc(c.name[0])}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:16px;font-weight:700;letter-spacing:-0.2px">${c.name}</div>
-        <div style="font-size:12px;color:var(--ink-muted);margin-top:2px">${c.tel || '—'}</div>
+        <div style="font-size:16px;font-weight:700;letter-spacing:-0.2px">${esc(c.name)}</div>
+        <div style="font-size:12px;color:var(--ink-muted);margin-top:2px">${esc(c.tel || '—')}</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <button class="btn btn-ghost btn-sm" onclick="editCust(${c.id})" title="거래처 수정"
@@ -7786,11 +7969,11 @@ ${pdfLink}
     </div>
     <!-- Info grid -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px">
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">대표자</div>${c.rep || '—'}</div>
-      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">담당자</div>${c.contact || '—'}</div>
-      <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주소</div>${c.addr || '—'}</div>
-      ${c.biz_no ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">사업자번호</div>${c.biz_no}</div>` : ''}
-      ${c.kakao ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">카카오톡</div>${c.kakao}</div>` : ''}
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">대표자</div>${esc(c.rep || '—')}</div>
+      <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">담당자</div>${esc(c.contact || '—')}</div>
+      <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주소</div>${esc(c.addr || '—')}</div>
+      ${c.biz_no ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">사업자번호</div>${esc(c.biz_no)}</div>` : ''}
+      ${c.kakao ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">카카오톡</div>${esc(c.kakao)}</div>` : ''}
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">총 매출</div><span style="color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total) + '원'}</span></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:3px">주문 건수</div>${ords.length}건</div>
     </div>
@@ -7803,7 +7986,7 @@ ${pdfLink}
         <div class="order-mini" onclick="openDetail(${o.id})" style="margin-bottom:0;flex-shrink:0">
           <div class="order-mini-left">
             <div class="order-mini-name">${o.order_date}</div>
-            <div class="order-mini-goods">${(o.items || []).map(i => i.name).join(', ')}</div>
+            <div class="order-mini-goods">${(o.items || []).map(i => esc(i.name)).join(', ')}</div>
           </div>
           <div class="order-mini-right">
             <div class="order-mini-amount">${UI.privacyMode ? '••••원' : fmt(orderTotal(o)) + '원'}</div>
@@ -7967,10 +8150,10 @@ ${pdfLink}
     document.getElementById('products-count').textContent = `총 ${list.length}개 제품`;
     document.getElementById('products-tb').innerHTML = list.map(p => `
       <tr>
-        <td style="font-weight:600">${p.name}</td>
-        <td style="color:var(--ink-muted);font-size:12px">${p.spec || '—'}</td>
+        <td style="font-weight:600">${esc(p.name)}</td>
+        <td style="color:var(--ink-muted);font-size:12px">${esc(p.spec || '—')}</td>
         <td style="text-align:right;font-weight:700;color:var(--blue)">${fmt(p.price)}원</td>
-        <td style="font-size:12px;color:var(--ink-muted)">${p.memo || '—'}</td>
+        <td style="font-size:12px;color:var(--ink-muted)">${esc(p.memo || '—')}</td>
         <td style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-xs" style="color:var(--blue)" onclick="editProduct(${p.id})">✏️</button>
           <button class="btn btn-ghost btn-xs" style="color:var(--red)" onclick="deleteProduct(${p.id})">🗑️</button>
@@ -7984,7 +8167,7 @@ ${pdfLink}
     const dl = document.getElementById('product-datalist');
     if (!dl) return;
     dl.innerHTML = DB.products.map(p =>
-      `<option value="${p.name}">${p.name}${p.spec ? ' (' + p.spec + ')' : ''} — ${fmt(p.price)}원</option>`
+      `<option value="${esc(p.name)}">${esc(p.name)}${p.spec ? ' (' + esc(p.spec) + ')' : ''} — ${fmt(p.price)}원</option>`
     ).join('');
   }
 
@@ -8327,23 +8510,23 @@ ${pdfLink}
       const isInvoice = e.type === 'invoice';
       const icon = isInvoice ? '📄' : (CATEGORY_ICON[e.category] || '💸');
       const typeBadge = isInvoice
-        ? `<span style="font-size:10px;background:#fff7ed;color:#b36a00;border:1px solid #fed7aa;border-radius:99px;padding:2px 8px;font-weight:700">수취명세서</span>`
-        : `<span style="font-size:10px;background:#e8f0fb;color:var(--blue);border:1px solid #c2e0ff;border-radius:99px;padding:2px 8px;font-weight:700">${e.category || '일일'}</span>`;
+        ? `<span style="font-size:10px;background:#fff7ed;color:#b36a00;border:1px solid #fed7aa;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap;display:inline-block">수취명세서</span>`
+        : `<span style="font-size:10px;background:#e8f0fb;color:var(--blue);border:1px solid #c2e0ff;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap;display:inline-block">${esc(e.category || '일일')}</span>`;
       const paidBadge = e.paid
-        ? `<span style="font-size:10px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:700;cursor:${isInvoice ? 'pointer' : 'default'}"
+        ? `<span style="font-size:10px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap;display:inline-block;cursor:${isInvoice ? 'pointer' : 'default'}"
              ${isInvoice ? `onclick="event.stopPropagation();markExpensePaid(${e.id},false)" title="클릭 → 미지급으로 변경"` : ''}>결제완료</span>`
-        : `<span style="font-size:10px;background:#fff1f0;color:var(--red);border:1px solid #fecaca;border-radius:99px;padding:2px 8px;font-weight:700;cursor:pointer"
+        : `<span style="font-size:10px;background:#fff1f0;color:var(--red);border:1px solid #fecaca;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap;display:inline-block;cursor:pointer"
              onclick="event.stopPropagation();markExpensePaid(${e.id},true)" title="클릭 → 결제완료">미지급</span>`;
       return `<tr style="border-bottom:1px solid var(--hairline);cursor:default">
         <td style="padding:11px 14px;font-size:13px;white-space:nowrap;color:var(--ink-muted)">${e.date || ''}</td>
         <td style="padding:11px 14px">${typeBadge}</td>
         <td style="padding:11px 14px;font-size:13px;font-weight:600;max-width:200px">
-          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${icon} ${e.description || ''}</div>
-          ${e.memo ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${e.memo}</div>` : ''}
-          ${e.created_by ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:3px">👤 ${e.created_by}</div>` : ''}
+          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${icon} ${esc(e.description || '')}</div>
+          ${e.memo ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${esc(e.memo)}</div>` : ''}
+          ${e.created_by ? `<div style="font-size:11px;color:var(--ink-muted);margin-top:3px">👤 ${esc(e.created_by)}</div>` : ''}
         </td>
-        <td style="padding:11px 14px;font-size:12px;color:var(--ink-muted)">${e.vendor || '—'}</td>
-        <td style="padding:11px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--red)">${fv(e.amount)}</td>
+        <td class="exp-col-vendor" style="padding:11px 14px;font-size:12px;color:var(--ink-muted)">${esc(e.vendor || '—')}</td>
+        <td style="padding:11px 14px;text-align:right;font-size:14px;font-weight:700;color:var(--red);white-space:nowrap">${fv(e.amount)}</td>
         <td style="padding:11px 14px;text-align:center">${paidBadge}</td>
         <td style="padding:11px 14px;display:flex;gap:4px;justify-content:flex-end">
           <button class="btn btn-ghost btn-xs" onclick="openExpenseModal(${e.id})" style="color:var(--blue)">✏️</button>
@@ -8365,8 +8548,8 @@ ${pdfLink}
       <input type="checkbox" value="${o.id}" style="width:15px;height:15px;accent-color:var(--blue)">
       <div style="width:4px;border-radius:99px;height:32px;background:${col};flex-shrink:0"></div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${c?.name || '—'} · ${o.order_date}</div>
-        <div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${(o.items || []).map(i => i.name + ' ×' + i.qty).join(' / ')}</div>
+        <div style="font-size:13px;font-weight:600">${esc(c?.name || '—')} · ${o.order_date}</div>
+        <div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${(o.items || []).map(i => esc(i.name) + ' ×' + i.qty).join(' / ')}</div>
       </div>
       <div style="font-size:13px;color:var(--blue);font-weight:700">${fmt(orderTotal(o))}원</div>
     </label>`;
@@ -8891,10 +9074,10 @@ ${pdfLink}
       const inThisShipment = event.itemIndexes.has(i._idx);
       if (isPartial) {
         return inThisShipment
-          ? `<span class="history-item-chip" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty} ✓</span>`
-          : `<span class="history-item-chip" style="text-decoration:line-through;opacity:0.4;background:#f9f9f9">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`;
+          ? `<span class="history-item-chip" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">${esc(i.name)}${i.spec ? ` (${esc(i.spec)})` : ''} ×${i.qty} ✓</span>`
+          : `<span class="history-item-chip" style="text-decoration:line-through;opacity:0.4;background:#f9f9f9">${esc(i.name)}${i.spec ? ` (${esc(i.spec)})` : ''} ×${i.qty}</span>`;
       }
-      return `<span class="history-item-chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`;
+      return `<span class="history-item-chip">${esc(i.name)}${i.spec ? ` (${esc(i.spec)})` : ''} ×${i.qty}</span>`;
     }).join('');
 
     const imgUrls = event.images || [];
@@ -8912,12 +9095,12 @@ ${pdfLink}
         <div class="history-card-main">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <div style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0"></div>
-            <span style="font-size:15px;font-weight:700;color:var(--ink)">${c?.name || '—'}</span>
+            <span style="font-size:15px;font-weight:700;color:var(--ink)">${esc(c?.name || '—')}</span>
             ${statusBadge}
           </div>
           <div style="font-size:12px;color:var(--ink-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             ${timeStr ? `<span style="font-weight:700;color:var(--ink);background:var(--parchment2);border-radius:6px;padding:1px 7px;border:1px solid var(--border)">🕐 ${timeStr}</span>` : ''}
-            ${event.tracking ? `<span>📦 ${event.tracking}</span>` : ''}
+            ${event.tracking ? `<span>📦 ${esc(event.tracking)}</span>` : ''}
           </div>
         </div>
         ${hasImg
@@ -8933,7 +9116,7 @@ ${pdfLink}
       </div>
       <div class="history-body">
         <div class="history-items">${itemStr || '<span style="color:var(--ink-muted)">품목 없음</span>'}</div>
-        ${o.memo ? `<div style="margin-top:8px;font-size:11px;color:var(--ink-muted);font-style:italic">메모: ${o.memo}</div>` : ''}
+        ${o.memo ? `<div style="margin-top:8px;font-size:11px;color:var(--ink-muted);font-style:italic">메모: ${esc(o.memo)}</div>` : ''}
       </div>
     </div>`;
   }
@@ -9036,15 +9219,20 @@ ${pdfLink}
     document.body.appendChild(ov);
   }
 
+  let _renderAllTimer = null;
   function renderAll() {
-    renderDashboard();
-    renderOrders();
-    renderCustomers();
-    renderHistory();
-    renderDebt();
-    renderExpenses();
-    if (UI.selectedDate) renderDayDetail(UI.selectedDate);
-    renderCalendar();
+    if (_renderAllTimer) return;
+    _renderAllTimer = setTimeout(() => {
+      _renderAllTimer = null;
+      renderDashboard();
+      renderOrders();
+      renderCustomers();
+      renderHistory();
+      renderDebt();
+      renderExpenses();
+      if (UI.selectedDate) renderDayDetail(UI.selectedDate);
+      renderCalendar();
+    }, 80);
   }
 
   function ordersSignature(orders) {
@@ -9065,6 +9253,7 @@ ${pdfLink}
         DB.orders = ords || [];
         UI.ordersSignature = nextSig;
         renderAll();
+        renderPaymentRequestButton(false);
         const dot = document.getElementById('db-dot');
         if (dot) { dot.style.transform = 'scale(1.4)'; setTimeout(() => dot.style.transform = '', 400); }
       }
@@ -9113,8 +9302,8 @@ ${pdfLink}
     UI.dataSignature = allDataSignature();
     if (UI.orderRefreshTimer) clearInterval(UI.orderRefreshTimer);
     if (UI.fullRefreshTimer) clearInterval(UI.fullRefreshTimer);
-    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 2000);
-    UI.fullRefreshTimer = setInterval(refreshAllLight, 8000);
+    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 15000);
+    UI.fullRefreshTimer = setInterval(refreshAllLight, 30000);
     startPaymentRequestPolling();
 
     // Realtime WebSocket이 꺼져 있어도 위의 lightweight polling으로 모바일 출고 변경을 따라잡음
@@ -9369,6 +9558,7 @@ ${pdfLink}
   }
 
   function openReportModal() {
+    document.body.classList.remove('sidebar-active');
     UI.reportPeriod = 'today';
     document.querySelectorAll('.report-tab').forEach(t =>
       t.classList.toggle('report-tab-active', t.dataset.rp === 'today')
@@ -9470,7 +9660,7 @@ ${pdfLink}
       const c = getCust(o.customer_id);
       const d = (o.order_date || '').slice(0, 10);
       const items = orderItems(o).map(i =>
-        `<span class="report-item-chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`
+        `<span class="report-item-chip">${esc(i.name)}${i.spec ? ` (${esc(i.spec)})` : ''} ×${i.qty}</span>`
       ).join('');
       const st = effectiveOrderStatus(o);
       const stLbl = STATUS_LABEL[st] || st;
@@ -9479,7 +9669,7 @@ ${pdfLink}
         <div class="report-order-top">
           <span>
             <span style="font-size:10px;color:var(--ink-muted)">${d}</span>
-            &nbsp;<b style="font-size:13px">${c?.name || '—'}</b>
+            &nbsp;<b style="font-size:13px">${esc(c?.name || '—')}</b>
             &nbsp;<span style="font-size:10px;font-weight:700;color:${stClr};background:${stClr}18;border-radius:4px;padding:1px 5px">${stLbl}</span>
           </span>
           <span style="color:var(--blue);font-weight:700;font-size:13px">${fmt(orderTotal(o))}원</span>
@@ -9521,7 +9711,7 @@ ${pdfLink}
     });
     const custSummaryRows = Object.values(byCustomer)
       .sort((a, b) => b.total - a.total)
-      .map(c => `<tr><td>${c.name}</td><td style="text-align:center">${c.count}건</td><td style="text-align:right;font-weight:700;color:#2563eb">${fmt(c.total)}원</td></tr>`)
+      .map(c => `<tr><td>${esc(c.name)}</td><td style="text-align:center">${c.count}건</td><td style="text-align:right;font-weight:700;color:#2563eb">${fmt(c.total)}원</td></tr>`)
       .join('') || '<tr><td colspan="3" style="text-align:center;color:#94a3b8">출고 내역 없음</td></tr>';
 
     // 전체 주문 현황 (신규+대기+완료)
@@ -9530,12 +9720,12 @@ ${pdfLink}
       const d = (o.order_date || '').slice(0, 10);
       const st = effectiveOrderStatus(o);
       const itms = orderItems(o).map(i =>
-        `<span class="chip" style="background:${itemIsShipped(i) ? '#f0fdf4' : (ST_BG[st] || '#eff6ff')};color:${itemIsShipped(i) ? '#16a34a' : (ST_COLOR[st] || '#2563eb')}">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}${i.price ? ` · ${fmt(i.price)}원` : ''}${itemIsShipped(i) ? ' ✓' : ''}</span>`
+        `<span class="chip" style="background:${itemIsShipped(i) ? '#f0fdf4' : (ST_BG[st] || '#eff6ff')};color:${itemIsShipped(i) ? '#16a34a' : (ST_COLOR[st] || '#2563eb')}">${esc(i.name)}${i.spec ? ` (${esc(i.spec)})` : ''} ×${i.qty}${i.price ? ` · ${fmt(i.price)}원` : ''}${itemIsShipped(i) ? ' ✓' : ''}</span>`
       ).join(' ');
       const amt = orderTotal(o);
       return `<tr class="${idx % 2 === 0 ? 'even' : ''}">
         <td class="nowrap">${d}</td>
-        <td><b>${c?.name || '—'}</b></td>
+        <td><b>${esc(c?.name || '—')}</b></td>
         <td class="nowrap"><span class="status-badge" style="color:${ST_COLOR[st] || '#888'};background:${ST_BG[st] || '#f8f8f8'}">${ST_LABEL[st] || st}</span></td>
         <td>${itms}</td>
         <td class="money">${fmt(amt)}원</td>
@@ -9546,10 +9736,10 @@ ${pdfLink}
     const shippedRows = shipments.map((line, idx) => {
       const d = (line.date || '').slice(0, 10);
       const t = (line.date || '').length > 10 ? (line.date || '').slice(11, 16) : '';
-      const itms = line.items.map(i => `<span class="chip">${i.name}${i.spec ? ` (${i.spec})` : ''} ×${i.qty}</span>`).join(' ');
+      const itms = line.items.map(i => `<span class="chip">${esc(i.name)}${i.spec ? ` (${esc(i.spec)})` : ''} ×${i.qty}</span>`).join(' ');
       return `<tr class="${idx % 2 === 0 ? 'even' : ''}">
         <td>${d}${t ? `<br><span style="color:#64748b;font-size:8pt">${t}</span>` : ''}</td>
-        <td><b>${line.customerName}</b></td>
+        <td><b>${esc(line.customerName)}</b></td>
         <td class="nowrap"><span class="status-badge" style="color:${ST_COLOR[line.status]};background:${ST_BG[line.status]}">${ST_LABEL[line.status]}</span></td>
         <td>${itms}${line.tracking ? `<div style="margin-top:3px;color:#64748b;font-size:8pt">송장 ${line.tracking}</div>` : ''}</td>
         <td class="money">${fmt(line.amount)}원</td>
