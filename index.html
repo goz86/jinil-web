@@ -8755,16 +8755,39 @@ ${pdfLink}
     }).join('');
   }
 
+  function loadMoreShipNotifications() {
+    DB.shipNotiDaysBack = (DB.shipNotiDaysBack || 2) + 7;
+    renderShipmentNotifications();
+  }
+
   function renderShipmentNotifications() {
     const body = document.getElementById('ship-notifications-body');
     if (!body) return;
 
-    const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const daysBack  = DB.shipNotiDaysBack || 2;
+    const cutoff    = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+    const cutoffDate = cutoff.slice(0, 10);
+    const rangeLabel = daysBack === 2 ? '48시간' : `${daysBack}일`;
+    const canLoadMore = daysBack < 60; // 최대 60일까지
     const lastCheck = getShipNotiLastCheck();
+
+    const loadMoreHtml = canLoadMore
+      ? `<div style="text-align:center;padding:12px 0 18px">
+          <button onclick="loadMoreShipNotifications()"
+            style="padding:8px 22px;border-radius:99px;border:1.5px solid var(--border);
+                   background:var(--canvas);color:var(--ink-muted);font-size:13px;font-weight:600;
+                   cursor:pointer;font-family:var(--font);transition:all .15s"
+            onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink-muted)'">
+            📂 ${cutoffDate} 이전 데이터 불러오기
+          </button>
+          <div style="font-size:11px;color:var(--ink-muted);margin-top:6px">현재 ${rangeLabel} 이후 데이터 표시 중</div>
+        </div>`
+      : `<div style="text-align:center;font-size:11px;color:var(--ink-muted);padding:8px 0 18px">— 모든 데이터 표시 중 —</div>`;
 
     // ── 1. Staff web actions (created / shipped on web by staff) ──
     const staffNotifs = (DB.notifications || [])
-      .filter(n => n.created_at && n.created_at >= cutoff48h)
+      .filter(n => n.created_at && n.created_at >= cutoff)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
     const staffShipOrderIds = new Set(
       staffNotifs
@@ -8778,7 +8801,7 @@ ${pdfLink}
         if (staffShipOrderIds.has(String(o.id))) return false;
         const d = getLatestShipDate(o);
         if (isSelfShipment({ id: o.id, ids: [o.id], shipDate: d })) return false;
-        return dateToMs(d) >= dateToMs(cutoff48h) && (effectiveOrderStatus(o) === 'shipped' || isPartialOrder(o));
+        return dateToMs(d) >= dateToMs(cutoff) && (effectiveOrderStatus(o) === 'shipped' || isPartialOrder(o));
       })
       .sort((a, b) => dateToMs(getLatestShipDate(b)) - dateToMs(getLatestShipDate(a)));
 
@@ -8786,7 +8809,7 @@ ${pdfLink}
     const hasMobile = mobileShipped.length > 0;
 
     if (!hasStaff && !hasMobile) {
-      body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="empty-icon">📦</div><div class="empty-text">최근 48시간 알림이 없습니다</div></div>';
+      body.innerHTML = `<div class="empty" style="padding:40px 0"><div class="empty-icon">📦</div><div class="empty-text">최근 ${rangeLabel} 알림이 없습니다</div></div>${loadMoreHtml}`;
       return;
     }
 
@@ -8848,6 +8871,7 @@ ${pdfLink}
         <div class="ship-noti-list">${staffHtml}</div>` : ''}
       ${hasMobile ? `<div style="font-size:11px;font-weight:700;color:var(--ink-muted);padding:10px 14px 4px;letter-spacing:.5px;text-transform:uppercase">📱 모바일 출고</div>
         <div class="ship-noti-list">${mobileHtml}</div>` : ''}
+      ${loadMoreHtml}
     `;
   }
 
@@ -8864,6 +8888,7 @@ ${pdfLink}
     const isAdmin = UI.currentUser?.role === 'admin';
     const isStaff = UI.currentUser?.role === 'staff';
     if (!isAdmin && !isStaff) return;
+    DB.shipNotiDaysBack = 2; // reset về 48h mỗi lần mở mới
     openModal('modal-ship-notifications');
     renderShipmentNotifications();
     // Mark all as seen — saved to Supabase so badge resets across all devices/sessions
