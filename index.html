@@ -5106,12 +5106,12 @@
 <div id="modal-guide-overlay"
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;
          align-items:center;justify-content:center;padding:16px">
-  <div style="background:#fff;border-radius:20px;width:100%;max-width:900px;
+  <div style="background:#f5f5f7;border-radius:20px;width:100%;max-width:900px;
               height:90vh;display:flex;flex-direction:column;overflow:hidden;
               box-shadow:0 24px 80px rgba(0,0,0,0.3)">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;
-                padding:16px 20px;border-bottom:1px solid #e0e0e0;flex-shrink:0">
+                padding:16px 20px;border-bottom:1px solid #e0e0e0;flex-shrink:0;background:#fff">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:20px">📋</span>
         <span style="font-size:16px;font-weight:700;color:#1d1d1f">사용 설명서</span>
@@ -5123,9 +5123,294 @@
         onmouseover="this.style.background='#e5e5ea'"
         onmouseout="this.style.background='#f5f5f7'">✕</button>
     </div>
-    <!-- iframe -->
-    <iframe src="guide-kr.html" style="flex:1;border:none;width:100%"
-      title="사용 설명서"></iframe>
+    <!-- Inline guide content (no iframe — blocked by X-Frame-Options) -->
+    <div id="gd" style="flex:1;overflow-y:auto">
+
+<style>
+/* ── GUIDE SCOPED STYLES (prefix: #gd) ── */
+#gd{font-family:'Noto Sans KR',system-ui,sans-serif;background:#f5f5f7;color:#1d1d1f;font-size:15px;line-height:1.6}
+#gd *{box-sizing:border-box;margin:0;padding:0}
+#gd .g-hero{background:linear-gradient(135deg,#0a2540 0%,#1a6b3a 100%);color:#fff;text-align:center;padding:48px 24px 40px}
+#gd .g-hero-badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:5px 16px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+#gd .g-hero h1{font-size:clamp(22px,4vw,38px);font-weight:900;letter-spacing:-.5px;line-height:1.1;margin-bottom:12px}
+#gd .g-hero p{font-size:15px;color:rgba(255,255,255,.75);max-width:480px;margin:0 auto;line-height:1.7}
+#gd .g-wrap{max-width:820px;margin:0 auto;padding:0 20px}
+#gd .g-sec{padding:44px 0}
+#gd .g-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#0066cc;margin-bottom:10px}
+#gd .g-title{font-size:clamp(20px,3.5vw,28px);font-weight:800;letter-spacing:-.4px;margin-bottom:8px}
+#gd .g-sub{font-size:14px;color:#6e6e73;margin-bottom:28px;max-width:600px}
+#gd .g-divider{height:1px;background:#e0e0e0}
+/* flow */
+#gd .gf-wrap{background:#fff;border-radius:18px;border:1px solid #e0e0e0;padding:28px 20px 20px;overflow-x:auto}
+#gd .fn{width:100%;min-height:44px;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;text-align:center;line-height:1.35;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+#gd .fn-g{background:#dcfce7;color:#166534;border:1.5px solid #86efac}
+#gd .fn-b{background:#dbeafe;color:#1e40af;border:1.5px solid #93c5fd}
+#gd .fn-o{background:#fff7ed;color:#92400e;border:1.5px solid #fcd34d}
+#gd .fa{width:2px;height:24px;background:#cbd5e1;position:relative;flex-shrink:0}
+#gd .fa::after{content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #94a3b8}
+/* role cards */
+#gd .g-role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#gd .g-role-card{background:#fff;border-radius:18px;border:1px solid #e0e0e0;padding:22px}
+#gd .g-role-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+#gd .g-role-card h3{font-size:16px;font-weight:700;margin-bottom:6px}
+#gd .g-role-card p{font-size:13px;color:#6e6e73;line-height:1.6;margin-bottom:12px}
+#gd .g-role-card ul{padding-left:0}
+#gd .g-role-card li{list-style:none;font-size:13px;padding:4px 0;border-bottom:1px solid #e0e0e0;display:flex;gap:8px}
+#gd .g-role-card li:last-child{border-bottom:none}
+#gd .g-role-card li::before{content:'✓';color:#1a7f2a;font-weight:700;flex-shrink:0}
+/* feature cards */
+#gd .g-feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+#gd .g-feat-card{background:#fff;border-radius:18px;border:1px solid #e0e0e0;padding:22px}
+#gd .g-feat-icon{font-size:26px;margin-bottom:10px;display:block}
+#gd .g-feat-card h3{font-size:14px;font-weight:700;margin-bottom:6px}
+#gd .g-feat-card p{font-size:13px;color:#6e6e73;line-height:1.6}
+/* status */
+#gd .g-status-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;align-items:center}
+#gd .g-badge{border-radius:99px;padding:6px 14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+#gd .gb-new{background:#eff6ff;color:#1e40af;border:1.5px solid #bfdbfe}
+#gd .gb-wait{background:#fefce8;color:#854d0e;border:1.5px solid #fde047}
+#gd .gb-part{background:#fff7ed;color:#9a3412;border:1.5px solid #fdba74}
+#gd .gb-ship{background:#f0fdf4;color:#166534;border:1.5px solid #86efac}
+/* steps */
+#gd .g-steps{display:flex;flex-direction:column}
+#gd .g-step{display:flex;gap:18px;position:relative}
+#gd .g-step:not(:last-child)::before{content:'';position:absolute;left:18px;top:44px;bottom:0;width:2px;background:#e0e0e0}
+#gd .g-step-num{width:38px;height:38px;border-radius:50%;background:#0066cc;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1}
+#gd .g-step-body{padding-bottom:28px;flex:1}
+#gd .g-step-body h4{font-size:15px;font-weight:700;margin-bottom:5px;margin-top:7px}
+#gd .g-step-body p{font-size:13px;color:#6e6e73;line-height:1.6}
+#gd .g-step-tip{margin-top:7px;background:#e8f2ff;border-radius:10px;padding:8px 12px;font-size:12px;color:#0066cc;font-weight:600}
+/* boxes */
+#gd .g-tip{background:#f0fdf4;border-left:4px solid #1a7f2a;border-radius:0 12px 12px 0;padding:14px 18px;font-size:13px;color:#166534;margin-top:20px;line-height:1.7}
+#gd .g-warn{background:#fff7ed;border-left:4px solid #f59e0b;border-radius:0 12px 12px 0;padding:14px 18px;font-size:13px;color:#b36a00;margin-top:20px;line-height:1.7}
+/* table */
+#gd .g-tbl{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid #e0e0e0;margin-top:16px}
+#gd .g-tbl th{background:#f8f8fa;font-size:12px;font-weight:700;padding:11px 14px;text-align:left;border-bottom:1px solid #e0e0e0;color:#6e6e73;letter-spacing:.5px}
+#gd .g-tbl td{padding:11px 14px;font-size:13px;border-bottom:1px solid #e0e0e0;vertical-align:top}
+#gd .g-tbl tr:last-child td{border-bottom:none}
+#gd .g-tbl tr:hover td{background:#fafafa}
+/* footer */
+#gd .g-footer{background:#1d1d1f;color:rgba(255,255,255,.6);text-align:center;padding:28px 20px;font-size:12px;line-height:1.8}
+#gd .g-footer strong{color:#fff}
+/* legend */
+#gd .g-legend{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
+#gd .g-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#6e6e73}
+#gd .g-ldot{width:12px;height:12px;border-radius:3px}
+@media(max-width:560px){#gd .g-role-grid{grid-template-columns:1fr}#gd .fn{white-space:normal}}
+</style>
+
+<!-- HERO -->
+<div class="g-hero">
+  <div class="g-hero-badge">📋 사용 설명서 · 운영 가이드</div>
+  <h1>진일 주문 관리 시스템</h1>
+  <p>주문 접수부터 출고 알림까지 — 모바일 앱과 웹이 연동되어 자동으로 처리합니다.</p>
+</div>
+
+<!-- FLOWCHART -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">📊 시스템 개요</div>
+  <div class="g-title">전체 운영 흐름도</div>
+  <p class="g-sub">모바일 앱 촬영부터 거래처 발송까지의 전체 과정을 한눈에 확인하세요.</p>
+  <div class="gf-wrap">
+    <div style="display:grid;grid-template-columns:1fr 48px 1fr 48px 1fr;gap:0;min-width:600px">
+      <div style="text-align:center;font-size:12px;font-weight:700;color:#166534;padding-bottom:16px;display:flex;align-items:center;justify-content:center;gap:5px">📱 앱 (Android)</div>
+      <div></div>
+      <div style="text-align:center;font-size:12px;font-weight:700;color:#0044aa;padding-bottom:16px;display:flex;align-items:center;justify-content:center;gap:5px">🖥 웹 / PC</div>
+      <div></div>
+      <div style="text-align:center;font-size:12px;font-weight:700;color:#92400e;padding-bottom:16px;display:flex;align-items:center;justify-content:center;gap:5px">📤 발송</div>
+      <!-- App col -->
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="fn fn-g">1. 박스 송장 사진 촬영</div><div class="fa"></div>
+        <div class="fn fn-g">2. 사진 자동 압축 (1080px)</div><div class="fa"></div>
+        <div class="fn fn-g">3. 데이터베이스에 사진 업로드</div>
+        <div style="flex:1"></div>
+      </div>
+      <!-- sync arrow -->
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div style="height:calc(44px + 24px + 44px + 24px + 22px + 44px + 24px + 22px)"></div>
+        <div style="display:flex;align-items:center;width:100%">
+          <div style="flex:1;height:2px;background:#60a5fa"></div>
+          <div style="border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid #60a5fa"></div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-top:3px">sync</div>
+      </div>
+      <!-- Web col -->
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="fn fn-b">4. 주문 입력 (거래처·품목·가격·날짜)</div><div class="fa"></div>
+        <div class="fn fn-b">5. 출고할 품목 선택 및 체크</div><div class="fa"></div>
+        <div class="fn fn-b">6. 송장번호 입력 (롯데 13자리 / 경기 16자리)</div><div class="fa"></div>
+        <div class="fn fn-b">7. 거래명세서 PDF 자동 생성</div><div class="fa"></div>
+        <div class="fn fn-b">8. 데이터베이스 저장 및 실시간 알림 전송</div>
+      </div>
+      <!-- web→send arrow -->
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div style="height:calc((44px + 24px)*4 + 22px)"></div>
+        <div style="display:flex;align-items:center;width:100%">
+          <div style="flex:1;height:2px;background:#f59e0b"></div>
+          <div style="border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid #f59e0b"></div>
+        </div>
+      </div>
+      <!-- Send col -->
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div style="height:calc((44px + 24px)*4)"></div>
+        <div class="fn fn-o">9. KakaoTalk 발송 (사진 + 메시지 + PDF 링크)</div><div class="fa"></div>
+        <div class="fn fn-o">10. SMS 문자 발송 (백업 수단)</div><div class="fa"></div>
+        <div style="width:100%;border:1.5px solid #fcd34d;border-radius:12px;background:#fff7ed;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">📋 발송 내용</div>
+          <div style="font-size:12px;color:#78350f;line-height:2">📷 송장 사진 (압축 480px 첨부)<br>📑 거래명세서 PDF 링크<br>📦 택배사명 + 송장번호<br>🛍 출고 품목 및 수량 목록</div>
+        </div>
+      </div>
+    </div>
+    <div class="g-legend">
+      <div class="g-legend-item"><div class="g-ldot" style="background:#dcfce7;border:1.5px solid #86efac"></div>앱(Android) 처리</div>
+      <div class="g-legend-item"><div class="g-ldot" style="background:#dbeafe;border:1.5px solid #93c5fd"></div>웹(PC) 처리</div>
+      <div class="g-legend-item"><div class="g-ldot" style="background:#fff7ed;border:1.5px solid #fcd34d"></div>발송 / 알림</div>
+    </div>
+  </div>
+</div></div>
+
+<div class="g-divider"></div>
+
+<!-- ROLES -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">👤 계정 구분</div>
+  <div class="g-title">역할 및 권한</div>
+  <p class="g-sub">시스템에는 두 가지 역할이 있습니다. 로그인 후 역할에 따라 메뉴와 기능이 달라집니다.</p>
+  <div class="g-role-grid">
+    <div class="g-role-card">
+      <div class="g-role-icon" style="background:#f0fdf4">🔑</div>
+      <h3>관리자 (Admin)</h3>
+      <p>모든 기능에 접근 가능하며 시스템 전체를 관리합니다.</p>
+      <ul>
+        <li>주문·고객·지출 전체 관리</li><li>직원 활동 알림 수신</li>
+        <li>결제 요청 승인 / 거절</li><li>공급자 정보 설정</li>
+        <li>PIN 잠금 설정</li><li>이전 데이터 조회 (최대 90일+)</li>
+      </ul>
+    </div>
+    <div class="g-role-card">
+      <div class="g-role-icon" style="background:#eff6ff">👷</div>
+      <h3>직원 (Staff)</h3>
+      <p>일상적인 주문 처리 및 출고 업무를 담당합니다.</p>
+      <ul>
+        <li>주문 생성 · 수정 · 출고 처리</li><li>고객 정보 조회</li>
+        <li>거래명세서 PDF 출력</li><li>모바일 앱으로 사진 촬영 및 발송</li>
+        <li>출고 알림 확인</li><li>결제 요청 생성</li>
+      </ul>
+    </div>
+  </div>
+</div></div>
+
+<div class="g-divider"></div>
+
+<!-- ORDER STATUS -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">📦 주문 상태</div>
+  <div class="g-title">주문 상태 흐름</div>
+  <p class="g-sub">주문은 아래 4단계 상태로 관리됩니다. 상태별로 색상이 다르게 표시됩니다.</p>
+  <div class="g-status-row">
+    <span class="g-badge gb-new">📝 신규</span>
+    <span style="color:#6e6e73;font-size:16px">→</span>
+    <span class="g-badge gb-wait">⏳ 대기</span>
+    <span style="color:#6e6e73;font-size:16px">→</span>
+    <span class="g-badge gb-part">📦 부분출고</span>
+    <span style="color:#6e6e73;font-size:16px">→</span>
+    <span class="g-badge gb-ship">✅ 출고완료</span>
+  </div>
+  <table class="g-tbl" style="margin-top:20px">
+    <thead><tr><th>상태</th><th>의미</th><th>다음 단계</th></tr></thead>
+    <tbody>
+      <tr><td><span class="g-badge gb-new">📝 신규</span></td><td>주문이 막 접수된 상태. 아직 처리 전.</td><td>주문 확인 후 "대기"로 변경하거나 바로 출고 처리</td></tr>
+      <tr><td><span class="g-badge gb-wait">⏳ 대기</span></td><td>확인 완료, 출고 준비 중인 상태</td><td>모바일 앱으로 송장 촬영 후 출고 처리</td></tr>
+      <tr><td><span class="g-badge gb-part">📦 부분출고</span></td><td>일부 품목만 출고된 상태</td><td>나머지 품목 출고 후 "출고완료"로 전환</td></tr>
+      <tr><td><span class="g-badge gb-ship">✅ 출고완료</span></td><td>모든 품목이 출고된 최종 상태</td><td>완료 — KakaoTalk / SMS로 거래처에 자동 알림 발송</td></tr>
+    </tbody>
+  </table>
+  <div class="g-tip">💡 <strong>부분출고란?</strong> 주문한 품목 중 일부만 먼저 보내는 경우입니다. 나머지는 다음 번에 추가 출고할 수 있으며, 모두 출고되면 자동으로 "출고완료"로 변경됩니다.</div>
+</div></div>
+
+<div class="g-divider"></div>
+
+<!-- FEATURES -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">⚡ 주요 기능</div>
+  <div class="g-title">메뉴별 기능 안내</div>
+  <p class="g-sub">웹 화면 상단 탭별로 제공되는 기능을 확인하세요.</p>
+  <div class="g-feat-grid">
+    <div class="g-feat-card"><span class="g-feat-icon">📋</span><h3>주문 관리</h3><p>거래처별 주문을 생성·수정하고 상태를 추적합니다. 기본으로 최근 90일 주문이 표시되며, "이전 데이터 불러오기" 버튼으로 더 오래된 내역도 조회할 수 있습니다.</p></div>
+    <div class="g-feat-card"><span class="g-feat-icon">👥</span><h3>고객 관리</h3><p>거래처 목록을 관리합니다. 담당자 이름, 전화번호, 사업자번호, 주소 등을 입력할 수 있으며 이 정보가 거래명세서에 자동으로 반영됩니다.</p></div>
+    <div class="g-feat-card"><span class="g-feat-icon">💰</span><h3>지출 관리</h3><p>택배비·구매비 등 운영 비용을 날짜·항목별로 기록합니다. 수입과 지출을 비교하여 손익 현황을 확인할 수 있습니다.</p></div>
+    <div class="g-feat-card"><span class="g-feat-icon">📑</span><h3>거래명세서 자동 생성</h3><p>출고 처리 시 PDF 거래명세서가 자동으로 생성됩니다. 공급자·거래처 정보, 품목·수량·단가·합계가 포함된 A4 형식의 문서입니다.</p></div>
+    <div class="g-feat-card"><span class="g-feat-icon">🔔</span><h3>실시간 알림</h3><p>모바일 앱에서 출고 처리 시 웹의 알림 벨(🔔)에 즉시 숫자가 표시됩니다. "이전 데이터 불러오기"로 더 오래된 알림도 조회 가능합니다.</p></div>
+    <div class="g-feat-card"><span class="g-feat-icon">💳</span><h3>결제 요청</h3><p>직원이 경비 승인을 요청하면 관리자에게 실시간 알림이 전송됩니다. 관리자는 승인 또는 거절을 선택할 수 있으며, 결과는 즉시 직원에게 전달됩니다.</p></div>
+  </div>
+</div></div>
+
+<div class="g-divider"></div>
+
+<!-- MOBILE STEPS -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">📱 모바일 앱</div>
+  <div class="g-title">모바일 출고 처리 순서</div>
+  <p class="g-sub">Android 앱에서 출고를 처리하는 단계별 방법입니다.</p>
+  <div class="g-steps">
+    <div class="g-step"><div class="g-step-num">1</div><div class="g-step-body"><h4>앱 실행 후 로그인</h4><p>관리자에게 받은 이메일·비밀번호로 로그인합니다. 한 번 로그인하면 자동으로 유지됩니다.</p></div></div>
+    <div class="g-step"><div class="g-step-num">2</div><div class="g-step-body"><h4>거래처 선택</h4><p>출고할 거래처를 목록에서 선택합니다. 이름으로 검색도 가능합니다.</p></div></div>
+    <div class="g-step"><div class="g-step-num">3</div><div class="g-step-body"><h4>송장 촬영</h4><p>박스에 붙은 송장 라벨을 카메라로 촬영합니다. 여러 장 촬영 가능합니다.</p><div class="g-step-tip">💡 사진 2장 이상 촬영 후 뒤로 가면 자동으로 공유 팝업이 열립니다.</div></div></div>
+    <div class="g-step"><div class="g-step-num">4</div><div class="g-step-body"><h4>출고할 품목 체크</h4><p>주문 목록에서 이번에 보낼 품목에 체크 표시를 합니다. 일부만 선택하면 자동으로 "부분출고"로 처리됩니다.</p></div></div>
+    <div class="g-step"><div class="g-step-num">5</div><div class="g-step-body"><h4>송장번호 입력</h4><p>택배 송장번호를 입력합니다. 롯데택배는 13자리, 경기택배는 16자리입니다. 앱이 자동으로 택배사를 구분합니다.</p></div></div>
+    <div class="g-step"><div class="g-step-num">6</div><div class="g-step-body"><h4>KakaoTalk 또는 SMS 발송</h4><p>발송 방법을 선택합니다. KakaoTalk으로 보내면 사진 + 거래명세서 링크 + 품목 정보가 함께 전송됩니다.</p><div class="g-step-tip">📱 KakaoTalk 권장 — 사진을 직접 첨부하여 거래처가 바로 확인할 수 있습니다.</div></div></div>
+    <div class="g-step"><div class="g-step-num">7</div><div class="g-step-body"><h4>출고 완료 처리</h4><p>발송 완료 후 "출고 완료 처리" 버튼을 누릅니다. 웹의 관리자·직원에게 실시간 알림이 전송되고 주문 상태가 자동으로 업데이트됩니다.</p></div></div>
+  </div>
+  <div class="g-tip">🚚 <strong>택배사 자동 구분:</strong> 송장번호 16자리 → 경기택배 / 13자리 → 롯데택배로 자동 인식됩니다.</div>
+</div></div>
+
+<div class="g-divider"></div>
+
+<!-- NOTIFICATIONS -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">🔔 알림 시스템</div>
+  <div class="g-title">알림 종류 및 동작 방식</div>
+  <p class="g-sub">시스템은 두 가지 종류의 실시간 알림을 제공합니다.</p>
+  <table class="g-tbl">
+    <thead><tr><th>알림 종류</th><th>발생 시점</th><th>수신 대상</th><th>확인 방법</th></tr></thead>
+    <tbody>
+      <tr><td>📦 <strong>출고 알림</strong></td><td>모바일 앱에서 출고 처리 시</td><td>관리자 + 직원</td><td>화면 우상단 🔔 벨 클릭</td></tr>
+      <tr><td>📝 <strong>주문 생성 알림</strong></td><td>직원이 웹에서 주문 생성 시</td><td>관리자만</td><td>화면 우상단 🔔 벨 클릭</td></tr>
+      <tr><td>💳 <strong>결제 요청 알림</strong></td><td>직원이 결제 요청 생성 시</td><td>관리자만</td><td>화면 우상단 💳 버튼 클릭</td></tr>
+    </tbody>
+  </table>
+  <div class="g-warn">⚠️ <strong>알림 초기화:</strong> 🔔 벨을 클릭하면 읽음 처리되어 숫자가 0으로 초기화됩니다. 이는 숫자(뱃지)만 없어지는 것이며, 실제 주문·출고 데이터는 삭제되지 않습니다.</div>
+</div></div>
+
+<div class="g-divider"></div>
+
+<!-- FAQ -->
+<div class="g-sec"><div class="g-wrap">
+  <div class="g-label">❓ 자주 묻는 질문</div>
+  <div class="g-title">FAQ</div>
+  <p class="g-sub">사용 중 자주 발생하는 질문들에 대한 답변입니다.</p>
+  <table class="g-tbl">
+    <thead><tr><th>질문</th><th>답변</th></tr></thead>
+    <tbody>
+      <tr><td>📱 앱에서 출고했는데 웹에 바로 반영이 안 됩니다</td><td>네트워크 상태에 따라 최대 1~2초 지연될 수 있습니다. 페이지를 새로고침하거나 잠시 기다려 주세요.</td></tr>
+      <tr><td>🔔 알림 숫자가 계속 쌓입니다</td><td>🔔 벨 버튼을 클릭하면 팝업이 열리면서 자동으로 읽음 처리됩니다. "알림 모두 지우기" 버튼으로도 초기화 가능합니다.</td></tr>
+      <tr><td>📋 오래된 주문이 목록에 없습니다</td><td>기본적으로 최근 90일 데이터만 표시됩니다. 주문 탭 하단의 "이전 데이터 불러오기" 버튼을 클릭하면 더 오래된 내역을 불러올 수 있습니다.</td></tr>
+      <tr><td>📑 거래명세서 PDF 링크가 너무 깁니다</td><td>링크가 길더라도 거래처에서 클릭하면 정상적으로 열립니다. KakaoTalk으로 보낼 경우 사진이 직접 첨부되어 링크 없이도 확인 가능합니다.</td></tr>
+      <tr><td>📷 사진을 여러 장 찍고 싶습니다</td><td>앱에서 사진을 촬영 후 뒤로 가면 다시 촬영할 수 있습니다. 2장 이상이 되면 자동으로 공유 팝업이 열립니다.</td></tr>
+      <tr><td>🚚 경기택배 / 롯데택배를 어떻게 구분하나요?</td><td>송장번호 자릿수로 자동 구분됩니다. 16자리 → 경기택배, 13자리 → 롯데택배.</td></tr>
+      <tr><td>🔐 비밀번호를 잊어버렸습니다</td><td>관리자에게 문의하여 비밀번호 재설정을 요청하세요.</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+<!-- GUIDE FOOTER -->
+<div class="g-footer">
+  <strong>진일 주문 관리 시스템</strong><br>
+  이 문서에 관한 문의는 관리자에게 연락하세요.<br>
+  <span style="opacity:.5;font-size:11px;margin-top:6px;display:block">내부용 사용 설명서 — 외부 공개 금지</span>
+</div>
+
+    </div><!-- /#gd -->
   </div>
 </div>
 
