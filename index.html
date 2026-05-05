@@ -2611,7 +2611,8 @@
       font-size: 13px;
     }
 
-    .order-items-wrap {
+    .order-items-wrap,
+    .invoice-items-wrap {
       overflow: visible !important;
       position: relative;
       z-index: 5;
@@ -2620,13 +2621,19 @@
     .order-items-wrap .items-table,
     .order-items-wrap .items-table tbody,
     .order-items-wrap .items-table tr,
-    .order-items-wrap .items-table td {
+    .order-items-wrap .items-table td,
+    .invoice-items-wrap .items-table,
+    .invoice-items-wrap .items-table tbody,
+    .invoice-items-wrap .items-table tr,
+    .invoice-items-wrap .items-table td {
       overflow: visible;
     }
 
     .item-suggest .ss-list {
       z-index: 3500;
-      max-height: 220px;
+      max-height: 170px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     /* Calendar Split Layout */
@@ -4525,12 +4532,12 @@
                   <button class="btn btn-ghost btn-sm" onclick="addInvItem()">+ 추가</button>
                 </div>
               </div>
-              <div style="overflow-x:auto">
+              <div class="invoice-items-wrap" style="overflow:visible">
                 <table class="items-table">
                   <thead>
                     <tr>
                       <th>품목명 / 규격</th>
-                      <th style="width:60px">수량</th>
+                      <th style="width:100px">수량</th>
                       <th style="width:100px">단가</th>
                       <th style="width:100px">금액</th>
                       <th style="width:32px"></th>
@@ -7707,7 +7714,8 @@ END $$;
     DEFAULT_ITEM_SUGGESTIONS.forEach(name => names.set(name, { name, source: '' }));
     (DB.products || []).forEach(p => {
       if (!p?.name) return;
-      names.set(p.name, { name: p.name, source: p.price ? `${fmt(p.price)}원` : '' });
+      const meta = [p.spec, p.price ? `${fmt(p.price)}원` : ''].filter(Boolean).join(' / ');
+      names.set(p.name, { name: p.name, source: meta });
     });
     const q = filter.trim().toLowerCase();
     return [...names.values()].filter(item => !q || item.name.toLowerCase().includes(q));
@@ -7733,13 +7741,21 @@ END $$;
 
   function selectItemSuggestion(el, name) {
     const wrap = el.closest('.item-suggest');
-    const input = wrap?.querySelector('.o-item-name') || _activeItemSuggestInput;
+    const input = wrap?.querySelector('.o-item-name, .inv-item-name') || _activeItemSuggestInput;
     const list = wrap?.querySelector('.item-suggest-list');
     if (!input) return;
     input.value = name;
+    const product = DB.products.find(p => p.name === name);
+    if (product) input.dataset.spec = product.spec || '';
     if (list) list.style.display = 'none';
     autofillItemPrice(input);
-    calcOTotal();
+    const tbody = input.closest('tbody');
+    if (tbody?.id === 'inv-items-tb') {
+      calcInvTotal();
+      buildInvoicePreview();
+    } else {
+      calcOTotal();
+    }
     input.focus();
   }
 
@@ -7754,7 +7770,10 @@ END $$;
     if (!e.target.closest('.item-suggest')) hideItemSuggestLists();
   });
   window.addEventListener('resize', () => hideItemSuggestLists());
-  window.addEventListener('scroll', () => hideItemSuggestLists(), true);
+  window.addEventListener('scroll', (e) => {
+    if (e.target?.closest?.('.item-suggest-list')) return;
+    hideItemSuggestLists();
+  }, true);
 
   function openNewOrder() {
     UI.editOrderId = null;
@@ -9632,10 +9651,15 @@ ${pdfLink}
     if (product && product.price > 0) {
       const row = inp.closest('tr');
       if (row) {
-        const priceInp = row.querySelector('.o-item-price');
+        const priceInp = row.querySelector('.o-item-price, .inv-item-price');
         if (priceInp && (!priceInp.value || priceInp.value === '0')) {
           priceInp.value = product.price;
-          calcOTotal();
+          if (inp.closest('tbody')?.id === 'inv-items-tb') {
+            calcInvTotal();
+            buildInvoicePreview();
+          } else {
+            calcOTotal();
+          }
         }
       }
     }
@@ -10007,9 +10031,17 @@ ${pdfLink}
   function addInvItemData(name, spec, qty, price) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-    <td><input type="text" value="${name}" placeholder="품목명" oninput="calcInvTotal();buildInvoicePreview()"></td>
+    <td>
+      <div class="ss-container item-suggest">
+        <input type="text" class="ss-input inv-item-name" value="${esc(name)}" data-spec="${esc(spec || '')}" placeholder="품목명" autocomplete="off"
+          onfocus="hideItemSuggestLists(this);renderItemSuggestList(this)"
+          oninput="this.dataset.spec='';calcInvTotal();buildInvoicePreview();renderItemSuggestList(this)"
+          onchange="autofillItemPrice(this);calcInvTotal();buildInvoicePreview()">
+        <div class="ss-list item-suggest-list"></div>
+      </div>
+    </td>
     <td><input type="number" value="${qty}" min="1" style="width:100%" oninput="calcInvTotal();buildInvoicePreview()"></td>
-    <td><input type="number" value="${price}" min="0" step="1000" style="width:100%" oninput="calcInvTotal();buildInvoicePreview()"></td>
+    <td><input type="number" class="inv-item-price" value="${price}" min="0" step="1000" style="width:100%" oninput="calcInvTotal();buildInvoicePreview()"></td>
     <td class="item-total-cell">${fmt(qty * price)}</td>
     <td><button class="btn btn-danger btn-xs" onclick="this.closest('tr').remove();calcInvTotal();buildInvoicePreview()">✕</button></td>`;
     document.getElementById('inv-items-tb').appendChild(tr);
@@ -10069,9 +10101,10 @@ ${pdfLink}
       const ins = tr.querySelectorAll('input');
       if (ins.length < 3) return;
       const name = ins[0].value.trim();
+      const spec = ins[0].dataset.spec || '';
       const qty = parseInt(ins[1].value) || 0;
       const price = parseInt(ins[2].value) || 0;
-      if (name) items.push({ name, qty, price, sub: qty * price });
+      if (name) items.push({ name, spec, qty, price, sub: qty * price });
     });
     const total = items.reduce((s, i) => s + i.sub, 0);
     const d = new Date(date);
