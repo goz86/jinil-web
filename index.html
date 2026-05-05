@@ -6059,6 +6059,9 @@
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='partial_shipped_date') THEN
               ALTER TABLE orders ADD COLUMN partial_shipped_date TEXT DEFAULT '';
             END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='created_by') THEN
+              ALTER TABLE orders ADD COLUMN created_by TEXT DEFAULT '';
+            END IF;
             BEGIN
               ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
               ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK(status IN ('new','pending','shipped','partial'));
@@ -6226,6 +6229,7 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS rep TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS contact TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS biz_no TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS partial_shipped_date TEXT DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_by TEXT DEFAULT '';
 DO $$ BEGIN
   ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
   ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK(status IN ('new','pending','shipped','partial'));
@@ -6801,6 +6805,7 @@ END $$;
       <td class="td-mono" style="white-space:nowrap">
         <div>${dt.slice(0, 10)}</div>
         <div style="font-size:10px;color:var(--ink-muted)">${dt.length > 10 ? dt.slice(11) : ''}</div>
+        ${o.created_by ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;font-weight:600">👤 ${esc(o.created_by)}</div>` : ''}
       </td>
       <td class="td-name">${esc(c?.name || '—')}</td>
       <td style="font-size:12px">${(o.items || []).map(i => esc(i.name)).join(', ')}</td>
@@ -7619,6 +7624,7 @@ END $$;
       <td class="td-mono" style="white-space:nowrap">
         <div>${dt.slice(0, 10)}</div>
         <div style="font-size:10px;color:var(--ink-muted)">${dt.length > 10 ? dt.slice(11) : ''}</div>
+        ${o.created_by ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;font-weight:600">👤 ${esc(o.created_by)}</div>` : ''}
       </td>
       <td>
         <div style="display:flex;align-items:center;gap:7px">
@@ -8158,13 +8164,15 @@ END $$;
       img_url: UI.orderImgBase64 || '',
       rep: document.getElementById('o-rep').value,
       contact: document.getElementById('o-contact').value,
-      biz_no: document.getElementById('o-biz-no').value
+      biz_no: document.getElementById('o-biz-no').value,
     };
+    // created_by: 신규 주문에만 저장, 수정 시 덮어쓰지 않음
+    if (!UI.editOrderId) order.created_by = paymentRequesterName();
     showLoading(true);
     const c = getCust(custId);
     const itms = items.map(i => `${i.name} ×${i.qty}`).join(', ');
 
-    const OPTIONAL_ORDER_COLS = ['rep', 'contact', 'biz_no'];   // columns added later, may not exist yet
+    const OPTIONAL_ORDER_COLS = ['rep', 'contact', 'biz_no', 'created_by'];   // columns added later, may not exist yet
 
     try {
       if (UI.orderImgFile) {
