@@ -113,8 +113,50 @@
     }
 
     /* ────────────────────────────────────────────
-       FLOWCHART
+       FLOWCHART — swimlane nodes & arrows
     ──────────────────────────────────────────── */
+
+    /* node */
+    .fn {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.35;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    /* Allow wrap only if text truly can't fit */
+    @media (max-width: 750px) { .fn { white-space: normal; } }
+
+    .fn-g { background:#dcfce7; color:#166534; border:1.5px solid #86efac; }
+    .fn-b { background:#dbeafe; color:#1e40af; border:1.5px solid #93c5fd; }
+    .fn-o { background:#fff7ed; color:#92400e; border:1.5px solid #fcd34d; }
+
+    /* vertical arrow between nodes */
+    .fa {
+      width: 2px;
+      height: 24px;
+      background: #cbd5e1;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .fa::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #94a3b8;
+    }
+
     .flow-wrap {
       background: var(--canvas);
       border-radius: var(--radius);
@@ -491,97 +533,93 @@
     <p class="section-sub">모바일 앱 촬영부터 거래처 발송까지의 전체 과정을 한눈에 확인하세요.</p>
 
     <div class="flow-wrap">
-      <div class="flow-grid">
 
-        <!-- COLUMN TITLES -->
-        <div class="flow-col-title" style="color:#166534">📱 앱 (Android)</div>
-        <div class="flow-col-title" style="color:#0044aa">🖥 웹 / PC</div>
-        <div class="flow-col-title" style="color:#92400e">📤 발송</div>
+      <!-- ── swimlane grid ── -->
+      <div style="display:grid;grid-template-columns:1fr 48px 1fr 48px 1fr;gap:0;min-width:640px">
 
-        <!-- ROW 1: 촬영 / 주문 입력 -->
-        <div class="flow-col">
-          <div class="flow-node node-green">
-            1. 사진 촬영<sub>송장 붙은 박스 촬영</sub>
+        <!-- ── HEADER ROW ── -->
+        <div style="text-align:center;font-size:13px;font-weight:700;color:#166534;padding-bottom:18px;display:flex;align-items:center;justify-content:center;gap:5px">📱 앱 (Android)</div>
+        <div></div>
+        <div style="text-align:center;font-size:13px;font-weight:700;color:#0044aa;padding-bottom:18px;display:flex;align-items:center;justify-content:center;gap:5px">🖥 웹 / PC</div>
+        <div></div>
+        <div style="text-align:center;font-size:13px;font-weight:700;color:#92400e;padding-bottom:18px;display:flex;align-items:center;justify-content:center;gap:5px">📤 발송</div>
+
+        <!-- ════ ROW A ════ -->
+        <!-- App: 촬영 -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div class="fn fn-g">1. 박스 송장 사진 촬영</div>
+          <div class="fa"></div>
+          <div class="fn fn-g">2. 사진 자동 압축 (1080px)</div>
+          <div class="fa"></div>
+          <div class="fn fn-g">3. 데이터베이스에 사진 업로드</div>
+          <!-- spacer to align with web col -->
+          <div style="flex:1"></div>
+        </div>
+
+        <!-- sync arrow: app → web at row of step 5 -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <!-- spacer = height of node1 + fa + node2 + fa + half-node3 -->
+          <div style="height:calc(44px + 24px + 44px + 24px + 22px + 44px + 24px + 22px)"></div>
+          <!-- horizontal sync arrow -->
+          <div style="display:flex;align-items:center;width:100%;position:relative">
+            <div style="flex:1;height:2px;background:#60a5fa"></div>
+            <div style="border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid #60a5fa"></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:#2563eb;letter-spacing:.5px;margin-top:3px">sync</div>
+        </div>
+
+        <!-- Web column -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div class="fn fn-b">4. 주문 입력 (거래처·품목·가격·날짜)</div>
+          <div class="fa"></div>
+          <div class="fn fn-b">5. 출고할 품목 선택 및 체크</div>
+          <div class="fa"></div>
+          <div class="fn fn-b">6. 송장번호 입력 (롯데 13자리 / 경기 16자리)</div>
+          <div class="fa"></div>
+          <div class="fn fn-b">7. 거래명세서 PDF 자동 생성</div>
+          <div class="fa"></div>
+          <div class="fn fn-b">8. 데이터베이스 저장 및 실시간 알림 전송</div>
+        </div>
+
+        <!-- arrow: web → send at step 8 -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <!-- spacer = 4 nodes + 4 arrows + half node8 -->
+          <div style="height:calc((44px + 24px) * 4 + 22px)"></div>
+          <div style="display:flex;align-items:center;width:100%">
+            <div style="flex:1;height:2px;background:#f59e0b"></div>
+            <div style="border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid #f59e0b"></div>
           </div>
         </div>
-        <div class="flow-col">
-          <div class="flow-node node-blue">
-            3. 주문 입력<sub>거래처명·품목·가격·날짜</sub>
-          </div>
-        </div>
-        <div class="flow-col"><!-- empty --></div>
 
-        <!-- ROW 2: 업로드 → sync → 송장 스캔 / KakaoTalk -->
-        <div class="flow-col">
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node node-green">
-            2. 사진 업로드<sub>Supabase 자동 저장</sub>
-          </div>
-        </div>
-        <div class="flow-col" style="position:relative">
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node node-blue">
-            4. 송장 스캔<sub>정확한 주문 찾기 → 체크</sub>
-          </div>
-          <!-- sync arrow -->
-          <div style="position:absolute;top:60px;left:-60px;display:flex;align-items:center;width:60px">
-            <div style="flex:1;height:2px;background:#60a5fa;position:relative">
-              <span style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:#2563eb;letter-spacing:.5px">sync</span>
+        <!-- Send column -->
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <!-- spacer to align KakaoTalk with step 8 -->
+          <div style="height:calc((44px + 24px) * 4)"></div>
+          <div class="fn fn-o">9. KakaoTalk 발송 (사진 + 메시지 + PDF 링크)</div>
+          <div class="fa"></div>
+          <div class="fn fn-o">10. SMS 문자 발송 (백업 수단)</div>
+          <div class="fa"></div>
+          <!-- 발송 내용 box -->
+          <div style="width:100%;border:1.5px solid #fcd34d;border-radius:12px;background:#fff7ed;padding:12px 14px">
+            <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px">📋 발송 내용</div>
+            <div style="font-size:12px;color:#78350f;line-height:2">
+              📷 송장 사진 (압축 480px 첨부)<br>
+              📑 거래명세서 PDF 링크<br>
+              📦 택배사명 + 송장번호<br>
+              🛍 출고 품목 및 수량 목록
             </div>
-            <div style="border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid #60a5fa"></div>
-          </div>
-        </div>
-        <div class="flow-col">
-          <div style="height:36px"></div>
-          <div class="flow-node node-orange">
-            6. KakaoTalk 발송<sub>거래처에 알림</sub>
           </div>
         </div>
 
-        <!-- ROW 3: 거래명세서 / SMS -->
-        <div class="flow-col"><div style="height:60px"></div></div>
-        <div class="flow-col">
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node node-blue">
-            5. 거래명세서 출력<sub>PDF 자동 생성</sub>
-          </div>
-        </div>
-        <div class="flow-col">
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node node-orange">
-            7. SMS 발송<sub>백업 / 예비 수단</sub>
-          </div>
-        </div>
-
-        <!-- ROW 4: 저장 / 발송 내용 -->
-        <div class="flow-col"><div style="height:60px"></div></div>
-        <div class="flow-col">
-          <div class="flow-arrow-down"></div>
-          <div class="flow-node node-gray">
-            8. 데이터 저장<sub>Supabase 클라우드</sub>
-          </div>
-        </div>
-        <div class="flow-col">
-          <div class="flow-arrow-down"></div>
-          <div class="flow-send-content">
-            <strong style="font-size:12px;color:#92400e">발송 내용</strong>
-            <ul style="margin-top:6px">
-              <li>📷 송장 사진</li>
-              <li>📑 거래명세서 PDF</li>
-              <li>📦 택배사 + 송장번호</li>
-              <li>🛍 출고 품목 목록</li>
-            </ul>
-          </div>
-        </div>
-
-      </div><!-- /flow-grid -->
+      </div><!-- /swimlane grid -->
 
       <!-- Legend -->
-      <div class="flow-legend">
+      <div class="flow-legend" style="margin-top:24px">
         <div class="flow-legend-item"><div class="legend-dot" style="background:#dcfce7;border:1.5px solid #86efac"></div> 앱(Android) 처리</div>
         <div class="flow-legend-item"><div class="legend-dot" style="background:#dbeafe;border:1.5px solid #93c5fd"></div> 웹(PC) 처리</div>
         <div class="flow-legend-item"><div class="legend-dot" style="background:#fff7ed;border:1.5px solid #fcd34d"></div> 발송 / 알림</div>
       </div>
+
     </div><!-- /flow-wrap -->
   </div>
 </section>

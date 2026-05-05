@@ -4129,6 +4129,16 @@
             <span class="slider"></span>
           </label>
         </div>
+        <!-- Guide Button -->
+        <button onclick="openGuide()" title="사용 설명서"
+          style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);
+                 background:var(--canvas);color:var(--ink-muted);font-size:14px;font-weight:700;
+                 cursor:pointer;display:flex;align-items:center;justify-content:center;
+                 transition:all .15s;flex-shrink:0;line-height:1"
+          onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)';this.style.background='var(--blue-light)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink-muted)';this.style.background='var(--canvas)'">
+          ?
+        </button>
         <!-- Global Search -->
         <div class="global-search-wrap" id="gsearch-wrap">
           <span class="global-search-icon">🔍</span>
@@ -5091,6 +5101,33 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ── 사용 설명서 모달 ── -->
+<div id="modal-guide-overlay"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;
+         align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:20px;width:100%;max-width:900px;
+              height:90vh;display:flex;flex-direction:column;overflow:hidden;
+              box-shadow:0 24px 80px rgba(0,0,0,0.3)">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:16px 20px;border-bottom:1px solid #e0e0e0;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">📋</span>
+        <span style="font-size:16px;font-weight:700;color:#1d1d1f">사용 설명서</span>
+      </div>
+      <button onclick="closeGuide()"
+        style="width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f7;
+               font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+               color:#6e6e73;transition:background .15s"
+        onmouseover="this.style.background='#e5e5ea'"
+        onmouseout="this.style.background='#f5f5f7'">✕</button>
+    </div>
+    <!-- iframe -->
+    <iframe src="guide-kr.html" style="flex:1;border:none;width:100%"
+      title="사용 설명서"></iframe>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -9115,6 +9152,19 @@ ${pdfLink}
     await loadPaymentRequests();
     renderPaymentRequests();
   }
+
+  function openGuide() {
+    const overlay = document.getElementById('modal-guide-overlay');
+    if (overlay) { overlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  }
+  function closeGuide() {
+    const overlay = document.getElementById('modal-guide-overlay');
+    if (overlay) { overlay.style.display = 'none'; document.body.style.overflow = ''; }
+  }
+  // Close guide when clicking outside
+  document.getElementById('modal-guide-overlay')?.addEventListener('click', function(e) {
+    if (e.target === this) closeGuide();
+  });
 
   function openShipmentNotifications() {
     const isAdmin = UI.currentUser?.role === 'admin';
