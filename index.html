@@ -940,7 +940,31 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      padding: 10px;
+    }
+
+    .ship-noti-columns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
       padding: 12px;
+      align-items: start;
+    }
+
+    .ship-noti-section {
+      min-width: 0;
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-md);
+      background: var(--parchment2);
+      overflow: hidden;
+    }
+
+    .ship-noti-section-title {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 10px 12px 2px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
     }
 
     .ship-noti-card {
@@ -4817,13 +4841,13 @@
     <div class="form-group" style="margin-top:12px">
       <label>송장 이미지</label>
       <div class="img-upload-zone" id="img-zone" tabindex="0"
-        onclick="focusImageZone();document.getElementById('o-img-inp').click()"
-        ondragenter="handleImageDrag(event)" ondragover="handleImageDrag(event)"
-        ondragleave="handleImageDragLeave(event)" ondrop="handleImageDrop(event)">
+        onclick="focusImageZone();document.getElementById('o-img-inp').click()" ondragenter="handleImageDrag(event)"
+        ondragover="handleImageDrag(event)" ondragleave="handleImageDragLeave(event)" ondrop="handleImageDrop(event)">
         <input type="file" id="o-img-inp" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
         <div id="img-placeholder" style="font-size:12px;color:var(--ink-muted)">📷 클릭 / 드래그 / Ctrl+V 붙여넣기</div>
         <img id="img-prev" class="img-preview" style="display:none">
-        <button type="button" class="img-remove-btn" id="img-remove-btn" onclick="event.stopPropagation();clearOrderImage()" title="삭제">×</button>
+        <button type="button" class="img-remove-btn" id="img-remove-btn"
+          onclick="event.stopPropagation();clearOrderImage()" title="삭제">×</button>
       </div>
     </div>
     <div class="form-group" style="margin-top:10px"><label>메모</label><textarea id="o-memo"
@@ -5043,7 +5067,7 @@
 </div>
 
 <div class="modal-overlay" id="modal-ship-notifications">
-  <div class="modal" style="max-width:min(560px,96vw);width:100%">
+  <div class="modal" style="max-width:min(980px,96vw);width:100%">
     <div class="modal-header">
       <div class="modal-title">📦 최근 출고 알림</div>
       <button class="modal-close" onclick="closeModal('modal-ship-notifications')">✕</button>
@@ -6362,8 +6386,13 @@ END $$;
     return 'new';
   }
   function shipmentTracking(o) {
-    const shippedItem = orderItems(o).find(itemIsShipped);
-    return o?.tracking || shippedItem?.shipped_tracking || '';
+    return shipmentTrackings(o).join(', ');
+  }
+  function shipmentTrackings(o) {
+    const itemTrackings = orderItems(o)
+      .filter(itemIsShipped)
+      .flatMap(i => asArray(i.shipped_tracking));
+    return uniqueValues([...itemTrackings, ...asArray(o?.tracking)]);
   }
   function shipmentImage(o) {
     return shipmentImages(o)[0] || '';
@@ -6378,9 +6407,9 @@ END $$;
         ...asArray(i.img_url),
       ]);
     return uniqueValues([
+      ...itemImages,
       ...asArray(o?.img_urls),
       ...asArray(o?.img_url),
-      ...itemImages,
     ]);
   }
   function shipmentPdf(o) {
@@ -8028,8 +8057,12 @@ END $$;
     const o = getOrder(id); if (!o) return;
     const c = getCust(o.customer_id);
     const col = custColor(c);
-    const detailTracking = shipmentTracking(o);
-    const detailImg = shipmentImage(o);
+    const detailTrackings = shipmentTrackings(o);
+    const trackInputValue = hasShippedItems(o) ? '' : (o.tracking || '');
+    const detailImages = shipmentImages(o);
+    const detailTrackingHtml = detailTrackings.length
+      ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">송장번호</div><div style="display:flex;flex-wrap:wrap;gap:6px">${detailTrackings.map(t => `<span class="td-mono" style="font-size:12px;padding:4px 8px;border:1px solid var(--hairline);border-radius:99px;background:var(--parchment2)">${esc(t)}</span>`).join('')}</div></div>`
+      : '';
     document.getElementById('detail-title').innerHTML = `<span style="color:${col};margin-right:8px">●</span>${esc(c?.name || '—')} 주문 상세`;
     document.getElementById('detail-body').innerHTML = `
     ${renderStepper(o)}
@@ -8039,14 +8072,15 @@ END $$;
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">연락처</div><div>${esc(o.tel || c?.tel || '—')}</div></div>
       <div><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">상태</div><div>${orderStatusBadge(o)}</div></div>
       <div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">주소</div><div style="font-size:13px">${esc(o.addr || '—')}</div></div>
-      ${detailTracking ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">송장번호</div><div class="td-mono">${esc(detailTracking)}</div></div>` : ''}
+      ${detailTrackingHtml}
       ${o.memo ? `<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px">메모</div><div style="color:var(--amber)">${esc(o.memo)}</div></div>` : ''}
     </div>
     <hr class="div">
     <div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:10px">품목 <span style="font-size:10px;color:var(--ink-muted);font-weight:400;text-transform:none">(체크된 품목만 출고됩니다)</span></div>
     ${orderItems(o).map((i, idx) => {
       const shipped = itemIsShipped(i);
-      const itemTracking = i.shipped_tracking ? `<span style="margin-left:6px;color:#15803d;font-size:11px">송장 ${i.shipped_tracking}</span>` : '';
+      const itemTrackings = uniqueValues(asArray(i.shipped_tracking));
+      const itemTracking = itemTrackings.length ? `<span style="margin-left:6px;color:#15803d;font-size:11px">${itemTrackings.map(t => `송장 ${esc(t)}`).join(' / ')}</span>` : '';
       const showCheckbox = !shipped && o.status !== 'shipped';
       const checkbox = showCheckbox
         ? `<input type="checkbox" class="ship-item-check" data-idx="${idx}" checked style="margin-right:8px;width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0">`
@@ -8058,7 +8092,7 @@ END $$;
       </div>`;
     }).join('')}
     <div style="text-align:right;margin-top:10px;font-weight:700;font-size:15px;color:var(--blue)">합계: ${fmt(orderTotal(o))}원</div>
-    ${detailImg ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><img src="${detailImg}" style="max-width:100%;border-radius:var(--r-md);max-height:150px;object-fit:cover"></div>` : ''}
+    ${detailImages.length ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><div style="display:flex;flex-wrap:wrap;gap:8px">${detailImages.map((src, imgIdx) => `<img src="${esc(src)}" title="송장 이미지 ${imgIdx + 1}" style="width:120px;height:150px;border-radius:var(--r-md);object-fit:cover;border:1px solid var(--hairline)">`).join('')}</div></div>` : ''}
     
     ${o.status === 'shipped' ? `
       <div style="margin-top:20px; padding: 12px; background: var(--blue-tint); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
@@ -8079,7 +8113,7 @@ END $$;
             <option value="직접배송">직접배송</option>
           </select>
         </div>
-        <div class="form-group"><label>송장번호</label><input type="text" id="detail-track" value="${o.tracking || ''}" placeholder="송장번호"></div>
+        <div class="form-group"><label>송장번호</label><input type="text" id="detail-track" value="${esc(trackInputValue)}" placeholder="송장번호"></div>
         <div class="form-group"><label>출고일</label><input type="date" id="detail-ship-dt" value="${today()}"></div>
       </div>`: ''}`;
     document.getElementById('btn-ship').style.display = o.status === 'shipped' ? 'none' : '';
@@ -8108,10 +8142,18 @@ END $$;
 
     const items = orderItems(o);
     const unshippedIdxs = items.map((it, idx) => itemIsShipped(it) ? -1 : idx).filter(idx => idx >= 0);
+    const previousOrderTracking = o.tracking || '';
+    const previousShipDate = o.partial_shipped_date || o.shipped_date || '';
 
     // Mark selected items as shipped, leave others alone
     const newItems = items.map((it, idx) => {
-      if (itemIsShipped(it)) return it;
+      if (itemIsShipped(it)) {
+        return {
+          ...it,
+          shipped_tracking: it.shipped_tracking || previousOrderTracking,
+          shipped_date: it.shipped_date || previousShipDate,
+        };
+      }
       if (selectedIdxs.has(idx)) {
         return {
           ...it,
@@ -8764,8 +8806,8 @@ ${pdfLink}
     const body = document.getElementById('ship-notifications-body');
     if (!body) return;
 
-    const daysBack  = DB.shipNotiDaysBack || 2;
-    const cutoff    = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+    const daysBack = DB.shipNotiDaysBack || 2;
+    const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
     const cutoffDate = cutoff.slice(0, 10);
     const rangeLabel = daysBack === 2 ? '48시간' : `${daysBack}일`;
     const canLoadMore = daysBack < 60; // 최대 60일까지
@@ -8807,6 +8849,7 @@ ${pdfLink}
 
     const hasStaff = staffNotifs.length > 0;
     const hasMobile = mobileShipped.length > 0;
+    const lastCheckMs = dateToMs(lastCheck);
 
     if (!hasStaff && !hasMobile) {
       body.innerHTML = `<div class="empty" style="padding:40px 0"><div class="empty-icon">📦</div><div class="empty-text">최근 ${rangeLabel} 알림이 없습니다</div></div>${loadMoreHtml}`;
@@ -8815,7 +8858,7 @@ ${pdfLink}
 
     // ── Render staff notifications ──
     const staffHtml = staffNotifs.map(n => {
-      const isNew = n.created_at > lastCheck;
+      const isNew = dateToMs(n.created_at) > lastCheckMs;
       const typeMap = {
         order_created: { label: '신규 주문', badge: 's-new', icon: '📝' },
         order_shipped: { label: '출고 처리', badge: 's-shipped', icon: '🚚' },
@@ -8852,7 +8895,7 @@ ${pdfLink}
       const badgeLabel = isPartial ? '부분출고' : '출고완료';
       const shippedItems = orderItems(o).filter(i => itemIsShipped(i));
       const itemsText = shippedItems.map(i => esc(i.name) + (i.spec ? ` (${esc(i.spec)})` : '') + ' ×' + i.qty).join(' · ') || '품목 없음';
-      const isNew = latestDate > lastCheck;
+      const isNew = dateToMs(latestDate) > lastCheckMs;
       return `<div class="ship-noti-card ${cardType}${isNew ? ' is-new' : ''}" onclick="closeModal('modal-ship-notifications');openDetail(${o.id})">
         <div class="ship-noti-card-top">
           ${isNew ? '<span class="new-badge">NEW</span>' : ''}
@@ -8867,10 +8910,16 @@ ${pdfLink}
     }).join('');
 
     body.innerHTML = `
-      ${hasStaff ? `<div style="font-size:11px;font-weight:700;color:#7c3aed;padding:10px 14px 4px;letter-spacing:.5px;text-transform:uppercase">직원 활동</div>
-        <div class="ship-noti-list">${staffHtml}</div>` : ''}
-      ${hasMobile ? `<div style="font-size:11px;font-weight:700;color:var(--ink-muted);padding:10px 14px 4px;letter-spacing:.5px;text-transform:uppercase">📱 모바일 출고</div>
-        <div class="ship-noti-list">${mobileHtml}</div>` : ''}
+      <div class="ship-noti-columns">
+        ${hasStaff ? `<section class="ship-noti-section">
+          <div class="ship-noti-section-title" style="color:#7c3aed">직원 활동</div>
+          <div class="ship-noti-list">${staffHtml}</div>
+        </section>` : ''}
+        ${hasMobile ? `<section class="ship-noti-section">
+          <div class="ship-noti-section-title" style="color:var(--ink-muted)">📱 모바일 출고</div>
+          <div class="ship-noti-list">${mobileHtml}</div>
+        </section>` : ''}
+      </div>
       ${loadMoreHtml}
     `;
   }
@@ -10098,7 +10147,7 @@ ${pdfLink}
 
     if (isWindowsDesktop()) {
       downloadFile(file);
-      navigator.clipboard?.writeText(invoiceShareMessage(inv)).catch(() => {});
+      navigator.clipboard?.writeText(invoiceShareMessage(inv)).catch(() => { });
       showToast('Windows에서는 KakaoTalk 파일 공유가 제한됩니다. PDF 저장 + 메시지 복사 완료', 'info');
       return;
     }

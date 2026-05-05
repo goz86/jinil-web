@@ -5,7 +5,12 @@ const SUPABASE_URL = 'https://oppfihohhvhsnjrdsmvx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcGZpaG9oaHZoc25qcmRzbXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzU2MDUsImV4cCI6MjA5MzExMTYwNX0.2kPzLY_XKbWiJuDJ7UyiSRYPUyBlxXz5zTR8CG--n_M';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true },
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
 });
 
 // ── Helpers ──────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Image, Share, Linking, Alert, Platform, ActivityIndicator, FlatList,
+  Image, Share, Linking, Alert, Platform, ActivityIndicator, FlatList, Modal,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
@@ -246,6 +246,7 @@ export default function MessageScreen({ route, navigation }) {
   const [stepMsg,      setStepMsg]      = useState('PDF 생성 중...');
   const [sent,         setSent]         = useState(false);
   const [pdfTruncated, setPdfTruncated] = useState(false);
+  const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
 
   useEffect(() => { processAssets(); }, []);
 
@@ -454,14 +455,17 @@ export default function MessageScreen({ route, navigation }) {
     if (fullyChecked && fullyChecked.length > 0) {
       for (const orderId of fullyChecked) {
         const { data: ord } = await supabase.from('orders').select('items').eq('id', orderId).single();
-        const nextItems = (ord?.items || []).map(item => ({
-          ...item,
-          shipped: true,
-          shipped_tracking: trackingNo || '',
-          shipped_date: shippedDateTime,
-          shipped_img_urls: imgUrls,
-          shipped_pdf_url: pdfUrl || '',
-        }));
+        const nextItems = (ord?.items || []).map(item => {
+          if (item?.shipped === true || item?.shipped === 'true') return item;
+          return {
+            ...item,
+            shipped: true,
+            shipped_tracking: trackingNo || '',
+            shipped_date: shippedDateTime,
+            shipped_img_urls: imgUrls,
+            shipped_pdf_url: pdfUrl || '',
+          };
+        });
         await updateOrdersSafely({
           items: nextItems,
           status: 'shipped',
@@ -480,6 +484,7 @@ export default function MessageScreen({ route, navigation }) {
         const { data: ord } = await supabase.from('orders').select('items').eq('id', pd.orderId).single();
         const newItems = (ord?.items || []).map((item, idx) => {
           if (pd.itemIdxs.includes(idx)) {
+            if (item?.shipped === true || item?.shipped === 'true') return item;
             return {
               ...item,
               shipped: true,
@@ -525,6 +530,23 @@ export default function MessageScreen({ route, navigation }) {
     }
   };
 
+  const goHomeWithoutSending = () => {
+    setSkipConfirmVisible(true);
+  };
+
+  const confirmHomeWithoutSending = async () => {
+    setSkipConfirmVisible(false);
+    setStep('marking_shipped');
+    setStepMsg('출고 정보 저장 중...');
+    try {
+      await performMarkShipped();
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    } catch (e) {
+      Alert.alert('오류', e.message || '출고 정보 저장 실패');
+      setStep('ready');
+    }
+  };
+
   const total = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
 
   // ── Processing screen ─────────────────────────────────
@@ -551,6 +573,7 @@ export default function MessageScreen({ route, navigation }) {
 
   // ── Ready screen ──────────────────────────────────────
   return (
+    <>
     <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
 
       {/* Summary card */}
@@ -655,15 +678,60 @@ export default function MessageScreen({ route, navigation }) {
             <Text style={styles.shippedBtnText}>✅  출고 완료 처리</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.pendingHintBox}>
-            <Text style={styles.pendingHintText}>
-              메시지를 발송하면{'\n'}출고 완료 버튼이 활성화됩니다
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.skipSendBtn} onPress={goHomeWithoutSending} activeOpacity={0.8}>
+            <View style={styles.skipSendIcon}>
+              <Text style={styles.skipSendIconText}>↩</Text>
+            </View>
+            <View style={styles.skipSendCopy}>
+              <Text style={styles.skipSendBtnText}>명세서·메시지 없이 홈으로</Text>
+              <Text style={styles.skipSendSubText}>출고 처리만 저장</Text>
+            </View>
+            <Text style={styles.skipSendArrow}>›</Text>
+          </TouchableOpacity>
         )}
       </View>
 
     </ScrollView>
+    <Modal
+      visible={skipConfirmVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setSkipConfirmVisible(false)}
+    >
+      <View style={styles.confirmBackdrop}>
+        <View style={styles.confirmCard}>
+          <View style={styles.confirmIconWrap}>
+            <Text style={styles.confirmIcon}>↩</Text>
+          </View>
+          <Text style={styles.confirmTitle}>출고 처리 후 홈으로</Text>
+          <Text style={styles.confirmMessage}>
+            선택한 품목은 출고 처리됩니다.{'\n'}
+            명세서와 메시지는 발송되지 않습니다.
+          </Text>
+          <View style={styles.confirmSummary}>
+            <View style={styles.confirmSummaryRow}>
+              <Text style={styles.confirmSummaryLabel}>송장번호</Text>
+              <Text style={styles.confirmSummaryValue}>{trackingNo || '(없음)'}</Text>
+            </View>
+            <View style={[styles.confirmSummaryRow, { borderBottomWidth: 0 }]}>
+              <Text style={styles.confirmSummaryLabel}>사진</Text>
+              <Text style={[styles.confirmSummaryValue, { color: allPhotos.length ? C.green : C.inkMuted }]}>
+                {allPhotos.length ? `${allPhotos.length}장 저장` : '없음'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.confirmActions}>
+            <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setSkipConfirmVisible(false)}>
+              <Text style={styles.confirmCancelText}>취소</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.confirmOkBtn} onPress={confirmHomeWithoutSending}>
+              <Text style={styles.confirmOkText}>출고 저장</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -759,13 +827,117 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   shippedBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
-  pendingHintBox: {
-    backgroundColor: C.canvas, borderRadius: 12,
-    borderWidth: 1, borderColor: C.hairline,
-    paddingVertical: 14, paddingHorizontal: 20,
-    width: '100%', alignItems: 'center',
+  skipSendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff7ed',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#fed7aa',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    width: '100%',
+    shadowColor: '#f97316',
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  pendingHintText: { color: C.inkMuted, fontSize: 12, textAlign: 'center', lineHeight: 20 },
+  skipSendIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffedd5',
+  },
+  skipSendIconText: { fontSize: 22, color: '#c2410c', fontWeight: '800' },
+  skipSendCopy: { flex: 1, minWidth: 0 },
+  skipSendBtnText: { color: '#9a3412', fontSize: 15, fontWeight: '800', textAlign: 'left' },
+  skipSendSubText: { color: '#c2410c', fontSize: 11, fontWeight: '600', marginTop: 2 },
+  skipSendArrow: { color: '#c2410c', fontSize: 24, fontWeight: '300' },
+
+  // ── Custom confirmation modal
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.56)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: C.canvas,
+    borderRadius: 24,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
+  },
+  confirmIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    marginBottom: 14,
+  },
+  confirmIcon: { fontSize: 26, color: '#c2410c', fontWeight: '800' },
+  confirmTitle: { fontSize: 22, fontWeight: '800', color: C.ink, letterSpacing: -0.4 },
+  confirmMessage: { fontSize: 15, color: C.inkMuted, lineHeight: 23, marginTop: 10 },
+  confirmSummary: {
+    backgroundColor: C.bg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.hairline,
+    marginTop: 16,
+    overflow: 'hidden',
+  },
+  confirmSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: C.hairline,
+  },
+  confirmSummaryLabel: { color: C.inkMuted, fontSize: 12, fontWeight: '700' },
+  confirmSummaryValue: { color: C.ink, fontSize: 13, fontWeight: '800', flexShrink: 1, textAlign: 'right' },
+  confirmActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  confirmCancelBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.hairline,
+  },
+  confirmCancelText: { color: C.inkMuted, fontSize: 14, fontWeight: '800' },
+  confirmOkBtn: {
+    flex: 1.35,
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    backgroundColor: '#f97316',
+    shadowColor: '#f97316',
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  confirmOkText: { color: '#fff', fontSize: 14, fontWeight: '900' },
 
   // ── Multiple photos grid
   photoGrid: {

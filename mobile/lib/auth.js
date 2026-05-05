@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AppState } from 'react-native';
 import { supabase } from './supabase';
 
 // Same email map as the web app
@@ -24,19 +25,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const refreshSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') supabase.auth.startAutoRefresh();
+      else supabase.auth.stopAutoRefresh();
+    });
+    supabase.auth.startAutoRefresh();
+
     // Load existing session (persisted via AsyncStorage)
     supabase.auth.getSession().then(({ data: { session } }) => {
       syncRealtimeAuth(session);
       setSession(session);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       syncRealtimeAuth(session);
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      refreshSub.remove();
+      subscription.unsubscribe();
+    };
   }, []);
 
   const email    = session?.user?.email || null;
@@ -52,11 +62,16 @@ export function AuthProvider({ children }) {
       email: emailAddr,
       password,
     });
+    if (data?.session) {
+      syncRealtimeAuth(data.session);
+      setSession(data.session);
+    }
     return { data, error };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setSession(null);
   };
 
   return (
