@@ -5366,6 +5366,12 @@
         if (isShipmentAction(data.action)) {
           handleShipmentNotification(data);
         }
+        // 결제 상태 변경 시 주문 목록·미결제 화면 즉시 갱신
+        if (data.action === 'paid' || data.action === 'unpaid') {
+          renderOrders();
+          renderDebt();
+          renderDashboard();
+        }
         renderPaymentRequestButton(false);
       })
       .on('broadcast', { event: 'data_changed' }, payload => {
@@ -8878,21 +8884,42 @@ ${pdfLink}
   }
 
   function handlePaymentRequestBroadcast(message) {
-    if (UI.currentUser?.role !== 'admin') return;
+    const role = UI.currentUser?.role;
     const data = message?.payload || message || {};
-    if (data.action === 'request' && data.request?.id) {
-      const exists = (UI.paymentRequests || []).some(r => r.id === data.request.id);
-      if (!exists) {
-        UI.paymentRequests = [data.request, ...(UI.paymentRequests || [])];
-        renderPaymentRequestButton(true);
-        if (document.getElementById('modal-pay-requests')?.classList.contains('open')) {
-          renderPaymentRequests();
+
+    // ── Admin: 새 요청 수신 ──
+    if (role === 'admin') {
+      if (data.action === 'request' && data.request?.id) {
+        const exists = (UI.paymentRequests || []).some(r => r.id === data.request.id);
+        if (!exists) {
+          UI.paymentRequests = [data.request, ...(UI.paymentRequests || [])];
+          renderPaymentRequestButton(true);
+          if (document.getElementById('modal-pay-requests')?.classList.contains('open')) {
+            renderPaymentRequests();
+          }
         }
       }
+      loadPaymentRequests({ notify: data.action === 'request' }).catch(e =>
+        console.warn('payment request broadcast sync failed:', e.message)
+      );
     }
-    loadPaymentRequests({ notify: data.action === 'request' }).catch(e =>
-      console.warn('payment request broadcast sync failed:', e.message)
-    );
+
+    // ── Staff: 승인 / 거절 결과 수신 ──
+    if (role === 'staff') {
+      if (data.action === 'approved') {
+        showToast('✅ 결제 승인됐습니다', 'success');
+        // 주문 목록과 미결제 뷰 즉시 갱신
+        refreshOrdersOnly().then(() => {
+          renderOrders();
+          renderDebt();
+          renderDashboard();
+        }).catch(() => {});
+        loadPaymentRequests().catch(() => {});
+      } else if (data.action === 'rejected') {
+        showToast('❌ 결제 요청이 거절됐습니다', 'error');
+        loadPaymentRequests().catch(() => {});
+      }
+    }
   }
 
   function stopPaymentRequestPolling() {
