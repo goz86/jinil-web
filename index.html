@@ -6,12 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>진일 라벨 — 주문관리 시스템</title>
   <link rel="icon" type="image/png" href="logo.png">
-  <link rel="stylesheet" as="style" crossorigin
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://oppfihohhvhsnjrdsmvx.supabase.co">
+  <link rel="dns-prefetch" href="https://oppfihohhvhsnjrdsmvx.supabase.co">
+  <link rel="stylesheet" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ═══ APPLE DESIGN SYSTEM ═══ */
     :root {
@@ -79,7 +79,8 @@
 
     /* Dashboard giữ cỡ chữ gốc — cancel lại zoom của html */
     #page-dashboard {
-      zoom: 0.926;  /* 1 / 1.08 ≈ 0.926 → trở về 100% */
+      zoom: 0.926;
+      /* 1 / 1.08 ≈ 0.926 → trở về 100% */
     }
 
     body {
@@ -941,6 +942,7 @@
       gap: 8px;
       padding: 12px;
     }
+
     .ship-noti-card {
       display: flex;
       flex-direction: column;
@@ -954,33 +956,56 @@
       transition: box-shadow 0.15s, background 0.15s;
       overflow: hidden;
     }
+
     .ship-noti-card::before {
       content: '';
       position: absolute;
-      left: 0; top: 0; bottom: 0;
+      left: 0;
+      top: 0;
+      bottom: 0;
       width: 4px;
       border-radius: var(--r-md) 0 0 var(--r-md);
     }
-    .ship-noti-card.is-shipped::before { background: #28a745; }
-    .ship-noti-card.is-partial::before { background: #7c3aed; }
-    .ship-noti-card.is-new { background: #f0f7ff; border-color: #c2e0ff; }
-    .ship-noti-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-    .ship-noti-card:active { background: var(--parchment2); }
+
+    .ship-noti-card.is-shipped::before {
+      background: #28a745;
+    }
+
+    .ship-noti-card.is-partial::before {
+      background: #7c3aed;
+    }
+
+    .ship-noti-card.is-new {
+      background: #f0f7ff;
+      border-color: #c2e0ff;
+    }
+
+    .ship-noti-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+    }
+
+    .ship-noti-card:active {
+      background: var(--parchment2);
+    }
+
     .ship-noti-card-top {
       display: flex;
       align-items: center;
       gap: 7px;
       flex-wrap: wrap;
     }
+
     .ship-noti-name {
       font-size: 15px;
       font-weight: 700;
       color: var(--ink);
     }
+
     .ship-noti-meta {
       font-size: 12px;
       color: var(--ink-muted);
     }
+
     .ship-noti-items {
       font-size: 12px;
       color: var(--ink-light);
@@ -988,6 +1013,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .new-badge {
       font-size: 9px;
       background: var(--red);
@@ -1408,6 +1434,8 @@
 
     .page.active {
       display: block;
+      content-visibility: auto;
+      contain-intrinsic-size: 900px;
     }
 
     /* ── EMPTY ── */
@@ -1523,12 +1551,38 @@
       border-color: var(--blue);
     }
 
+    .img-upload-zone.drag-over {
+      border-color: var(--blue);
+      background: var(--blue-tint);
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.08);
+    }
+
     .img-preview {
       max-width: 100%;
       max-height: 110px;
       border-radius: var(--r-sm);
       margin-top: 8px;
       object-fit: cover;
+    }
+
+    .img-remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.94);
+      color: var(--red);
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
 
     /* ═══════════════════════════════════════════
@@ -1750,6 +1804,173 @@
       text-align: right;
       margin-right: 28px;
       margin-bottom: 2px;
+    }
+
+    .inv-mobile-wrap {
+      display: flex;
+      width: 100%;
+      border: 2px solid #1a6b3a;
+      background: #fff;
+      color: #111;
+      font-family: 'Noto Sans KR', sans-serif;
+      height: auto;
+    }
+
+    .inv-mobile-copy {
+      flex: 1;
+      padding: 10px;
+      border-right: 2px solid #1a6b3a;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .inv-mobile-side {
+      width: 28px;
+      flex-shrink: 0;
+      border-left: 2px solid #1a6b3a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f0fdf4;
+    }
+
+    .inv-mobile-side-title {
+      writing-mode: vertical-rl;
+      font-size: 15pt;
+      font-weight: 700;
+      color: #1a6b3a;
+      letter-spacing: 4px;
+    }
+
+    .inv-mobile-side-label {
+      writing-mode: vertical-rl;
+      font-size: 7pt;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .inv-mobile-parties {
+      display: flex;
+      gap: 4px;
+      margin-right: 32px;
+      margin-bottom: 4px;
+    }
+
+    .inv-mobile-party {
+      flex: 1;
+      border: 1px solid #1a6b3a;
+    }
+
+    .inv-mobile-party-title {
+      background: #e8f5e8;
+      color: #1a6b3a;
+      font-weight: 700;
+      text-align: center;
+      font-size: 9pt;
+      padding: 3px 0;
+      border-bottom: 1px solid #1a6b3a;
+    }
+
+    .inv-mobile-party-row {
+      display: flex;
+      border-bottom: 1px solid #c5e0c5;
+      min-height: 16px;
+    }
+
+    .inv-mobile-party-row:last-child {
+      border-bottom: none;
+    }
+
+    .inv-mobile-party-lbl {
+      width: 55px;
+      padding: 2px 4px;
+      border-right: 1px solid #c5e0c5;
+      color: #555;
+      font-size: 7pt;
+      background: #f9fdf9;
+      text-align: center;
+    }
+
+    .inv-mobile-party-val {
+      flex: 1;
+      padding: 2px 5px;
+      font-size: 7.5pt;
+    }
+
+    .inv-mobile-bank {
+      display: flex;
+      align-items: center;
+      margin-right: 32px;
+      margin-bottom: 4px;
+      border: 1.5px solid #1a6b3a;
+      background: #fffbe6;
+      font-size: 8pt;
+    }
+
+    .inv-mobile-bank-lbl {
+      padding: 4px 10px;
+      border-right: 1.5px solid #1a6b3a;
+      font-weight: 700;
+      color: #1a6b3a;
+      background: #e8f5e8;
+      white-space: nowrap;
+    }
+
+    .inv-mobile-bank-val {
+      padding: 4px 12px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .inv-mobile-table {
+      width: calc(100% - 32px);
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      margin-top: 4px;
+      border: 1px solid #1a6b3a;
+    }
+
+    .inv-mobile-table th {
+      background: #e8f5e8;
+      color: #1a6b3a;
+      border: 1px solid #1a6b3a;
+      padding: 4px 3px;
+      font-size: 7.5pt;
+      text-align: center;
+    }
+
+    .inv-mobile-table td {
+      border: 1px solid #d4e8d4;
+      padding: 3px 3px;
+      text-align: center;
+      font-size: 7.5pt;
+    }
+
+    .inv-mobile-total {
+      display: flex;
+      border: 1.5px solid #1a6b3a;
+      margin-top: 6px;
+      width: calc(100% - 32px);
+    }
+
+    .inv-mobile-total-lbl {
+      background: #e8f5e8;
+      color: #1a6b3a;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-right: 1.5px solid #1a6b3a;
+      font-size: 10pt;
+    }
+
+    .inv-mobile-total-val {
+      flex: 1;
+      padding: 5px 12px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 10pt;
     }
 
     /* ── HISTORY FILTER TABS ── */
@@ -2361,6 +2582,29 @@
       color: #fff;
     }
 
+    .item-suggest .ss-input {
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    .order-items-wrap {
+      overflow: visible !important;
+      position: relative;
+      z-index: 5;
+    }
+
+    .order-items-wrap .items-table,
+    .order-items-wrap .items-table tbody,
+    .order-items-wrap .items-table tr,
+    .order-items-wrap .items-table td {
+      overflow: visible;
+    }
+
+    .item-suggest .ss-list {
+      z-index: 3500;
+      max-height: 220px;
+    }
+
     /* Calendar Split Layout */
     .cal-split {
       display: grid;
@@ -2873,12 +3117,14 @@
       border: 1px solid var(--hairline);
       box-shadow: var(--shadow-sm);
     }
+
     .stepper {
       display: flex;
       justify-content: space-between;
       position: relative;
       padding: 0 10px;
     }
+
     .stepper::before {
       content: "";
       position: absolute;
@@ -2889,6 +3135,7 @@
       background: #e5e7eb;
       z-index: 1;
     }
+
     .stepper-progress {
       position: absolute;
       top: 10px;
@@ -2898,9 +3145,11 @@
       z-index: 2;
       transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     .stepper-progress.partial {
       background: linear-gradient(90deg, var(--blue), #a78bfa, #7c3aed);
     }
+
     .step {
       position: relative;
       z-index: 3;
@@ -2909,6 +3158,7 @@
       align-items: center;
       width: 60px;
     }
+
     .step-dot {
       width: 20px;
       height: 20px;
@@ -2921,15 +3171,18 @@
       transition: all 0.3s;
       margin-bottom: 8px;
     }
+
     .step.active .step-dot {
       border-color: var(--blue);
       background: var(--blue);
       box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
     }
+
     .step.completed .step-dot {
       border-color: var(--blue);
       background: var(--blue);
     }
+
     .step.active .step-dot::after {
       content: "";
       width: 8px;
@@ -2938,6 +3191,7 @@
       background: #fff;
       animation: pulse 2s infinite;
     }
+
     .step-label {
       font-size: 11px;
       font-weight: 700;
@@ -2945,21 +3199,37 @@
       white-space: nowrap;
       transition: color 0.3s;
     }
-    .step.active .step-label, .step.completed .step-label {
+
+    .step.active .step-label,
+    .step.completed .step-label {
       color: var(--blue);
     }
+
     .step.partial .step-dot {
       border-color: #7c3aed;
       background: #7c3aed;
       box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
     }
+
     .step.partial .step-label {
       color: #7c3aed !important;
     }
+
     @keyframes pulse {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.4); opacity: 0.5; }
-      100% { transform: scale(1); opacity: 1; }
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     /* ── Mini Stepper (List View) ── */
@@ -2971,6 +3241,7 @@
       width: 140px;
       position: relative;
     }
+
     .mini-stepper::before {
       content: "";
       position: absolute;
@@ -2981,6 +3252,7 @@
       background: #e5e7eb;
       z-index: 1;
     }
+
     .mini-stepper-progress {
       position: absolute;
       top: 3.5px;
@@ -2993,6 +3265,7 @@
       width: calc((100% - 24px) * var(--p) / 100);
       animation: mini-shimmer 4s linear infinite;
     }
+
     .mini-step {
       display: flex;
       flex-direction: column;
@@ -3001,6 +3274,7 @@
       position: relative;
       z-index: 3;
     }
+
     .mini-step-dot {
       width: 8px;
       height: 8px;
@@ -3009,23 +3283,42 @@
       transition: all 0.3s;
       border: 1.5px solid #fff;
     }
+
     .mini-step-dot.active {
       background: var(--blue);
       box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2);
       transform: scale(1.2);
       animation: mini-breathing 3.5s ease-in-out infinite;
     }
+
     @keyframes mini-shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
     }
+
     @keyframes mini-breathing {
-      0%, 100% { transform: scale(1.1); box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1); }
-      50% { transform: scale(1.3); box-shadow: 0 0 0 5px rgba(0, 102, 204, 0.3); }
+
+      0%,
+      100% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+      }
+
+      50% {
+        transform: scale(1.3);
+        box-shadow: 0 0 0 5px rgba(0, 102, 204, 0.3);
+      }
     }
+
     .mini-step-dot.completed {
       background: var(--blue);
     }
+
     .mini-step-label {
       font-size: 8px;
       font-weight: 700;
@@ -3033,16 +3326,20 @@
       margin-top: 4px;
       white-space: nowrap;
     }
+
     .mini-step.active .mini-step-label {
       color: var(--blue);
     }
+
     .mini-step.partial .mini-step-dot {
       background: #7c3aed;
       box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
     }
+
     .mini-step.partial .mini-step-label {
       color: #7c3aed;
     }
+
     .mini-stepper-progress.partial {
       background: linear-gradient(90deg, var(--blue), #a78bfa, #7c3aed);
     }
@@ -3079,10 +3376,14 @@
 
     /* ── Mobile Responsive (≤768px) — Drawer sidebar ───── */
     @media (max-width: 768px) {
-      html { font-size: 14px; }
+      html {
+        font-size: 14px;
+      }
 
       /* ── Hamburger button: show on mobile ── */
-      .mobile-menu-btn { display: block; }
+      .mobile-menu-btn {
+        display: block;
+      }
 
       /* ── Sidebar: hidden off-screen by default ── */
       .sidebar {
@@ -3096,7 +3397,7 @@
         z-index: 1000;
         transform: translateX(-100%);
         transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
         overflow-y: auto;
         overflow-x: hidden;
       }
@@ -3110,24 +3411,41 @@
       .sidebar-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.45);
+        background: rgba(0, 0, 0, 0.45);
         z-index: 999;
         display: none;
         backdrop-filter: blur(2px);
         -webkit-backdrop-filter: blur(2px);
       }
-      body.sidebar-active .sidebar-overlay { display: block; }
+
+      body.sidebar-active .sidebar-overlay {
+        display: block;
+      }
 
       /* ── Main content: always full width ── */
-      .main { width: 100% !important; flex: 1; }
+      .main {
+        width: 100% !important;
+        flex: 1;
+      }
 
       /* ── Topbar ── */
-      .topbar { padding: 0 14px; height: 54px; }
-      .topbar-right { display: none; }
+      .topbar {
+        padding: 0 14px;
+        height: 54px;
+      }
+
+      .topbar-right {
+        display: none;
+      }
 
       /* ── Content area padding ── */
-      .content { padding: 14px !important; }
-      .page { padding: 0 !important; }
+      .content {
+        padding: 14px !important;
+      }
+
+      .page {
+        padding: 0 !important;
+      }
 
       /* ── Grid → single column (except stats which stays 2-col) ── */
       .db-grid,
@@ -3138,14 +3456,32 @@
       .form-grid {
         grid-template-columns: 1fr !important;
       }
-      .form-group.full { grid-column: span 1 !important; }
+
+      .form-group.full {
+        grid-column: span 1 !important;
+      }
 
       /* ── Stats: keep 2-column on mobile ── */
-      .db-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-      .stat-card-new { padding: 12px 8px; }
-      .stat-value-new { font-size: 18px; }
-      .stat-label-new { font-size: 9px; }
-      .stat-pill { padding: 10px 12px !important; }
+      .db-stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+
+      .stat-card-new {
+        padding: 12px 8px;
+      }
+
+      .stat-value-new {
+        font-size: 18px;
+      }
+
+      .stat-label-new {
+        font-size: 9px;
+      }
+
+      .stat-pill {
+        padding: 10px 12px !important;
+      }
 
       /* ── Section head: vertical stack ── */
       .section-head {
@@ -3155,34 +3491,89 @@
       }
 
       /* ── Tables: horizontal scroll (only tbl-wrap, not all cards) ── */
-      .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .tbl-wrap table { min-width: 460px; }
-      .data-table th, .data-table td { padding: 8px 8px !important; font-size: 11px !important; }
-      th, td { padding: 8px 6px; font-size: 11px; }
+      .tbl-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .tbl-wrap table {
+        min-width: 460px;
+      }
+
+      .data-table th,
+      .data-table td {
+        padding: 8px 8px !important;
+        font-size: 11px !important;
+      }
+
+      th,
+      td {
+        padding: 8px 6px;
+        font-size: 11px;
+      }
 
       /* ── Hide less important columns on mobile ── */
-      .orders-col-tracking, .orders-col-shipdate { display: none !important; }
+      .orders-col-tracking,
+      .orders-col-shipdate {
+        display: none !important;
+      }
 
       /* ── Mini-stepper: hidden on mobile (saves ~160px per row) ── */
-      .mini-stepper { display: none !important; }
+      .mini-stepper {
+        display: none !important;
+      }
 
       /* ── Calendar: stack vertically on mobile ── */
-      .cal-split { grid-template-columns: 1fr !important; gap: 12px !important; }
-      .cal-cell { min-height: 60px !important; font-size: 11px !important; padding: 4px 1px 3px !important; }
-      .cal-cname { font-size: 8px !important; padding: 1px 4px !important; }
-      #cal-detail-panel { height: auto !important; max-height: 60vh !important; }
+      .cal-split {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+
+      .cal-cell {
+        min-height: 60px !important;
+        font-size: 11px !important;
+        padding: 4px 1px 3px !important;
+      }
+
+      .cal-cname {
+        font-size: 8px !important;
+        padding: 1px 4px !important;
+      }
+
+      #cal-detail-panel {
+        height: auto !important;
+        max-height: 60vh !important;
+      }
 
       /* ── Tabs ── */
-      .tab { font-size: 11px; padding: 6px 6px; white-space: nowrap; }
-      .tabs { gap: 2px; }
+      .tab {
+        font-size: 11px;
+        padding: 6px 6px;
+        white-space: nowrap;
+      }
+
+      .tabs {
+        gap: 2px;
+      }
 
       /* ── Chart header: wrap tabs to 2nd row on mobile ── */
-      .db-chart-card { padding: 12px 14px !important; }
-      .chart-mode-tabs { gap: 3px; }
-      .chart-mode-tab { padding: 3px 9px !important; }
+      .db-chart-card {
+        padding: 12px 14px !important;
+      }
+
+      .chart-mode-tabs {
+        gap: 3px;
+      }
+
+      .chart-mode-tab {
+        padding: 3px 9px !important;
+      }
 
       /* ── Debt customer header: wrap buttons to 2nd row ── */
-      .debt-cust-hd { flex-wrap: wrap; }
+      .debt-cust-hd {
+        flex-wrap: wrap;
+      }
+
       .debt-cust-btns {
         width: 100%;
         display: flex;
@@ -3195,21 +3586,41 @@
       }
 
       /* ── Expenses stats: 2-col grid on mobile ── */
-      .exp-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+      .exp-stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
 
       /* ── Expenses table: scrollable + hide vendor col ── */
-      .exp-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .exp-tbl-wrap table { min-width: 380px; }
-      .exp-col-vendor { display: none !important; }
+      .exp-tbl-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .exp-tbl-wrap table {
+        min-width: 380px;
+      }
+
+      .exp-col-vendor {
+        display: none !important;
+      }
 
       /* ── Buttons ── */
-      .btn-sm { padding: 6px 10px !important; font-size: 11px !important; }
+      .btn-sm {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+      }
 
       /* ── Cards ── */
-      .card { border-radius: var(--r-md) !important; }
+      .card {
+        border-radius: var(--r-md) !important;
+      }
 
       /* ── Modal: sheet from bottom ── */
-      .modal-overlay { align-items: flex-end !important; }
+      .modal-overlay {
+        align-items: flex-end !important;
+      }
+
       .modal {
         max-width: 100% !important;
         width: 100% !important;
@@ -3220,21 +3631,47 @@
       }
 
       /* ── Login ── */
-      #login-overlay { flex-direction: column; overflow-y: auto; }
-      .login-left { padding: 28px 20px; order: 2; width: 100%; }
-      .login-right {
-        min-height: 200px; order: 1; width: 100%;
-        padding: 36px 24px; border-radius: 0 0 36px 36px;
+      #login-overlay {
+        flex-direction: column;
+        overflow-y: auto;
       }
-      .login-title { font-size: 26px; margin-bottom: 20px; }
-      .login-right-art { opacity: 0.25; }
+
+      .login-left {
+        padding: 28px 20px;
+        order: 2;
+        width: 100%;
+      }
+
+      .login-right {
+        min-height: 200px;
+        order: 1;
+        width: 100%;
+        padding: 36px 24px;
+        border-radius: 0 0 36px 36px;
+      }
+
+      .login-title {
+        font-size: 26px;
+        margin-bottom: 20px;
+      }
+
+      .login-right-art {
+        opacity: 0.25;
+      }
     }
 
     /* ── Extra small (≤480px): icon-only sidebar nav ── */
     @media (max-width: 480px) {
-      .sidebar { width: 200px !important; }
-      .topbar { height: 50px; padding: 0 12px; }
+      .sidebar {
+        width: 200px !important;
+      }
+
+      .topbar {
+        height: 50px;
+        padding: 0 12px;
+      }
     }
+
     /* ── PIN LOCK ── */
     #pin-overlay {
       position: fixed;
@@ -3248,31 +3685,78 @@
       justify-content: center;
       flex-direction: column;
     }
-    #pin-overlay.active { display: flex; }
+
+    #pin-overlay.active {
+      display: flex;
+    }
+
     .pin-card {
       background: #fff;
       border-radius: 32px;
       padding: 40px 30px;
       width: 320px;
       text-align: center;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
       animation: pinCardEntry 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     @keyframes pinCardEntry {
-      from { opacity: 0; transform: translateY(30px) scale(0.95); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
-    .pin-icon { font-size: 40px; margin-bottom: 20px; }
-    .pin-title { font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
-    .pin-sub { font-size: 13px; color: var(--ink-muted); margin-bottom: 24px; }
-    .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 36px; }
-    .pin-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #e0e0e0; transition: all 0.2s; }
-    .pin-dot.filled { background: var(--blue); border-color: var(--blue); transform: scale(1.1); }
+
+    .pin-icon {
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+
+    .pin-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .pin-sub {
+      font-size: 13px;
+      color: var(--ink-muted);
+      margin-bottom: 24px;
+    }
+
+    .pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    .pin-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #e0e0e0;
+      transition: all 0.2s;
+    }
+
+    .pin-dot.filled {
+      background: var(--blue);
+      border-color: var(--blue);
+      transform: scale(1.1);
+    }
+
     .pin-keypad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
+
     .pin-btn {
       width: 64px;
       height: 64px;
@@ -3288,10 +3772,26 @@
       justify-content: center;
       transition: all 0.15s;
     }
-    .pin-btn:active { background: #f2f2f7; transform: scale(0.92); }
-    .pin-btn.back { font-size: 16px; border: none; }
-    .pin-btn.empty { border: none; cursor: default; }
-    .pin-btn.empty:active { transform: none; background: none; }
+
+    .pin-btn:active {
+      background: #f2f2f7;
+      transform: scale(0.92);
+    }
+
+    .pin-btn.back {
+      font-size: 16px;
+      border: none;
+    }
+
+    .pin-btn.empty {
+      border: none;
+      cursor: default;
+    }
+
+    .pin-btn.empty:active {
+      transform: none;
+      background: none;
+    }
 
     /* ── PIN TOGGLE ── */
     .pin-toggle-wrap {
@@ -3306,13 +3806,20 @@
       font-weight: 700;
       color: var(--ink-muted);
     }
+
     .switch {
       position: relative;
       display: inline-block;
       width: 32px;
       height: 18px;
     }
-    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
     .slider {
       position: absolute;
       cursor: pointer;
@@ -3321,6 +3828,7 @@
       transition: .3s;
       border-radius: 34px;
     }
+
     .slider:before {
       position: absolute;
       content: "";
@@ -3331,17 +3839,43 @@
       background-color: white;
       transition: .3s;
       border-radius: 50%;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
-    input:checked + .slider { background-color: var(--green); }
-    input:checked + .slider:before { transform: translateX(14px); }
 
-    .shake { animation: pinShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    input:checked+.slider {
+      background-color: var(--green);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(14px);
+    }
+
+    .shake {
+      animation: pinShake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+    }
+
     @keyframes pinShake {
-      10%, 90% { transform: translate3d(-1px, 0, 0); }
-      20%, 80% { transform: translate3d(2px, 0, 0); }
-      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-      40%, 60% { transform: translate3d(4px, 0, 0); }
+
+      10%,
+      90% {
+        transform: translate3d(-1px, 0, 0);
+      }
+
+      20%,
+      80% {
+        transform: translate3d(2px, 0, 0);
+      }
+
+      30%,
+      50%,
+      70% {
+        transform: translate3d(-4px, 0, 0);
+      }
+
+      40%,
+      60% {
+        transform: translate3d(4px, 0, 0);
+      }
     }
   </style>
 </head>
@@ -3359,7 +3893,7 @@
   <div class="login-left">
     <div class="login-brand-mark">
       <div class="login-brand-icon">
-        <img src="logo.png" class="login-brand-img" alt="Logo">
+        <img src="logo.png" class="login-brand-img" alt="Logo" decoding="async" fetchpriority="high">
       </div>
       <div>
         <div class="login-brand-name">진일 라벨</div>
@@ -3504,7 +4038,7 @@
   <!-- ── SIDEBAR ── -->
   <aside class="sidebar">
     <div class="logo-wrap">
-      <img src="logo.png" class="logo-img" alt="Logo">
+      <img src="logo.png" class="logo-img" alt="Logo" loading="lazy" decoding="async">
       <div>
         <div class="logo-text">진일 라벨</div>
         <div class="logo-sub">주문관리 시스템</div>
@@ -3600,9 +4134,12 @@
               <div>
                 <div style="font-size:14px;font-weight:700;letter-spacing:-0.3px">비즈니스 현황</div>
                 <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span style="display:inline-block;width:18px;height:2px;background:#0066cc;border-radius:2px"></span>매출</span>
-                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span style="display:inline-block;width:18px;height:2px;background:#ef4444;border-radius:2px;border-bottom:2px dashed #ef4444;height:0"></span>지출</span>
-                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span style="display:inline-block;width:18px;height:0;border-bottom:2px dashed #ff9500"></span>주문</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span
+                      style="display:inline-block;width:18px;height:2px;background:#0066cc;border-radius:2px"></span>매출</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span
+                      style="display:inline-block;width:18px;height:2px;background:#ef4444;border-radius:2px;border-bottom:2px dashed #ef4444;height:0"></span>지출</span>
+                  <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)"><span
+                      style="display:inline-block;width:18px;height:0;border-bottom:2px dashed #ff9500"></span>주문</span>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -3648,15 +4185,19 @@
             </div>
             <div class="stat-card-new" style="cursor:pointer" onclick="showPage('expenses')">
               <div class="stat-label-new">이번달 지출</div>
-              <div class="stat-value-new" id="s-month-expense" style="color:var(--red)">0<span class="stat-unit-new">원</span></div>
+              <div class="stat-value-new" id="s-month-expense" style="color:var(--red)">0<span
+                  class="stat-unit-new">원</span></div>
             </div>
             <div class="stat-card-new" style="cursor:pointer" onclick="showPage('expenses')">
               <div class="stat-label-new">미지급 명세서</div>
-              <div class="stat-value-new" id="s-unpaid-invoices" style="color:var(--red)">0<span class="stat-unit-new">건</span></div>
+              <div class="stat-value-new" id="s-unpaid-invoices" style="color:var(--red)">0<span
+                  class="stat-unit-new">건</span></div>
             </div>
-            <div class="stat-card-new" style="grid-column:1/-1;flex-direction:row;justify-content:space-between;padding:10px 16px">
+            <div class="stat-card-new"
+              style="grid-column:1/-1;flex-direction:row;justify-content:space-between;padding:10px 16px">
               <div class="stat-label-new" style="margin-bottom:0">이번달 순이익</div>
-              <div class="stat-value-new sensitive" id="s-month-profit" style="color:var(--green);font-size:22px">0<span class="stat-unit-new">원</span></div>
+              <div class="stat-value-new sensitive" id="s-month-profit" style="color:var(--green);font-size:22px">0<span
+                  class="stat-unit-new">원</span></div>
             </div>
           </div>
         </div>
@@ -3743,7 +4284,8 @@
             </div>
           </div>
 
-          <div class="card" id="cal-detail-panel" style="align-self:stretch;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+          <div class="card" id="cal-detail-panel"
+            style="align-self:stretch;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
             <div class="empty">
               <div class="empty-icon">📅</div>
               <div class="empty-text">날짜를 선택하세요</div>
@@ -3773,12 +4315,17 @@
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:12px;color:var(--ink-muted);font-weight:600">기간:</span>
-          <input type="date" id="order-date-from" onchange="renderOrders()" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
+          <input type="date" id="order-date-from" onchange="renderOrders()"
+            style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
           <span style="font-size:12px;color:var(--ink-muted)">~</span>
-          <input type="date" id="order-date-to" onchange="renderOrders()" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
-          <button class="btn btn-ghost btn-xs" onclick="clearOrderDateFilter()" style="color:var(--ink-muted)">✕ 초기화</button>
-          <button class="btn btn-ghost btn-xs" onclick="setOrderDateFilterMonth(0)" style="color:var(--blue)">이번달</button>
-          <button class="btn btn-ghost btn-xs" onclick="setOrderDateFilterMonth(-1)" style="color:var(--ink-muted)">지난달</button>
+          <input type="date" id="order-date-to" onchange="renderOrders()"
+            style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
+          <button class="btn btn-ghost btn-xs" onclick="clearOrderDateFilter()" style="color:var(--ink-muted)">✕
+            초기화</button>
+          <button class="btn btn-ghost btn-xs" onclick="setOrderDateFilterMonth(0)"
+            style="color:var(--blue)">이번달</button>
+          <button class="btn btn-ghost btn-xs" onclick="setOrderDateFilterMonth(-1)"
+            style="color:var(--ink-muted)">지난달</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <div class="tbl-wrap" style="max-height: 680px; overflow-y: auto;">
@@ -3821,8 +4368,8 @@
         <div class="grid-2" style="align-items:start">
           <!-- Left: customer list -->
           <div class="card" style="padding:14px;display:flex;flex-direction:column;max-height:calc(100vh - 160px)">
-            <div class="search-bar" style="flex-shrink:0"><span style="color:var(--ink-muted)">🔍</span><input type="text"
-                placeholder="거래처 검색..." id="cust-q" oninput="renderCustomers()"></div>
+            <div class="search-bar" style="flex-shrink:0"><span style="color:var(--ink-muted)">🔍</span><input
+                type="text" placeholder="거래처 검색..." id="cust-q" oninput="renderCustomers()"></div>
             <div id="cust-list" style="overflow-y:auto;flex:1;margin-top:8px"></div>
           </div>
           <!-- Right: customer detail -->
@@ -3840,7 +4387,7 @@
         <div class="section-head" style="margin-bottom:20px">
           <div>
             <div class="section-title">거래명세서</div>
-            <div class="section-sub">A4 가로 출력 / PDF 저장</div>
+            <div class="section-sub">A4 세로 출력 / PDF 저장</div>
           </div>
         </div>
 
@@ -3983,12 +4530,13 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
               <div
                 style="font-size:11px;color:var(--ink-muted);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">
-                미리보기 (A4 가로)
+                미리보기 (A4 세로)
               </div>
               <div style="display:flex;gap:6px">
                 <button class="btn btn-ghost btn-sm" onclick="buildInvoicePreview()" title="미리보기 새로고침">🔄 미리보기</button>
                 <button class="btn btn-ghost btn-sm" onclick="printInvoice()">🖨 인쇄</button>
-                <button class="btn btn-primary btn-sm" onclick="printInvoice()">⬇ PDF 저장</button>
+                <button class="btn btn-ghost btn-sm" onclick="shareInvoiceKakao()">💬 카카오톡</button>
+                <button class="btn btn-primary btn-sm" onclick="downloadInvoicePDF()">⬇ PDF 저장</button>
               </div>
             </div>
             <div id="inv-preview" style="transform-origin:top left;overflow:hidden"></div>
@@ -4039,13 +4587,17 @@
 
         <!-- Month navigator -->
         <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px">
-          <button onclick="shiftExpMonth(-1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--canvas);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)">‹</button>
-          <span id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--ink);min-width:90px;text-align:center"></span>
-          <button onclick="shiftExpMonth(1)" id="exp-month-next" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--canvas);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)">›</button>
+          <button onclick="shiftExpMonth(-1)"
+            style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--canvas);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)">‹</button>
+          <span id="exp-month-label"
+            style="font-size:15px;font-weight:700;color:var(--ink);min-width:90px;text-align:center"></span>
+          <button onclick="shiftExpMonth(1)" id="exp-month-next"
+            style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--canvas);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)">›</button>
         </div>
 
         <!-- Stats -->
-        <div class="exp-stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="exp-stats-grid"
+          style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
           <div class="card" style="padding:16px;text-align:center">
             <div style="font-size:11px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">월 총 지출</div>
             <div style="font-size:20px;font-weight:700;color:var(--red)" id="exp-s-total">0원</div>
@@ -4069,26 +4621,34 @@
           <button class="btn btn-ghost btn-sm exp-tab active-tab" onclick="setExpTab('all',this)">전체</button>
           <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('daily',this)">일일 지출</button>
           <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('invoice',this)">📄 수취 명세서</button>
-          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('unpaid',this)" style="color:var(--red)">⚠️ 미지급</button>
+          <button class="btn btn-ghost btn-sm exp-tab" onclick="setExpTab('unpaid',this)" style="color:var(--red)">⚠️
+            미지급</button>
         </div>
 
         <!-- List -->
         <div class="card" style="padding:0;overflow:hidden">
           <div class="exp-tbl-wrap">
-          <table style="width:100%;border-collapse:collapse">
-            <thead>
-              <tr style="background:#fafafa;border-bottom:1px solid var(--hairline)">
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">날짜</th>
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">구분</th>
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">항목</th>
-                <th class="exp-col-vendor" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">공급처</th>
-                <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--ink-muted);font-weight:600">금액</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--ink-muted);font-weight:600">결제</th>
-                <th style="padding:10px 14px;font-size:11px"></th>
-              </tr>
-            </thead>
-            <tbody id="exp-list"></tbody>
-          </table>
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr style="background:#fafafa;border-bottom:1px solid var(--hairline)">
+                  <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">날짜
+                  </th>
+                  <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">구분
+                  </th>
+                  <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">항목
+                  </th>
+                  <th class="exp-col-vendor"
+                    style="padding:10px 14px;text-align:left;font-size:11px;color:var(--ink-muted);font-weight:600">공급처
+                  </th>
+                  <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--ink-muted);font-weight:600">
+                    금액</th>
+                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--ink-muted);font-weight:600">
+                    결제</th>
+                  <th style="padding:10px 14px;font-size:11px"></th>
+                </tr>
+              </thead>
+              <tbody id="exp-list"></tbody>
+            </table>
           </div>
           <div id="exp-empty" style="text-align:center;padding:40px;color:var(--ink-muted);display:none">
             <div style="font-size:32px;margin-bottom:8px">💸</div>
@@ -4132,7 +4692,8 @@
           <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 제품 추가</button>
         </div>
         <div style="margin-bottom:12px">
-          <input type="text" id="product-q" class="search-input" placeholder="제품명 검색..." oninput="renderProducts()" style="max-width:320px">
+          <input type="text" id="product-q" class="search-input" placeholder="제품명 검색..." oninput="renderProducts()"
+            style="max-width:320px">
         </div>
         <div class="card" style="padding:0;overflow:hidden">
           <table class="data-table">
@@ -4218,8 +4779,8 @@
             <input type="hidden" id="o-cust">
             <div class="ss-list" id="o-cust-list"></div>
           </div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="openQuickAddCust()"
-            title="새 거래처 등록" style="white-space:nowrap;flex-shrink:0;padding:8px 12px;border:1.5px dashed var(--blue);color:var(--blue);border-radius:var(--r-md)">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="openQuickAddCust()" title="새 거래처 등록"
+            style="white-space:nowrap;flex-shrink:0;padding:8px 12px;border:1.5px dashed var(--blue);color:var(--blue);border-radius:var(--r-md)">
             + 신규
           </button>
         </div>
@@ -4237,7 +4798,7 @@
       <div style="font-size:13px;font-weight:700">주문 품목</div><button class="btn btn-ghost btn-sm" onclick="addOItem()">+
         추가</button>
     </div>
-    <div style="overflow-x:auto;margin-bottom:10px">
+    <div class="order-items-wrap" style="overflow:visible;margin-bottom:10px">
       <table class="items-table">
         <thead>
           <tr>
@@ -4255,10 +4816,14 @@
     </div>
     <div class="form-group" style="margin-top:12px">
       <label>송장 이미지</label>
-      <div class="img-upload-zone" id="img-zone" onclick="document.getElementById('o-img-inp').click()">
+      <div class="img-upload-zone" id="img-zone" tabindex="0"
+        onclick="focusImageZone();document.getElementById('o-img-inp').click()"
+        ondragenter="handleImageDrag(event)" ondragover="handleImageDrag(event)"
+        ondragleave="handleImageDragLeave(event)" ondrop="handleImageDrop(event)">
         <input type="file" id="o-img-inp" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
-        <div id="img-placeholder" style="font-size:12px;color:var(--ink-muted)">📷 클릭하여 송장 이미지 업로드</div>
+        <div id="img-placeholder" style="font-size:12px;color:var(--ink-muted)">📷 클릭 / 드래그 / Ctrl+V 붙여넣기</div>
         <img id="img-prev" class="img-preview" style="display:none">
+        <button type="button" class="img-remove-btn" id="img-remove-btn" onclick="event.stopPropagation();clearOrderImage()" title="삭제">×</button>
       </div>
     </div>
     <div class="form-group" style="margin-top:10px"><label>메모</label><textarea id="o-memo"
@@ -4295,16 +4860,17 @@
     </div>
     <!-- Type toggle -->
     <div style="display:flex;gap:8px;margin-bottom:18px">
-      <button id="exp-type-daily" class="btn btn-primary btn-sm" style="flex:1"
-        onclick="setExpenseType('daily')"> 일일 지출</button>
-      <button id="exp-type-invoice" class="btn btn-ghost btn-sm" style="flex:1"
-        onclick="setExpenseType('invoice')">📄 수취 명세서</button>
+      <button id="exp-type-daily" class="btn btn-primary btn-sm" style="flex:1" onclick="setExpenseType('daily')"> 일일
+        지출</button>
+      <button id="exp-type-invoice" class="btn btn-ghost btn-sm" style="flex:1" onclick="setExpenseType('invoice')">📄
+        수취 명세서</button>
     </div>
     <div class="form-grid">
       <div class="form-group"><label>날짜 *</label><input type="date" id="exp-date"></div>
       <div class="form-group" id="exp-category-wrap">
         <label>카테고리</label>
-        <select id="exp-category" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px">
+        <select id="exp-category"
+          style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-size:14px">
           <option value="퀵서비스"> 퀵서비스</option>
           <option value="식비"> 식비</option>
           <option value="소모품"> 소모품</option>
@@ -4313,11 +4879,13 @@
           <option value="기타"> 기타</option>
         </select>
       </div>
-      <div class="form-group full"><label>항목명 *</label><input type="text" id="exp-desc" placeholder="예: 강남 퀵서비스, 사무용품 구입..."></div>
+      <div class="form-group full"><label>항목명 *</label><input type="text" id="exp-desc"
+          placeholder="예: 강남 퀵서비스, 사무용품 구입..."></div>
       <div class="form-group" id="exp-vendor-wrap" style="display:none">
         <label>공급처 (업체명)</label><input type="text" id="exp-vendor" placeholder="공급업체명">
       </div>
-      <div class="form-group"><label>금액 *</label><input type="number" id="exp-amount" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/,'')"></div>
+      <div class="form-group"><label>금액 *</label><input type="number" id="exp-amount" placeholder="0"
+          oninput="this.value=this.value.replace(/[^0-9]/,'')"></div>
       <div class="form-group" id="exp-paid-wrap">
         <label>결제 상태</label>
         <div style="display:flex;gap:8px;margin-top:4px">
@@ -4329,7 +4897,8 @@
           </label>
         </div>
       </div>
-      <div class="form-group full"><label>메모</label><textarea id="exp-memo" placeholder="비고..." style="height:60px"></textarea></div>
+      <div class="form-group full"><label>메모</label><textarea id="exp-memo" placeholder="비고..."
+          style="height:60px"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-expense')">취소</button>
@@ -4366,7 +4935,8 @@
   <div class="modal" style="max-width:480px">
     <div class="modal-header">
       <div class="modal-title" id="modal-cust-title">거래처 추가</div>
-      <button class="modal-close" onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">✕</button>
+      <button class="modal-close"
+        onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">✕</button>
     </div>
     <div class="form-grid">
       <div class="form-group"><label>업체명 *</label><input type="text" id="c-name" placeholder="업체명"></div>
@@ -4378,11 +4948,13 @@
       <div class="form-group"><label>KakaoTalk ID</label><input type="text" id="c-kakao" placeholder="카카오톡 아이디"></div>
       <div class="form-group full">
         <label>메모 / 특이사항</label>
-        <textarea id="c-notes" rows="3" placeholder="배송 주의사항, 결제 방식, 특이사항 등..." style="width:100%;resize:vertical;border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--canvas);line-height:1.5"></textarea>
+        <textarea id="c-notes" rows="3" placeholder="배송 주의사항, 결제 방식, 특이사항 등..."
+          style="width:100%;resize:vertical;border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--canvas);line-height:1.5"></textarea>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">취소</button>
+      <button class="btn btn-ghost"
+        onclick="UI.editCustId=null;UI.custSavedForOrder=false;document.getElementById('modal-cust-title').textContent='거래처 추가';closeModal('modal-cust')">취소</button>
       <button class="btn btn-primary" onclick="saveCustomer()">저장</button>
     </div>
   </div>
@@ -4476,7 +5048,8 @@
       <div class="modal-title">📦 최근 출고 알림</div>
       <button class="modal-close" onclick="closeModal('modal-ship-notifications')">✕</button>
     </div>
-    <div id="ship-notifications-body" style="max-height:min(480px,70vh);overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+    <div id="ship-notifications-body"
+      style="max-height:min(480px,70vh);overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
     <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="clearShipmentNotifications()">알림 모두 지우기</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-ship-notifications')">닫기</button>
@@ -4486,6 +5059,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   /* ════════════════════════════════════════════
      SUPABASE CONFIG
@@ -4494,6 +5068,47 @@
   const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcGZpaG9oaHZoc25qcmRzbXZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzU2MDUsImV4cCI6MjA5MzExMTYwNX0.2kPzLY_XKbWiJuDJ7UyiSRYPUyBlxXz5zTR8CG--n_M';
 
   // Supabase JS client — used for WebSocket realtime subscriptions
+  const PERF_ASSETS = {
+    chart: 'https://cdn.jsdelivr.net/npm/chart.js',
+    html2canvas: 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',
+    jspdf: 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
+  };
+  const _scriptLoads = {};
+
+  function loadExternalScript(src) {
+    if (_scriptLoads[src]) return _scriptLoads[src];
+    _scriptLoads[src] = new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        if (existing.dataset.loaded === 'true') resolve();
+        else {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', reject, { once: true });
+        }
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.dataset.loaded = 'false';
+      script.onload = () => { script.dataset.loaded = 'true'; resolve(); };
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    });
+    return _scriptLoads[src];
+  }
+
+  function ensureChart() {
+    return window.Chart ? Promise.resolve() : loadExternalScript(PERF_ASSETS.chart);
+  }
+
+  function ensurePdfLibs() {
+    const jobs = [];
+    if (!window.html2canvas) jobs.push(loadExternalScript(PERF_ASSETS.html2canvas));
+    if (!window.jspdf?.jsPDF) jobs.push(loadExternalScript(PERF_ASSETS.jspdf));
+    return Promise.all(jobs);
+  }
+
   const _supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
   // ── JWT Auth Token Cache ──────────────────────
@@ -4616,6 +5231,8 @@
     pinBuffer: '',
     shipmentNotifications: [],
     shipmentNotiCount: 0,
+    shipmentToastKeys: new Set(),
+    selfShipmentKeys: new Set(),
   };
 
   /* ════════════════════════════════════════════
@@ -4647,13 +5264,16 @@
       UI.realtimeChannel = null;
     }
     const channel = _supa.channel('jinil-sync', { config: { broadcast: { self: false } } })
-      .on('broadcast', { event: 'orders_changed' }, payload => {
+      .on('broadcast', { event: 'orders_changed' }, async payload => {
         console.log('📣 Broadcast orders_changed:', payload);
         const data = payload.payload || payload;
-        if (data.action === 'mobile_ship') {
+        // Wait for orders to reload before re-rendering badge
+        // (so mobileCount reflects the new shipped_date)
+        await refreshOrdersOnly();
+        if (isShipmentAction(data.action)) {
           handleShipmentNotification(data);
         }
-        refreshOrdersOnly();
+        renderPaymentRequestButton(false);
       })
       .on('broadcast', { event: 'data_changed' }, payload => {
         console.log('📣 Broadcast data_changed:', payload);
@@ -4677,6 +5297,7 @@
         // Pulse the DB indicator
         const dot = document.getElementById('db-dot');
         if (dot) { dot.style.transform = 'scale(1.6)'; setTimeout(() => dot.style.transform = '', 500); }
+        const shipmentNotice = shipmentNoticeFromOrderRealtime(payload);
 
         // Smart update: don't wipe DB.orders with a filtered reload
         if (payload.eventType === 'UPDATE' && payload.new?.id) {
@@ -4708,6 +5329,8 @@
           // Fallback: full reload only when we can't do smart update
           loadAll().then(renderAll);
         }
+        renderPaymentRequestButton(false);
+        if (shipmentNotice) handleShipmentNotification(shipmentNotice);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, payload => {
         console.log('🔔 Realtime Change (Customers):', payload.eventType);
@@ -4748,20 +5371,21 @@
           openActivityLog();
         }
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
-        const row = payload.new;
-        if (!row) return;
-        // Only admins receive staff notifications
+      .on('broadcast', { event: 'staff_notification_changed' }, payload => {
+        // Only admins receive staff notifications — instant broadcast delivery
         if (UI.currentUser?.role !== 'admin') return;
-        // Add to local cache
-        DB.notifications = [row, ...DB.notifications];
-        renderPaymentRequestButton(false);
-        // Show toast alert
-        const typeLabel = row.type === 'order_created' ? '📝 신규 주문' : row.type === 'order_shipped' ? '🚚 출고 처리' : '📦 부분 출고';
-        showToast(`${typeLabel} — ${row.customer_name || '—'} · ${row.actor}`, 'info');
-        // If notification panel is open, refresh it
-        if (document.getElementById('modal-ship-notifications')?.classList.contains('open')) {
-          renderShipmentNotifications();
+        const data = payload.payload || payload;
+        const notif = data.notification;
+        if (!notif) return;
+        // Deduplicate: broadcastChange retries 3×, only process first arrival
+        if (!DB.notifications.find(n => n.id == notif.id)) {
+          DB.notifications = [notif, ...DB.notifications];
+          renderPaymentRequestButton(false);
+          const typeLabel = notif.type === 'order_created' ? '📝 신규 주문' : notif.type === 'order_shipped' ? '🚚 출고 처리' : '📦 부분 출고';
+          showToast(`${typeLabel} — ${notif.customer_name || '—'} · ${notif.actor}`, 'info');
+          if (document.getElementById('modal-ship-notifications')?.classList.contains('open')) {
+            renderShipmentNotifications();
+          }
         }
       })
       .subscribe((status) => {
@@ -4771,20 +5395,26 @@
     UI.realtimeChannel = channel;
   }
 
-  // ── Staff → Admin notification ────────────────────────
-  // Inserts a row into `notifications` table when staff performs actions.
-  // Real-time subscription above delivers it to admin immediately.
-  function saveStaffNotification(type, orderId, customerName, itemsText) {
-    if (UI.currentUser?.role !== 'staff') return; // only staff triggers admin notifications
+  // ── Staff → Admin notification ─────────────────────────────────
+  // Stores notification in settings table (key='staff_notifications')
+  // and broadcasts instantly via channel (same pattern as 결제요청).
+  async function saveStaffNotification(type, orderId, customerName, itemsText) {
+    if (UI.currentUser?.role !== 'staff') return;
     const actor = UI.currentUser?.nickname || UI.currentUser?.username || '직원';
-    supa('POST', 'notifications', {
-      type,
-      order_id: orderId || null,
-      actor,
-      actor_role: 'staff',
-      customer_name: customerName || '',
-      items_text: itemsText || '',
-    }).catch(e => console.warn('saveStaffNotification failed:', e.message));
+    const notif = {
+      id: Date.now(),
+      type, order_id: orderId || null, actor, actor_role: 'staff',
+      customer_name: customerName || '', items_text: itemsText || '',
+      created_at: new Date().toISOString(),
+    };
+    try {
+      const existing = await loadSettingValue('staff_notifications', []);
+      const updated = [notif, ...(Array.isArray(existing) ? existing : [])].slice(0, 200);
+      await saveSettingValue('staff_notifications', updated);
+      broadcastChange('staff_notification_changed', { notification: notif });
+    } catch (e) {
+      console.warn('saveStaffNotification failed:', e.message);
+    }
   }
 
   function broadcastChange(event, payload = {}) {
@@ -4840,6 +5470,13 @@
 
   function handleSettingsChange(key, value, notify = false) {
     if (!key) return;
+    if (key === 'staff_notifications') {
+      // Only admin needs to process these
+      if (UI.currentUser?.role === 'admin') {
+        loadStaffNotifications().catch(() => { });
+      }
+      return;
+    }
     if (key === 'payment_requests') {
       if (UI.currentUser?.role === 'admin') {
         UI.paymentRequests = Array.isArray(value) ? value : [];
@@ -5377,6 +6014,44 @@
     } catch (e) {
       console.warn('settings table check failed:', e.message);
     }
+    // 3. Ensure notifications table exists (existing DBs may not have it)
+    try {
+      const notifProbe = await fetch(`${SUPA_URL}/rest/v1/notifications?limit=1`, {
+        method: 'GET', headers: getHeaders()
+      });
+      if (!notifProbe.ok) {
+        const errText = await notifProbe.text();
+        if (errText.includes('42P01') || errText.includes('does not exist')) {
+          await fetch(`${SUPA_URL}/rest/v1/rpc/exec_sql`, {
+            method: 'POST', headers: getHeaders(),
+            body: JSON.stringify({
+              sql: `
+              CREATE TABLE IF NOT EXISTS notifications (
+                id BIGSERIAL PRIMARY KEY,
+                type TEXT NOT NULL DEFAULT 'order_created',
+                order_id BIGINT,
+                actor TEXT DEFAULT '',
+                actor_role TEXT DEFAULT '',
+                customer_name TEXT DEFAULT '',
+                items_text TEXT DEFAULT '',
+                created_at TIMESTAMPTZ DEFAULT NOW()
+              );
+              ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+              DO $p$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='notifications' AND policyname='app_auth_all') THEN
+                  CREATE POLICY "app_auth_all" ON notifications FOR ALL TO authenticated USING (true) WITH CHECK (true);
+                END IF;
+              END $p$;
+              CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+            ` })
+          });
+          console.log('✅ notifications table created');
+        }
+      }
+    } catch (e) {
+      console.warn('notifications table check failed:', e.message);
+    }
+
     await ensureRealtimePublication();
   }
 
@@ -5517,21 +6192,28 @@ END $$;
     return d.toISOString().split('T')[0]; // YYYY-MM-DD
   }
 
+  async function loadStaffNotifications() {
+    const data = await loadSettingValue('staff_notifications', []).catch(() => []);
+    DB.notifications = Array.isArray(data) ? data : [];
+    renderPaymentRequestButton(false);
+  }
+
   async function loadAll(daysAgo = LOAD_DAYS) {
     const from = getDateFrom(daysAgo);
-    const ago48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const [custs, ords, exps, prods, notifs] = await Promise.all([
+    const [custs, ords, exps, prods] = await Promise.all([
       supa('GET', 'customers', null, '?order=name'),
       supa('GET', 'orders', null, `?order=order_date.desc&order_date=gte.${from}&limit=1000`),
       supa('GET', 'expenses', null, `?order=date.desc&date=gte.${from}&limit=1000`).catch(() => []),
       supa('GET', 'products', null, '?order=name').catch(() => []),
-      supa('GET', 'notifications', null, `?order=created_at.desc&created_at=gte.${ago48h}&limit=200`).catch(() => []),
     ]);
     DB.customers = custs || [];
     DB.orders = ords || [];
     DB.expenses = exps || [];
     DB.products = prods || [];
-    DB.notifications = notifs || [];
+    // Load staff notifications from settings (only useful for admin)
+    if (UI.currentUser?.role === 'admin') {
+      loadStaffNotifications().catch(() => { });
+    }
     DB.loadedFrom = from;
     DB.hasMore = ords?.length === 1000;
     updateLoadMoreBtn();
@@ -5611,7 +6293,7 @@ END $$;
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
   const fmt = n => Number(n || 0).toLocaleString('ko-KR');
-  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const getCust = id => DB.customers.find(c => c.id == id);
   const getOrder = id => DB.orders.find(o => o.id == id);
   function orderItems(o) {
@@ -5627,6 +6309,22 @@ END $$;
     }
     if (raw && typeof raw === 'object') return Object.values(raw);
     return [];
+  }
+  function dateToMs(value) {
+    if (!value) return 0;
+    if (value instanceof Date) return value.getTime() || 0;
+    const s = String(value).trim();
+    if (!s) return 0;
+    const normalized = s.includes('T') ? s : s.replace(' ', 'T');
+    const ms = Date.parse(normalized);
+    return Number.isNaN(ms) ? 0 : ms;
+  }
+  function latestDateString(values) {
+    return values.reduce((best, value) => {
+      const ms = dateToMs(value);
+      if (!ms) return best;
+      return ms > dateToMs(best) ? String(value) : best;
+    }, '');
   }
   function itemIsShipped(i) {
     return i?.shipped === true || i?.shipped === 'true';
@@ -5937,7 +6635,7 @@ END $$;
     document.getElementById('s-month-revenue').innerHTML = formatVal(monthRevenue, '원');
 
     // 2c. Expense stats
-    const expYm = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const expYm = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     const monthExps = (DB.expenses || []).filter(e => (e.date || '').startsWith(expYm));
     const monthExpTotal = monthExps.reduce((s, e) => s + (e.amount || 0), 0);
     const unpaidInvoices = (DB.expenses || []).filter(e => e.type === 'invoice' && !e.paid);
@@ -6044,21 +6742,21 @@ END $$;
       topEl.innerHTML = topCusts.length === 0
         ? '<div style="color:var(--ink-muted);font-size:13px">데이터가 없습니다</div>'
         : topCusts.map((x, i) => {
-            const pct = Math.round((x.total / maxRev) * 100);
-            const col = custColor(x.cust);
-            return `<div style="margin-bottom:10px">
+          const pct = Math.round((x.total / maxRev) * 100);
+          const col = custColor(x.cust);
+          return `<div style="margin-bottom:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
                 <div style="display:flex;align-items:center;gap:8px">
-                  <div style="width:20px;height:20px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">${i+1}</div>
+                  <div style="width:20px;height:20px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff">${i + 1}</div>
                   <span style="font-size:13px;font-weight:600;color:var(--ink)">${esc(x.cust.name)}</span>
                 </div>
-                <span style="font-size:13px;font-weight:700;color:var(--blue)">${UI.privacyMode ? '••••원' : fmt(x.total)+'원'}</span>
+                <span style="font-size:13px;font-weight:700;color:var(--blue)">${UI.privacyMode ? '••••원' : fmt(x.total) + '원'}</span>
               </div>
               <div style="height:6px;background:var(--parchment2);border-radius:99px;overflow:hidden">
                 <div style="height:100%;width:${pct}%;background:${col};border-radius:99px;transition:width 0.5s ease"></div>
               </div>
             </div>`;
-          }).join('');
+        }).join('');
     }
   }
 
@@ -6376,8 +7074,16 @@ END $$;
     body.innerHTML = html;
   }
 
-  function renderMainChart() {
-    const ctx = document.getElementById('mainChart').getContext('2d');
+  async function renderMainChart() {
+    const canvas = document.getElementById('mainChart');
+    if (!canvas) return;
+    try {
+      await ensureChart();
+    } catch (e) {
+      console.warn('Chart load failed:', e.message);
+      return;
+    }
+    const ctx = canvas.getContext('2d');
     if (UI.mainChart) UI.mainChart.destroy();
 
     const labels = [];
@@ -6672,9 +7378,9 @@ END $$;
       );
     }
     const dateFrom = document.getElementById('order-date-from')?.value;
-    const dateTo   = document.getElementById('order-date-to')?.value;
+    const dateTo = document.getElementById('order-date-to')?.value;
     if (dateFrom) list = list.filter(o => (o.order_date || '') >= dateFrom);
-    if (dateTo)   list = list.filter(o => (o.order_date || '') <= dateTo);
+    if (dateTo) list = list.filter(o => (o.order_date || '') <= dateTo);
     if (q) list = list.filter(o => {
       const c = getCust(o.customer_id);
       return (c?.name || '').toLowerCase().includes(q) || orderItems(o).some(i => (i.name || '').toLowerCase().includes(q)) || (shipmentTracking(o) || '').includes(q);
@@ -6735,15 +7441,18 @@ END $$;
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const lastDay = new Date(y, d.getMonth() + 1, 0).getDate();
     const from = document.getElementById('order-date-from');
-    const to   = document.getElementById('order-date-to');
+    const to = document.getElementById('order-date-to');
     if (from) from.value = `${y}-${m}-01`;
-    if (to)   to.value   = `${y}-${m}-${String(lastDay).padStart(2,'0')}`;
+    if (to) to.value = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
     renderOrders();
   }
 
   /* ════════════════════════════════════════════
      NEW ORDER
      ════════════════════════════════════════════ */
+  const DEFAULT_ITEM_SUGGESTIONS = ['메인 라벨', '케어 라벨', '바코드', '행택', '스티커', '택고리'];
+  let _activeItemSuggestInput = null;
+
   function refreshCustSelects() {
     // We handle the custom searchable dropdowns here
     initSearchSelect('o-cust', fillOrderAddr, true);
@@ -6819,6 +7528,60 @@ END $$;
     input.value = c ? c.name : '';
   }
 
+  function getItemSuggestions(filter = '') {
+    const names = new Map();
+    DEFAULT_ITEM_SUGGESTIONS.forEach(name => names.set(name, { name, source: '' }));
+    (DB.products || []).forEach(p => {
+      if (!p?.name) return;
+      names.set(p.name, { name: p.name, source: p.price ? `${fmt(p.price)}원` : '' });
+    });
+    const q = filter.trim().toLowerCase();
+    return [...names.values()].filter(item => !q || item.name.toLowerCase().includes(q));
+  }
+
+  function renderItemSuggestList(input) {
+    _activeItemSuggestInput = input;
+    const wrap = input.closest('.item-suggest');
+    const list = wrap?.querySelector('.item-suggest-list');
+    if (!list) return;
+    const suggestions = getItemSuggestions(input.value);
+    list.innerHTML = suggestions.map(item => `
+      <div class="ss-item" onclick="selectItemSuggestion(this, '${esc(item.name).replace(/'/g, "\\'")}')">
+        <div style="font-weight:600">${esc(item.name)}</div>
+        ${item.source ? `<div style="font-size:11px;color:var(--ink-muted)">${esc(item.source)}</div>` : ''}
+      </div>
+    `).join('');
+    list.style.left = '';
+    list.style.top = '';
+    list.style.width = '';
+    list.style.display = suggestions.length ? 'block' : 'none';
+  }
+
+  function selectItemSuggestion(el, name) {
+    const wrap = el.closest('.item-suggest');
+    const input = wrap?.querySelector('.o-item-name') || _activeItemSuggestInput;
+    const list = wrap?.querySelector('.item-suggest-list');
+    if (!input) return;
+    input.value = name;
+    if (list) list.style.display = 'none';
+    autofillItemPrice(input);
+    calcOTotal();
+    input.focus();
+  }
+
+  function hideItemSuggestLists(exceptInput = null) {
+    document.querySelectorAll('.item-suggest-list').forEach(list => {
+      if (exceptInput && list.closest('.item-suggest')?.contains(exceptInput)) return;
+      list.style.display = 'none';
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.item-suggest')) hideItemSuggestLists();
+  });
+  window.addEventListener('resize', () => hideItemSuggestLists());
+  window.addEventListener('scroll', () => hideItemSuggestLists(), true);
+
   function openNewOrder() {
     UI.editOrderId = null;
     document.querySelector('#modal-order .modal-title').textContent = '새 주문 등록';
@@ -6829,6 +7592,7 @@ END $$;
     UI.orderImgBase64 = null;
     document.getElementById('img-prev').style.display = 'none';
     document.getElementById('img-placeholder').style.display = 'block';
+    document.getElementById('img-remove-btn').style.display = 'none';
     addOItem();
     openModal('modal-order');
   }
@@ -6843,10 +7607,10 @@ END $$;
     if (!id) return;
     const c = getCust(id);
     // 연락처·대표자 정보는 즉시 채움
-    document.getElementById('o-tel').value     = c?.tel     || '';
-    document.getElementById('o-rep').value     = c?.rep     || '';
+    document.getElementById('o-tel').value = c?.tel || '';
+    document.getElementById('o-rep').value = c?.rep || '';
     document.getElementById('o-contact').value = c?.contact || '';
-    document.getElementById('o-biz-no').value  = c?.biz_no  || '';
+    document.getElementById('o-biz-no').value = c?.biz_no || '';
     // 주소는 스마트 피커로
     showAddrPicker(id);
   }
@@ -6958,13 +7722,22 @@ END $$;
     (o.items || []).forEach(i => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" value="${esc(i.name)}" oninput="calcOTotal()"></td>
+        <td>
+          <div class="ss-container item-suggest">
+            <input type="text" class="ss-input o-item-name" value="${esc(i.name)}" placeholder="품목명" autocomplete="off"
+              onfocus="hideItemSuggestLists(this);renderItemSuggestList(this)"
+              oninput="calcOTotal();renderItemSuggestList(this)"
+              onchange="autofillItemPrice(this)">
+            <div class="ss-list item-suggest-list"></div>
+          </div>
+        </td>
         <td><input type="number" value="${i.qty}" min="1" style="width:100%" oninput="calcOTotal()"></td>
-        <td><input type="number" value="${i.price}" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
+        <td><input type="number" class="o-item-price" value="${i.price}" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
         <td class="item-total-cell">${fmt(i.qty * i.price)}</td>
         <td><button class="btn btn-danger btn-xs" onclick="this.closest('tr').remove();calcOTotal()">✕</button></td>
       `;
       tb.appendChild(tr);
+      refreshProductAutocomplete();
     });
 
     if (o.img_url) {
@@ -6972,10 +7745,12 @@ END $$;
       document.getElementById('img-prev').src = o.img_url;
       document.getElementById('img-prev').style.display = 'block';
       document.getElementById('img-placeholder').style.display = 'none';
+      document.getElementById('img-remove-btn').style.display = 'flex';
     } else {
       UI.orderImgBase64 = null;
       document.getElementById('img-prev').style.display = 'none';
       document.getElementById('img-placeholder').style.display = 'block';
+      document.getElementById('img-remove-btn').style.display = 'none';
     }
 
     calcOTotal();
@@ -7008,12 +7783,21 @@ END $$;
   function addOItem() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-    <td><input type="text" class="o-item-name" list="product-datalist" placeholder="품목명" oninput="calcOTotal()" onchange="autofillItemPrice(this)"></td>
+    <td>
+      <div class="ss-container item-suggest">
+        <input type="text" class="ss-input o-item-name" placeholder="품목명" autocomplete="off"
+          onfocus="hideItemSuggestLists(this);renderItemSuggestList(this)"
+          oninput="calcOTotal();renderItemSuggestList(this)"
+          onchange="autofillItemPrice(this)">
+        <div class="ss-list item-suggest-list"></div>
+      </div>
+    </td>
     <td><input type="number" value="1" min="1" style="width:100%" oninput="calcOTotal()"></td>
-    <td><input type="number" class="o-item-price" value="0" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
+    <td><input type="number" class="o-item-price" value="" min="0" step="1000" style="width:100%" oninput="calcOTotal()"></td>
     <td class="item-total-cell">0</td>
     <td><button class="btn btn-danger btn-xs" onclick="this.closest('tr').remove();calcOTotal()">✕</button></td>`;
     document.getElementById('o-items-tb').appendChild(tr);
+    refreshProductAutocomplete();
   }
 
   function calcOTotal() {
@@ -7030,21 +7814,81 @@ END $$;
 
   function handleImgUpload(input) {
     const file = input.files[0]; if (!file) return;
+    setOrderImageFile(file);
+    input.value = '';
+  }
+
+  function setOrderImageFile(file) {
+    if (!file || !file.type?.startsWith('image/')) {
+      showToast('이미지 파일만 업로드할 수 있습니다', 'error');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
       UI.orderImgBase64 = e.target.result;
       document.getElementById('img-prev').src = e.target.result;
       document.getElementById('img-prev').style.display = 'block';
       document.getElementById('img-placeholder').style.display = 'none';
+      document.getElementById('img-remove-btn').style.display = 'flex';
+      document.getElementById('img-zone')?.classList.remove('drag-over');
+      showToast('송장 이미지가 추가되었습니다 ✓', 'success');
     };
     reader.readAsDataURL(file);
   }
+
+  function focusImageZone() {
+    document.getElementById('img-zone')?.focus();
+  }
+
+  function clearOrderImage() {
+    UI.orderImgBase64 = null;
+    const inp = document.getElementById('o-img-inp');
+    if (inp) inp.value = '';
+    document.getElementById('img-prev').removeAttribute('src');
+    document.getElementById('img-prev').style.display = 'none';
+    document.getElementById('img-placeholder').style.display = 'block';
+    document.getElementById('img-remove-btn').style.display = 'none';
+    focusImageZone();
+    showToast('송장 이미지가 삭제되었습니다', 'info');
+  }
+
+  function getFirstImageFile(files) {
+    return [...(files || [])].find(file => file?.type?.startsWith('image/'));
+  }
+
+  function handleImageDrag(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('img-zone')?.classList.add('drag-over');
+  }
+
+  function handleImageDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target) e.currentTarget.classList.remove('drag-over');
+  }
+
+  function handleImageDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+    const file = getFirstImageFile(e.dataTransfer?.files);
+    if (file) setOrderImageFile(file);
+  }
+
+  document.addEventListener('paste', (e) => {
+    if (!document.getElementById('modal-order')?.classList.contains('open')) return;
+    const file = getFirstImageFile(e.clipboardData?.files);
+    if (!file) return;
+    e.preventDefault();
+    setOrderImageFile(file);
+  });
 
   async function saveOrder() {
     const custId = parseInt(document.getElementById('o-cust').value);
     const date = document.getElementById('o-date').value;
     if (!custId || !date) { showToast('거래처와 날짜를 입력하세요', 'error'); return; }
-    
+
     const now = new Date();
     const timeStr = ` ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const finalOrderDate = (date === today()) ? (date + timeStr) : date;
@@ -7087,11 +7931,14 @@ END $$;
         const saved = await supaResilient('POST', 'orders', order, '', OPTIONAL_ORDER_COLS);
         const savedOrder = Array.isArray(saved) ? saved[0] : saved;
         DB.orders.unshift(savedOrder);
-        broadcastChange('orders_changed', { action: 'insert', id: savedOrder?.id || null });
+        const actorRole = UI.currentUser?.role || '';
+        broadcastChange('orders_changed', { action: 'insert', id: savedOrder?.id || null, actorRole });
         showToast('주문 저장 완료 ✓');
         logAction('create', 'order', null, `신규 주문 — ${c?.name || '—'} (${itms})`);
         // 직원이 주문 추가 → 관리자에게 알림 저장
-        saveStaffNotification('order_created', savedOrder?.id || null, c?.name || '', itms);
+        if (actorRole === 'staff') {
+          saveStaffNotification('order_created', savedOrder?.id || null, c?.name || '', itms);
+        }
       }
       closeModal('modal-order'); renderAll();
     } catch (e) {
@@ -7130,15 +7977,15 @@ END $$;
         <div class="stepper">
           <div class="stepper-progress ${isPartial ? 'partial' : ''}" style="width: ${progressWidth}%"></div>
           ${labels.map((label, i) => {
-            const activeClass = i === status ? 'active' : '';
-            const completedClass = i < status ? 'completed' : '';
-            const partialClass = (i === status && isPartial) ? 'partial' : '';
-            return `
+      const activeClass = i === status ? 'active' : '';
+      const completedClass = i < status ? 'completed' : '';
+      const partialClass = (i === status && isPartial) ? 'partial' : '';
+      return `
               <div class="step ${activeClass} ${completedClass} ${partialClass}">
                 <div class="step-dot"></div>
                 <div class="step-label">${label}</div>
               </div>`;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
     `;
@@ -7151,24 +7998,24 @@ END $$;
     const labels = ['신규', '대기', '부분', '출고', '미납', '완료'];
     const progressWidth = (status / (steps - 1)) * 100;
     const isPartial = status === 2;
-    
+
     let html = `<div class="mini-stepper" style="width: 160px" title="상태: ${['신규', '출고대기', '부분출고', '출고완료', '미결제', '결제완료'][status]}">`;
-    
+
     // Background Progress
     html += `<div class="mini-stepper-progress ${isPartial ? 'partial' : ''}" style="--p: ${progressWidth}"></div>`;
-    
+
     for (let i = 0; i < steps; i++) {
       const activeClass = i === status ? 'active' : '';
       const completedClass = i < status ? 'completed' : '';
       const partialClass = (i === status && isPartial) ? 'partial' : '';
-      
+
       html += `
         <div class="mini-step ${activeClass} ${completedClass} ${partialClass}">
           <div class="mini-step-dot ${activeClass} ${completedClass} ${partialClass}"></div>
           <div class="mini-step-label">${labels[i]}</div>
         </div>`;
     }
-    
+
     html += `</div>`;
     return html;
   }
@@ -7302,6 +8149,15 @@ END $$;
       if (allShipped) payload.shipped_date = finalDt;
       else payload.partial_shipped_date = finalDt;
 
+      if (UI.currentUser?.role === 'admin') {
+        markSelfShipment({
+          action: allShipped ? 'ship' : 'partial',
+          id: o.id,
+          ids: [o.id],
+          shipDate: finalDt,
+        });
+      }
+
       await supaResilient('PATCH', 'orders',
         payload,
         `?id=eq.${o.id}`,
@@ -7309,9 +8165,16 @@ END $$;
       );
       showToast(allShipped ? '출고 처리 완료 ✓' : '부분 출고 처리 완료 ✓');
 
-      broadcastChange('orders_changed', { action: allShipped ? 'ship' : 'partial', id: o.id });
+      broadcastChange('orders_changed', {
+        action: allShipped ? 'ship' : 'partial',
+        id: o.id,
+        ids: [o.id],
+        tracking: track,
+        shipDate: finalDt,
+        actorRole: UI.currentUser?.role || '',
+      });
       const msg = getShippingMessage(o);
-      sendNotification(
+      if (UI.currentUser?.role !== 'admin') sendNotification(
         allShipped ? '🚚 출고 완료' : '📦 부분 출고',
         `안녕하세요, ${c?.name || '—'} 고객님. 금일 주문 상품이 ${allShipped ? '' : '부분 '}출고되었습니다.`,
         `ship-${o.id}`
@@ -7384,11 +8247,11 @@ ${pdfLink}
     refreshCustSelects();
     setSSValue('inv-cust', custId);
     document.getElementById('inv-date').value = today();
-    document.getElementById('inv-to-name').value  = c?.name  || '';
-    document.getElementById('inv-to-rep').value   = c?.rep   || '';
-    document.getElementById('inv-to-addr').value  = c?.addr  || '';
-    document.getElementById('inv-to-biz').value   = c?.biz_no || '';
-    document.getElementById('inv-to-tel').value   = c?.tel   || '';
+    document.getElementById('inv-to-name').value = c?.name || '';
+    document.getElementById('inv-to-rep').value = c?.rep || '';
+    document.getElementById('inv-to-addr').value = c?.addr || '';
+    document.getElementById('inv-to-biz').value = c?.biz_no || '';
+    document.getElementById('inv-to-tel').value = c?.tel || '';
     document.getElementById('inv-note').value =
       `미수금 합산 명세서 (${unpaid.length}건 / ${unpaid.map(o => o.order_date).join(', ')})`;
 
@@ -7508,11 +8371,15 @@ ${pdfLink}
   }
 
   function getLatestShipDate(o) {
-    const fromItems = orderItems(o).reduce((max, i) => {
-      const d = i.shipped_date || '';
-      return d > max ? d : max;
-    }, '');
-    return fromItems || o.shipped_date || '';
+    return latestDateString([
+      o?.shipped_date,
+      o?.partial_shipped_date,
+      ...orderItems(o).flatMap(i => [
+        i.shipped_date,
+        i.partial_shipped_date,
+        i.shipped_at,
+      ]),
+    ]);
   }
 
   // ── Notification read-state helpers ─────────────────
@@ -7533,7 +8400,7 @@ ${pdfLink}
     const email = UI.currentUser?.email;
     if (email) {
       const key = `ship_noti_last_check_${email}`;
-      saveSettingValue(key, ts).catch(() => {});
+      saveSettingValue(key, ts).catch(() => { });
     }
   }
 
@@ -7549,35 +8416,154 @@ ${pdfLink}
         const local = localStorage.getItem(_shipNotiLsKey()) || '';
         if (saved > local) localStorage.setItem(_shipNotiLsKey(), saved);
       }
-    } catch (_) {}
+    } catch (_) { }
     // Refresh badge with the now-correct lastCheck
     renderPaymentRequestButton(false);
+  }
+
+  function isShipmentAction(action) {
+    return ['mobile_ship', 'ship', 'partial', 'order_shipped', 'order_partial'].includes(action || '');
+  }
+
+  function shipmentIdsFromData(data = {}) {
+    return uniqueValues([
+      ...asArray(data.ids),
+      data.id,
+      data.orderId,
+      data.order_id,
+    ].map(v => v == null ? '' : String(v)));
+  }
+
+  function shipmentToastKey(data = {}) {
+    const ids = shipmentIdsFromData(data).sort().join(',');
+    return [
+      data.action || 'ship',
+      ids || 'unknown',
+      data.tracking || '',
+      data.shipDate || data.shippedDate || data.at || '',
+    ].join('|');
+  }
+
+  const SELF_SHIPMENT_SUPPRESS_KEY = 'self_shipment_suppress_v1';
+
+  function selfShipmentKey(data = {}) {
+    const ids = shipmentIdsFromData(data).sort().join(',');
+    return [
+      ids || 'unknown',
+      data.shipDate || data.shippedDate || data.at || '',
+    ].join('|');
+  }
+
+  function readSelfShipmentKeys() {
+    try {
+      const now = Date.now();
+      const rows = JSON.parse(localStorage.getItem(SELF_SHIPMENT_SUPPRESS_KEY) || '[]')
+        .filter(x => x?.key && (now - (x.ts || 0)) < 24 * 60 * 60 * 1000);
+      localStorage.setItem(SELF_SHIPMENT_SUPPRESS_KEY, JSON.stringify(rows));
+      UI.selfShipmentKeys = new Set(rows.map(x => x.key));
+    } catch (_) {
+      UI.selfShipmentKeys = new Set();
+    }
+    return UI.selfShipmentKeys;
+  }
+
+  function markSelfShipment(data = {}) {
+    const key = selfShipmentKey(data);
+    if (!key || key.includes('unknown')) return;
+    const keys = readSelfShipmentKeys();
+    keys.add(key);
+    const rows = [...keys].map(k => ({ key: k, ts: Date.now() })).slice(-80);
+    localStorage.setItem(SELF_SHIPMENT_SUPPRESS_KEY, JSON.stringify(rows));
+  }
+
+  function isSelfShipment(data = {}) {
+    const key = selfShipmentKey(data);
+    return !!key && readSelfShipmentKeys().has(key);
+  }
+
+  function shouldSkipShipmentToast(data = {}) {
+    if (isSelfShipment(data)) return true;
+    // Staff web shipment already has a richer admin notification via staff_notification_changed.
+    return data.actorRole === 'staff' && UI.currentUser?.role === 'admin';
+  }
+
+  function shipmentNoticeFromOrderRealtime(payload) {
+    if (payload?.eventType !== 'UPDATE' || !payload.new?.id) return null;
+    const oldRow = payload.old || {};
+    const hasOldShipmentFields =
+      Object.prototype.hasOwnProperty.call(oldRow, 'status') ||
+      Object.prototype.hasOwnProperty.call(oldRow, 'items') ||
+      Object.prototype.hasOwnProperty.call(oldRow, 'shipped_date') ||
+      Object.prototype.hasOwnProperty.call(oldRow, 'partial_shipped_date');
+    if (!hasOldShipmentFields) return null;
+
+    const newStatus = effectiveOrderStatus(payload.new);
+    if (newStatus !== 'shipped' && newStatus !== 'partial') return null;
+
+    const latest = getLatestShipDate(payload.new);
+    const oldLatest = getLatestShipDate(oldRow);
+    const oldStatus = effectiveOrderStatus(oldRow);
+    if (!latest || (latest === oldLatest && newStatus === oldStatus)) return null;
+
+    return {
+      action: newStatus === 'partial' ? 'partial' : 'ship',
+      id: payload.new.id,
+      ids: [payload.new.id],
+      tracking: shipmentTracking(payload.new),
+      shipDate: latest,
+      source: 'postgres',
+    };
   }
 
   function countNewShipments() {
     const lastCheck = getShipNotiLastCheck();
     const ago24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const since = lastCheck > ago24h ? lastCheck : ago24h;
+    const sinceMs = dateToMs(since);
+
+    const recentStaffNotifs = (DB.notifications || []).filter(n => {
+      if (!n.created_at) return false;
+      const dMs = dateToMs(n.created_at);
+      return !!dMs && dMs > sinceMs;
+    });
+    const staffShipOrderIds = new Set(
+      recentStaffNotifs
+        .filter(n => ['order_shipped', 'order_partial'].includes(n.type) && n.order_id)
+        .map(n => String(n.order_id))
+    );
 
     // Mobile shipments (orders with recent ship date)
-    const mobileCount = (DB.orders || []).filter(o => {
+    // Note: mobile uses "YYYY-MM-DD HH:MM" format — must parse to ms, not compare as string
+    const orderShipCount = (DB.orders || []).filter(o => {
+      if (staffShipOrderIds.has(String(o.id))) return false;
       const d = getLatestShipDate(o);
-      return d && d > since;
+      if (!d) return false;
+      if (isSelfShipment({ id: o.id, ids: [o.id], shipDate: d })) return false;
+      const dMs = dateToMs(d);
+      return !!dMs && dMs > sinceMs;
     }).length;
 
-    // Staff web notifications (order_created / order_shipped)
-    const staffCount = (DB.notifications || []).filter(n => {
-      return n.created_at && n.created_at > since;
-    }).length;
-
-    return mobileCount + staffCount;
+    // Staff web notifications (order_created / order_shipped) — ISO format, safe to parse
+    return orderShipCount + recentStaffNotifs.length;
   }
 
   function handleShipmentNotification(data) {
-    const ids = data.ids || [];
+    if (!['admin', 'staff'].includes(UI.currentUser?.role)) return;
+    if (!isShipmentAction(data.action)) return;
+    const key = shipmentToastKey(data);
+    if (UI.shipmentToastKeys.has(key)) return;
+    UI.shipmentToastKeys.add(key);
+    setTimeout(() => UI.shipmentToastKeys.delete(key), 60 * 1000);
+    if (shouldSkipShipmentToast(data)) {
+      renderPaymentRequestButton(false);
+      return;
+    }
+
+    const ids = shipmentIdsFromData(data);
     const tracking = data.tracking || '';
     // Show toast for real-time mobile shipment alerts
-    showToast(`📦 새 출고 알림: ${ids.length}건${tracking ? ' · ' + tracking : ''}`, 'info');
+    showToast(`📦 새 출고 알림: ${ids.length || 1}건${tracking ? ' · ' + tracking : ''}`, 'info');
+    sendNotification('📦 새 출고 알림', `${ids.length || 1}건의 출고가 처리되었습니다${tracking ? ' · ' + tracking : ''}`, `ship-noti-${key}`);
     renderPaymentRequestButton(false);
     if (document.getElementById('modal-ship-notifications')?.classList.contains('open')) {
       renderShipmentNotifications();
@@ -7608,7 +8594,7 @@ ${pdfLink}
         payCnt.textContent = String(payCount);
         payBtn.style.display = 'inline-flex';
         payBtn.classList.toggle('has-items', payCount > 0);
-        
+
         if (notify && payCount > (UI.paymentRequestCount || 0)) {
           showToast(`새 결제 승인 요청 ${payCount - (UI.paymentRequestCount || 0)}건`, 'info');
         }
@@ -7780,16 +8766,23 @@ ${pdfLink}
     const staffNotifs = (DB.notifications || [])
       .filter(n => n.created_at && n.created_at >= cutoff48h)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    const staffShipOrderIds = new Set(
+      staffNotifs
+        .filter(n => ['order_shipped', 'order_partial'].includes(n.type) && n.order_id)
+        .map(n => String(n.order_id))
+    );
 
     // ── 2. Mobile shipments (orders shipped via mobile app) ──
     const mobileShipped = [...(DB.orders || [])]
       .filter(o => {
+        if (staffShipOrderIds.has(String(o.id))) return false;
         const d = getLatestShipDate(o);
-        return d && d >= cutoff48h && (effectiveOrderStatus(o) === 'shipped' || isPartialOrder(o));
+        if (isSelfShipment({ id: o.id, ids: [o.id], shipDate: d })) return false;
+        return dateToMs(d) >= dateToMs(cutoff48h) && (effectiveOrderStatus(o) === 'shipped' || isPartialOrder(o));
       })
-      .sort((a, b) => getLatestShipDate(b).localeCompare(getLatestShipDate(a)));
+      .sort((a, b) => dateToMs(getLatestShipDate(b)) - dateToMs(getLatestShipDate(a)));
 
-    const hasStaff  = staffNotifs.length > 0;
+    const hasStaff = staffNotifs.length > 0;
     const hasMobile = mobileShipped.length > 0;
 
     if (!hasStaff && !hasMobile) {
@@ -7801,9 +8794,9 @@ ${pdfLink}
     const staffHtml = staffNotifs.map(n => {
       const isNew = n.created_at > lastCheck;
       const typeMap = {
-        order_created: { label: '신규 주문', badge: 's-new',     icon: '📝' },
-        order_shipped: { label: '출고 처리', badge: 's-shipped',  icon: '🚚' },
-        order_partial: { label: '부분 출고', badge: 's-partial',  icon: '📦' },
+        order_created: { label: '신규 주문', badge: 's-new', icon: '📝' },
+        order_shipped: { label: '출고 처리', badge: 's-shipped', icon: '🚚' },
+        order_partial: { label: '부분 출고', badge: 's-partial', icon: '📦' },
       };
       const t = typeMap[n.type] || { label: n.type, badge: 's-new', icon: '📋' };
       const dateStr = (n.created_at || '').slice(0, 10);
@@ -8156,14 +9149,14 @@ ${pdfLink}
     const c = getCust(id); if (!c) return;
     UI.editCustId = id;
     document.getElementById('modal-cust-title').textContent = '거래처 수정';
-    document.getElementById('c-name').value    = c.name    || '';
-    document.getElementById('c-rep').value     = c.rep     || '';
+    document.getElementById('c-name').value = c.name || '';
+    document.getElementById('c-rep').value = c.rep || '';
     document.getElementById('c-contact').value = c.contact || '';
-    document.getElementById('c-tel').value     = c.tel     || '';
-    document.getElementById('c-addr').value    = c.addr    || '';
-    document.getElementById('c-biz').value     = c.biz_no  || '';
-    document.getElementById('c-kakao').value   = c.kakao   || '';
-    document.getElementById('c-notes').value   = c.notes   || '';
+    document.getElementById('c-tel').value = c.tel || '';
+    document.getElementById('c-addr').value = c.addr || '';
+    document.getElementById('c-biz').value = c.biz_no || '';
+    document.getElementById('c-kakao').value = c.kakao || '';
+    document.getElementById('c-notes').value = c.notes || '';
     openModal('modal-cust');
   }
 
@@ -8204,7 +9197,7 @@ ${pdfLink}
   function openQuickAddCust() {
     const typed = (document.getElementById('o-cust-search')?.value || '').trim();
     // Clear cust form
-    ['c-name','c-rep','c-contact','c-tel','c-addr','c-biz','c-kakao','c-notes'].forEach(id => {
+    ['c-name', 'c-rep', 'c-contact', 'c-tel', 'c-addr', 'c-biz', 'c-kakao', 'c-notes'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -8223,13 +9216,13 @@ ${pdfLink}
     const isEdit = !!UI.editCustId;
     const data = {
       name,
-      rep:     document.getElementById('c-rep').value,
+      rep: document.getElementById('c-rep').value,
       contact: document.getElementById('c-contact').value,
-      tel:     document.getElementById('c-tel').value,
-      addr:    document.getElementById('c-addr').value,
-      biz_no:  document.getElementById('c-biz').value,
-      kakao:   document.getElementById('c-kakao').value,
-      notes:   document.getElementById('c-notes').value,
+      tel: document.getElementById('c-tel').value,
+      addr: document.getElementById('c-addr').value,
+      biz_no: document.getElementById('c-biz').value,
+      kakao: document.getElementById('c-kakao').value,
+      notes: document.getElementById('c-notes').value,
     };
 
     showLoading(true);
@@ -8332,13 +9325,13 @@ ${pdfLink}
     if (id) {
       const p = DB.products.find(x => x.id == id);
       if (p) {
-        document.getElementById('p-name').value  = p.name || '';
-        document.getElementById('p-spec').value  = p.spec || '';
+        document.getElementById('p-name').value = p.name || '';
+        document.getElementById('p-spec').value = p.spec || '';
         document.getElementById('p-price').value = p.price || 0;
-        document.getElementById('p-memo').value  = p.memo || '';
+        document.getElementById('p-memo').value = p.memo || '';
       }
     } else {
-      ['p-name','p-spec','p-memo'].forEach(fid => document.getElementById(fid).value = '');
+      ['p-name', 'p-spec', 'p-memo'].forEach(fid => document.getElementById(fid).value = '');
       document.getElementById('p-price').value = 0;
     }
     openModal('modal-product');
@@ -8350,9 +9343,9 @@ ${pdfLink}
     if (!name) { showToast('제품명을 입력하세요', 'error'); return; }
     const data = {
       name,
-      spec:  document.getElementById('p-spec').value.trim(),
+      spec: document.getElementById('p-spec').value.trim(),
       price: parseInt(document.getElementById('p-price').value) || 0,
-      memo:  document.getElementById('p-memo').value.trim(),
+      memo: document.getElementById('p-memo').value.trim(),
     };
     showLoading(true);
     try {
@@ -8391,7 +9384,7 @@ ${pdfLink}
 
   function refreshProductAutocomplete() {
     document.querySelectorAll('.o-item-name').forEach(inp => {
-      inp.setAttribute('list', 'product-datalist');
+      inp.removeAttribute('list');
     });
   }
 
@@ -8417,21 +9410,21 @@ ${pdfLink}
 
   // ── Month navigator state ─────────────────────────────
   const _nowD = new Date();
-  let _expYear  = _nowD.getFullYear();
+  let _expYear = _nowD.getFullYear();
   let _expMonth = _nowD.getMonth() + 1; // 1-12
 
   function _expYM() {
-    return `${_expYear}-${String(_expMonth).padStart(2,'0')}`;
+    return `${_expYear}-${String(_expMonth).padStart(2, '0')}`;
   }
 
   function shiftExpMonth(delta) {
     _expMonth += delta;
-    if (_expMonth > 12) { _expMonth = 1;  _expYear++; }
-    if (_expMonth < 1)  { _expMonth = 12; _expYear--; }
+    if (_expMonth > 12) { _expMonth = 1; _expYear++; }
+    if (_expMonth < 1) { _expMonth = 12; _expYear--; }
     // 미래 달은 이동 불가
     const now = new Date();
     const nextBtn = document.getElementById('exp-month-next');
-    if (nextBtn) nextBtn.disabled = (_expYear > now.getFullYear() || (_expYear === now.getFullYear() && _expMonth >= now.getMonth()+1));
+    if (nextBtn) nextBtn.disabled = (_expYear > now.getFullYear() || (_expYear === now.getFullYear() && _expMonth >= now.getMonth() + 1));
     renderExpenses();
   }
 
@@ -8443,12 +9436,12 @@ ${pdfLink}
   }
 
   function setExpenseType(type) {
-    document.getElementById('exp-type-daily').className   = type === 'daily'   ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+    document.getElementById('exp-type-daily').className = type === 'daily' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
     document.getElementById('exp-type-invoice').className = type === 'invoice' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
-    document.getElementById('exp-type-daily').style.flex   = '1';
+    document.getElementById('exp-type-daily').style.flex = '1';
     document.getElementById('exp-type-invoice').style.flex = '1';
-    document.getElementById('exp-category-wrap').style.display = type === 'daily'   ? '' : 'none';
-    document.getElementById('exp-vendor-wrap').style.display   = type === 'invoice' ? '' : 'none';
+    document.getElementById('exp-category-wrap').style.display = type === 'daily' ? '' : 'none';
+    document.getElementById('exp-vendor-wrap').style.display = type === 'invoice' ? '' : 'none';
     // invoice type: default unpaid
     if (type === 'invoice') document.getElementById('exp-paid-no').checked = true;
     else document.getElementById('exp-paid-yes').checked = true;
@@ -8462,30 +9455,30 @@ ${pdfLink}
       const e = DB.expenses.find(x => x.id == id);
       if (!e) return;
       setExpenseType(e.type || 'daily');
-      document.getElementById('exp-date').value     = e.date        || '';
-      document.getElementById('exp-category').value = e.category    || '퀵서비스';
-      document.getElementById('exp-desc').value     = e.description || '';
-      document.getElementById('exp-vendor').value   = e.vendor      || '';
-      document.getElementById('exp-amount').value   = e.amount      || '';
-      document.getElementById('exp-memo').value     = e.memo        || '';
+      document.getElementById('exp-date').value = e.date || '';
+      document.getElementById('exp-category').value = e.category || '퀵서비스';
+      document.getElementById('exp-desc').value = e.description || '';
+      document.getElementById('exp-vendor').value = e.vendor || '';
+      document.getElementById('exp-amount').value = e.amount || '';
+      document.getElementById('exp-memo').value = e.memo || '';
       document.getElementById(e.paid ? 'exp-paid-yes' : 'exp-paid-no').checked = true;
     } else {
       setExpenseType('daily');
-      document.getElementById('exp-date').value     = today();
+      document.getElementById('exp-date').value = today();
       document.getElementById('exp-category').value = '퀵서비스';
-      document.getElementById('exp-desc').value     = '';
-      document.getElementById('exp-vendor').value   = '';
-      document.getElementById('exp-amount').value   = '';
-      document.getElementById('exp-memo').value     = '';
+      document.getElementById('exp-desc').value = '';
+      document.getElementById('exp-vendor').value = '';
+      document.getElementById('exp-amount').value = '';
+      document.getElementById('exp-memo').value = '';
       document.getElementById('exp-paid-yes').checked = true;
     }
     openModal('modal-expense');
   }
 
   async function saveExpense() {
-    const type   = document.getElementById('modal-expense').dataset.type || 'daily';
-    const date   = document.getElementById('exp-date').value;
-    const desc   = document.getElementById('exp-desc').value.trim();
+    const type = document.getElementById('modal-expense').dataset.type || 'daily';
+    const date = document.getElementById('exp-date').value;
+    const desc = document.getElementById('exp-desc').value.trim();
     const amount = parseInt(document.getElementById('exp-amount').value) || 0;
     if (!date || !desc || !amount) { showToast('날짜, 항목명, 금액을 입력하세요', 'error'); return; }
 
@@ -8493,13 +9486,13 @@ ${pdfLink}
     const byUser = UI.currentUser?.nickname || UI.currentUser?.username || '알 수 없음';
     const exp = {
       date, type,
-      category:    type === 'daily' ? document.getElementById('exp-category').value : '',
-      vendor:      type === 'invoice' ? document.getElementById('exp-vendor').value : '',
+      category: type === 'daily' ? document.getElementById('exp-category').value : '',
+      vendor: type === 'invoice' ? document.getElementById('exp-vendor').value : '',
       description: desc,
       amount,
       paid,
-      paid_at:    paid ? new Date().toISOString() : null,
-      memo:       document.getElementById('exp-memo').value,
+      paid_at: paid ? new Date().toISOString() : null,
+      memo: document.getElementById('exp-memo').value,
       created_by: byUser,
     };
 
@@ -8540,7 +9533,7 @@ ${pdfLink}
           icon: '🔐',
           okText: '확인',
           okClass: 'btn-primary',
-          onOk: () => {},
+          onOk: () => { },
         });
         return;
       }
@@ -8557,7 +9550,7 @@ ${pdfLink}
 
   async function markExpensePaid(id, newPaid) {
     const e = DB.expenses.find(x => x.id == id); if (!e) return;
-    
+
     if (newPaid) {
       customConfirm({
         title: '결제 완료 처리',
@@ -8604,7 +9597,7 @@ ${pdfLink}
       msg: `"${e.description}" ${fmt(e.amount)}원\n이 지출 내역을 삭제하시겠습니까?`,
       okText: '삭제', okClass: 'btn-danger',
       onOk: async () => {
-        try { await supa('DELETE', 'expenses', null, `?id=eq.${id}`); } catch (_) {}
+        try { await supa('DELETE', 'expenses', null, `?id=eq.${id}`); } catch (_) { }
         DB.expenses = DB.expenses.filter(x => x.id != id);
         broadcastChange('data_changed', { table: 'expenses', action: 'delete', id });
         renderExpenses(); renderDashboard();
@@ -8614,38 +9607,38 @@ ${pdfLink}
   }
 
   function renderExpenses() {
-    const ym  = _expYM();
+    const ym = _expYM();
     const all = DB.expenses || [];
 
     // ── Month label & next button state ──
-    const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
     const labelEl = document.getElementById('exp-month-label');
-    if (labelEl) labelEl.textContent = `${_expYear}년 ${monthNames[_expMonth-1]}`;
+    if (labelEl) labelEl.textContent = `${_expYear}년 ${monthNames[_expMonth - 1]}`;
     const nextBtn = document.getElementById('exp-month-next');
     const now = new Date();
-    if (nextBtn) nextBtn.disabled = (_expYear > now.getFullYear() || (_expYear === now.getFullYear() && _expMonth >= now.getMonth()+1));
+    if (nextBtn) nextBtn.disabled = (_expYear > now.getFullYear() || (_expYear === now.getFullYear() && _expMonth >= now.getMonth() + 1));
 
     // ── Stats (선택한 달 기준) ──
     const thisMonth = all.filter(e => (e.date || '').startsWith(ym));
-    const totalAmt   = thisMonth.reduce((s, e) => s + (e.amount || 0), 0);
-    const dailyAmt   = thisMonth.filter(e => e.type === 'daily').reduce((s, e) => s + (e.amount || 0), 0);
+    const totalAmt = thisMonth.reduce((s, e) => s + (e.amount || 0), 0);
+    const dailyAmt = thisMonth.filter(e => e.type === 'daily').reduce((s, e) => s + (e.amount || 0), 0);
     // 수취 명세서: 해당 달의 invoice 중 미지급만 (결제완료 제외)
     const invoiceAmt = thisMonth.filter(e => e.type === 'invoice' && !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
     // 미지급 금액: 해당 달 전체 미지급 (타입 무관)
-    const unpaidAmt  = thisMonth.filter(e => !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
+    const unpaidAmt = thisMonth.filter(e => !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
 
     const fv = v => fmt(v) + '원';
-    const s  = id => document.getElementById(id);
-    if (s('exp-s-total'))   s('exp-s-total').textContent   = fv(totalAmt);
-    if (s('exp-s-daily'))   s('exp-s-daily').textContent   = fv(dailyAmt);
+    const s = id => document.getElementById(id);
+    if (s('exp-s-total')) s('exp-s-total').textContent = fv(totalAmt);
+    if (s('exp-s-daily')) s('exp-s-daily').textContent = fv(dailyAmt);
     if (s('exp-s-invoice')) s('exp-s-invoice').textContent = fv(invoiceAmt);
-    if (s('exp-s-unpaid'))  s('exp-s-unpaid').textContent  = fv(unpaidAmt);
+    if (s('exp-s-unpaid')) s('exp-s-unpaid').textContent = fv(unpaidAmt);
 
     // ── Filter list (선택한 달만 표시) ──
     let list = [...thisMonth].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    if (_expTab === 'daily')   list = list.filter(e => e.type === 'daily');
+    if (_expTab === 'daily') list = list.filter(e => e.type === 'daily');
     if (_expTab === 'invoice') list = list.filter(e => e.type === 'invoice');
-    if (_expTab === 'unpaid')  list = list.filter(e => !e.paid);
+    if (_expTab === 'unpaid') list = list.filter(e => !e.paid);
 
     const tbody = document.getElementById('exp-list');
     const empty = document.getElementById('exp-empty');
@@ -8658,7 +9651,7 @@ ${pdfLink}
     }
     if (empty) empty.style.display = 'none';
 
-    const CATEGORY_ICON = { '퀵서비스':'','식비':'','소모품':'','교통비':'','수리/유지보수':'','기타':'' };
+    const CATEGORY_ICON = { '퀵서비스': '', '식비': '', '소모품': '', '교통비': '', '수리/유지보수': '', '기타': '' };
 
     tbody.innerHTML = list.map(e => {
       const isInvoice = e.type === 'invoice';
@@ -8714,7 +9707,20 @@ ${pdfLink}
   function applyWizard() {
     const checked = [...document.querySelectorAll('#wiz-order-list input:checked')];
     if (!checked.length) { showToast('주문을 선택하세요', 'error'); return; }
-    const o = getOrder(parseInt(checked[0].value)); if (!o) return;
+    const selectedOrders = checked.map(cb => getOrder(parseInt(cb.value))).filter(Boolean);
+    const customerIds = uniqueValues(selectedOrders.map(o => String(o.customer_id || '')));
+    if (customerIds.length > 1) {
+      customConfirm({
+        title: '거래처가 다릅니다',
+        msg: '명세서는 같은 거래처 주문만 함께 발행할 수 있습니다. 같은 거래처 주문만 선택해 주세요.',
+        icon: '⚠️',
+        okText: '확인',
+        okClass: 'btn-primary',
+        hideCancel: true
+      });
+      return;
+    }
+    const o = selectedOrders[0]; if (!o) return;
     const c = getCust(o.customer_id);
     refreshCustSelects();
     setSSValue('inv-cust', o.customer_id);
@@ -8725,13 +9731,12 @@ ${pdfLink}
     document.getElementById('inv-to-biz').value = c?.biz_no || '';
     document.getElementById('inv-to-tel').value = o.tel || c?.tel || '';
     const tb = document.getElementById('inv-items-tb'); tb.innerHTML = '';
-    checked.forEach(cb => {
-      const ord = getOrder(parseInt(cb.value));
+    selectedOrders.forEach(ord => {
       (ord?.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price));
     });
     calcInvTotal();
-    closeModal('modal-inv-wiz');
-    showPage('invoice');
+    document.getElementById('modal-inv-wiz')?.classList.remove('open');
+    showPage('invoice', false, true);
     setTimeout(buildInvoicePreview, 100);
   }
 
@@ -8835,6 +9840,9 @@ ${pdfLink}
     return { c, date, d, toName, toRep, toAddr, toBiz, toTel, items, total, note, supplier };
   }
 
+  const INVOICE_PRINT_WIDTH_MM = 185;
+  const INVOICE_PRINT_MARGIN_X_MM = (210 - INVOICE_PRINT_WIDTH_MM) / 2;
+
   /* ─── BUILD 거래명세서 HTML ─── */
   function buildInvoiceHTML(inv, copyType = '공급받는자용') {
     const { d, toName, toRep, toAddr, toBiz, toTel, items, total, note, supplier } = inv;
@@ -8842,86 +9850,62 @@ ${pdfLink}
     const mo = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
 
-    const ROWS = Math.max(20, items.length);
-    let itemRows = '';
-    for (let i = 0; i < ROWS; i++) {
-      const it = items[i];
-      if (it) {
-        itemRows += `<tr>
-        <td>${mo}/${day}</td>
-        <td class="td-left" style="max-width:120px;overflow:hidden">${it.name}</td>
-        <td></td>
-        <td>${it.qty}</td>
-        <td class="td-right">${fmt(it.price)}</td>
-        <td class="td-right">${fmt(it.sub)}</td>
-        <td></td><td></td>
-      </tr>`;
-      } else {
-        itemRows += `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
-      }
-    }
+    const itemRows = items.map(it => `<tr>
+      <td>${mo}/${day}</td>
+      <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
+      <td></td>
+      <td>${it.qty}</td>
+      <td style="text-align:right">${fmt(it.price)}</td>
+      <td style="text-align:right">${fmt(it.sub)}</td>
+      <td></td><td></td>
+    </tr>`).join('');
 
-    return `<div class="inv-copy">
-    <div class="inv-page-no">PAGE &nbsp;1 / 1</div>
-    <div class="inv-date-issued">${yr}년 ${mo}월 ${day}일</div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-right:28px;margin-bottom:4px">
-      <!-- 공급자 -->
-      <div style="border:1px solid #1a6b3a">
-        <div class="inv-party-title">공 급 자</div>
-        <div style="display:grid;grid-template-columns:auto 1fr">
-          <div class="inv-party-row"><div class="inv-party-label">등록번호</div><div class="inv-party-val">${supplier.biz || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">상&nbsp;&nbsp;&nbsp;&nbsp;호</div><div class="inv-party-val" style="font-weight:600">${supplier.name || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">성&nbsp;&nbsp;&nbsp;&nbsp;명</div><div class="inv-party-val">${supplier.rep || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">주&nbsp;&nbsp;&nbsp;&nbsp;소</div><div class="inv-party-val">${supplier.addr || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">업&nbsp;&nbsp;&nbsp;&nbsp;태</div><div class="inv-party-val">${supplier.bizType || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">종&nbsp;&nbsp;&nbsp;&nbsp;목</div><div class="inv-party-val">${supplier.itemType || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">Tel</div><div class="inv-party-val">${supplier.tel || '　'}</div></div>
+    return `<div class="inv-mobile-wrap">
+      <div class="inv-mobile-copy">
+        <div style="font-size:6.5pt;color:#888;margin-bottom:2px">${yr}년 ${mo}월 ${day}일</div>
+        <div class="inv-mobile-parties">
+          <div class="inv-mobile-party">
+            <div class="inv-mobile-party-title">공 급 자</div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">등록번호</div><div class="inv-mobile-party-val">${supplier.biz || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">상 호</div><div class="inv-mobile-party-val" style="font-weight:700">${supplier.name || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">성 명</div><div class="inv-mobile-party-val">${supplier.rep || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">주 소</div><div class="inv-mobile-party-val">${supplier.addr || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">업 태</div><div class="inv-mobile-party-val">${supplier.bizType || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">종 목</div><div class="inv-mobile-party-val">${supplier.itemType || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">Tel</div><div class="inv-mobile-party-val">${supplier.tel || ''}</div></div>
+          </div>
+          <div class="inv-mobile-party">
+            <div class="inv-mobile-party-title">공 급 받 는 자</div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">등록번호</div><div class="inv-mobile-party-val">${toBiz || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">상 호</div><div class="inv-mobile-party-val" style="font-weight:700">${toName || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">성 명</div><div class="inv-mobile-party-val">${toRep || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">주 소</div><div class="inv-mobile-party-val">${toAddr || ''}</div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">업 태</div><div class="inv-mobile-party-val"></div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">종 목</div><div class="inv-mobile-party-val"></div></div>
+            <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">Tel</div><div class="inv-mobile-party-val">${toTel || ''}</div></div>
+          </div>
+        </div>
+        ${supplier.bank ? `<div class="inv-mobile-bank"><div class="inv-mobile-bank-lbl">입금 계좌</div><div class="inv-mobile-bank-val">${supplier.bank}</div></div>` : ''}
+        <table class="inv-mobile-table">
+          <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        <div class="inv-mobile-total">
+          <div class="inv-mobile-total-lbl">합 계</div>
+          <div class="inv-mobile-total-val">${fmt(total)}원</div>
         </div>
       </div>
-      <!-- 공급받는자 -->
-      <div style="border:1px solid #1a6b3a">
-        <div class="inv-party-title">공 급 받 는 자</div>
-        <div style="display:grid;grid-template-columns:auto 1fr">
-          <div class="inv-party-row"><div class="inv-party-label">등록번호</div><div class="inv-party-val">${toBiz || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">상&nbsp;&nbsp;&nbsp;&nbsp;호</div><div class="inv-party-val" style="font-weight:600">${toName || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">성&nbsp;&nbsp;&nbsp;&nbsp;명</div><div class="inv-party-val">${toRep || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">주&nbsp;&nbsp;&nbsp;&nbsp;소</div><div class="inv-party-val">${toAddr || '　'}</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">업&nbsp;&nbsp;&nbsp;&nbsp;태</div><div class="inv-party-val">　</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">종&nbsp;&nbsp;&nbsp;&nbsp;목</div><div class="inv-party-val">　</div></div>
-          <div class="inv-party-row"><div class="inv-party-label">Tel</div><div class="inv-party-val">${toTel || '　'}</div></div>
-        </div>
+      <div class="inv-mobile-side">
+        <div class="inv-mobile-side-title">거래명세서</div>
+        <div class="inv-mobile-side-label">(${copyType})</div>
       </div>
-    </div>
-
-    ${supplier.bank ? `
-    <div style="margin-right:28px;margin-bottom:4px;border:1.5px solid #1a6b3a;background:#fffbe6;display:flex;align-items:center;gap:0;font-size:8pt;">
-      <div style="padding:4px 10px;border-right:1.5px solid #1a6b3a;font-weight:700;color:#1a6b3a;white-space:nowrap;background:#e8f5e8;">입금 계좌</div>
-      <div style="padding:4px 12px;font-weight:600;color:#1d1d1f;letter-spacing:0.3px;">${supplier.bank}</div>
-    </div>` : ''}
-    <div class="inv-table-wrap">
-      <table class="inv-tbl">
-        <thead>
-          <tr><th>날&nbsp;짜</th><th>품&nbsp;목&nbsp;명</th><th>규&nbsp;격</th><th>수량</th><th>단&nbsp;가</th><th>공급가액</th><th>세&nbsp;액</th><th>비&nbsp;고</th></tr>
-        </thead>
-        <tbody>${itemRows}</tbody>
-      </table>
-    </div>
-
-    <div style="display:grid;grid-template-columns:auto 1fr auto;margin-right:28px;border:1px solid #1a6b3a;font-size:8pt;margin-bottom:3px">
-      <div style="padding:3px 10px;border-right:1px solid #1a6b3a;font-weight:700;color:#1a6b3a;background:#e8f5e8;white-space:nowrap">합&nbsp;&nbsp;&nbsp;&nbsp;계</div>
-      <div style="padding:3px 6px;border-right:1px solid #1a6b3a"></div>
-      <div style="padding:3px 10px;text-align:right;font-weight:700">${fmt(total)}원</div>
-    </div>
-
-    <!-- Title removed -->
-  </div>`;
+    </div>`;
   }
 
   function buildInvoicePreview() {
     const inv = getInvoiceData();
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:block;border:1.5px solid #1a6b3a;width:100%;background:#fff';
+    wrap.style.cssText = 'display:block;width:100%;background:#fff';
     wrap.innerHTML = buildInvoiceHTML(inv, '공급받는자용');
     const container = document.getElementById('inv-preview');
     container.innerHTML = '';
@@ -8929,7 +9913,7 @@ ${pdfLink}
     // 항상 컨테이너 너비에 맞게 스케일 조정
     setTimeout(() => {
       const cardW = container.clientWidth - 4;
-      const docW  = wrap.scrollWidth;
+      const docW = wrap.scrollWidth;
       if (docW > 0) {
         const scale = Math.min(1, cardW / docW);
         wrap.style.transform = `scale(${scale})`;
@@ -8959,10 +9943,11 @@ ${pdfLink}
 
     const win = iframe.contentWindow;
     const css = `
-      @page { size: A4 portrait; margin: 10mm; }
+      @page { size: A4 portrait; margin: 0; }
       * { box-sizing: border-box; margin:0; padding:0; }
-      body { font-family:'Noto Sans KR',Arial,sans-serif; font-size:9pt; background:#fff; color:#111; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .wrap { display:block; width:100%; border:1.5px solid #1a6b3a; }
+      html, body { width:210mm; min-height:297mm; }
+      body { font-family:'Noto Sans KR',Arial,sans-serif; font-size:9pt; background:#fff; color:#111; padding-top:12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .wrap { display:block; width:${INVOICE_PRINT_WIDTH_MM}mm; margin:0 auto; }
       .inv-copy { padding:8px 10px; position:relative; display:flex; flex-direction:column; }
       .inv-party-title { background:#e8f5e8; color:#1a6b3a; font-weight:700; text-align:center; font-size:9pt; padding:3px 0; border-bottom:1px solid #1a6b3a; letter-spacing:2px; }
       .inv-party-label { padding:3px 5px; border-right:1px solid #ccc; border-bottom:1px solid #eee; color:#555; white-space:nowrap; font-size:8pt; background:#f9fdf9; }
@@ -8975,13 +9960,34 @@ ${pdfLink}
       .td-left { text-align:left; } .td-right { text-align:right; }
       .inv-page-no { position:absolute; top:4px; left:4px; font-size:7pt; color:#555; }
       .inv-date-issued { font-size:8pt; color:#555; text-align:right; margin-right:28px; margin-bottom:4px; }
+      .inv-mobile-wrap{display:flex;width:100%;border:2px solid #1a6b3a;background:#fff;color:#111;font-family:'Noto Sans KR',Arial,sans-serif;height:auto}
+      .inv-mobile-copy{flex:1;padding:10px;border-right:2px solid #1a6b3a;position:relative;display:flex;flex-direction:column;min-width:0}
+      .inv-mobile-side{width:28px;flex-shrink:0;border-left:2px solid #1a6b3a;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f0fdf4}
+      .inv-mobile-side-title{writing-mode:vertical-rl;font-size:15pt;font-weight:700;color:#1a6b3a;letter-spacing:4px}
+      .inv-mobile-side-label{writing-mode:vertical-rl;font-size:7pt;color:#555;margin-top:8px}
+      .inv-mobile-parties{display:flex;gap:4px;margin-right:32px;margin-bottom:4px}
+      .inv-mobile-party{flex:1;border:1px solid #1a6b3a}
+      .inv-mobile-party-title{background:#e8f5e8;color:#1a6b3a;font-weight:700;text-align:center;font-size:9pt;padding:3px 0;border-bottom:1px solid #1a6b3a}
+      .inv-mobile-party-row{display:flex;border-bottom:1px solid #c5e0c5;min-height:16px}
+      .inv-mobile-party-row:last-child{border-bottom:none}
+      .inv-mobile-party-lbl{width:55px;padding:2px 4px;border-right:1px solid #c5e0c5;color:#555;font-size:7pt;background:#f9fdf9;text-align:center}
+      .inv-mobile-party-val{flex:1;padding:2px 5px;font-size:7.5pt}
+      .inv-mobile-bank{display:flex;align-items:center;margin-right:32px;margin-bottom:4px;border:1.5px solid #1a6b3a;background:#fffbe6;font-size:8pt}
+      .inv-mobile-bank-lbl{padding:4px 10px;border-right:1.5px solid #1a6b3a;font-weight:700;color:#1a6b3a;background:#e8f5e8;white-space:nowrap}
+      .inv-mobile-bank-val{padding:4px 12px;font-weight:600;color:#1d1d1f}
+      .inv-mobile-table{width:calc(100% - 32px);border-collapse:collapse;font-size:7.5pt;margin-top:4px;border:1px solid #1a6b3a}
+      .inv-mobile-table th{background:#e8f5e8;color:#1a6b3a;border:1px solid #1a6b3a;padding:4px 3px;font-size:7.5pt;text-align:center}
+      .inv-mobile-table td{border:1px solid #d4e8d4;padding:3px 3px;text-align:center;font-size:7.5pt}
+      .inv-mobile-total{display:flex;border:1.5px solid #1a6b3a;margin-top:6px;width:calc(100% - 32px)}
+      .inv-mobile-total-lbl{background:#e8f5e8;color:#1a6b3a;font-weight:700;padding:5px 12px;border-right:1.5px solid #1a6b3a;font-size:10pt}
+      .inv-mobile-total-val{flex:1;padding:5px 12px;text-align:right;font-weight:700;font-size:10pt}
     `;
 
     const body = buildInvoiceHTML(inv, '공급받는자용');
 
     win.document.open();
     win.document.write(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>거래명세서</title>
+<html><head><meta charset="utf-8"><title></title>
 <style>${css}</style></head>
 <body onload="window.print()">
   <div class="wrap">${body}</div>
@@ -8989,7 +9995,109 @@ ${pdfLink}
     win.document.close();
   }
 
-  function downloadInvoicePDF() { printInvoice(); }
+  async function downloadInvoicePDF() {
+    const file = await createInvoicePdfFile();
+    if (!file) return;
+    downloadFile(file);
+    showToast('PDF가 저장되었습니다', 'success');
+  }
+
+  function invoiceFileName(inv) {
+    const name = (inv.toName || inv.c?.name || '거래처').replace(/[\\/:*?"<>|]/g, '_').trim() || '거래처';
+    return `거래명세서_${name}_${inv.date || today()}.pdf`;
+  }
+
+  async function createInvoicePdfFile(inv = getInvoiceData()) {
+    if (!inv.items.length) { showToast('품목을 입력하세요', 'error'); return null; }
+    showLoading(true);
+    try {
+      await ensurePdfLibs();
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:-10000px;top:0;width:1123px;background:#fff;padding:0;z-index:-1;zoom:1;';
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:block;width:1123px;background:#fff;';
+      wrap.innerHTML = buildInvoiceHTML(inv, '공급받는자용');
+      host.appendChild(wrap);
+      document.body.appendChild(host);
+
+      const canvas = await html2canvas(wrap, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false
+      });
+      document.body.removeChild(host);
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const img = canvas.toDataURL('image/jpeg', 0.95);
+      const imgW = INVOICE_PRINT_WIDTH_MM;
+      const imgH = Math.min(277, canvas.height * imgW / canvas.width);
+      pdf.addImage(img, 'JPEG', INVOICE_PRINT_MARGIN_X_MM, 10, imgW, imgH);
+      const blob = pdf.output('blob');
+      return new File([blob], invoiceFileName(inv), { type: 'application/pdf' });
+    } catch (e) {
+      console.warn('createInvoicePdfFile failed:', e);
+      showToast('PDF 생성에 실패했습니다', 'error');
+      return null;
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function invoiceShareMessage(inv) {
+    const name = inv.toName || inv.c?.name || '고객님';
+    const total = fmt(inv.total || 0);
+    return `${name} 거래명세서 보내드립니다.\n합계: ${total}원`;
+  }
+
+  function isWindowsDesktop() {
+    return /Windows/i.test(navigator.userAgent || '');
+  }
+
+  async function shareInvoiceKakao() {
+    const inv = getInvoiceData();
+    const file = await createInvoicePdfFile(inv);
+    if (!file) return;
+
+    if (isWindowsDesktop()) {
+      downloadFile(file);
+      navigator.clipboard?.writeText(invoiceShareMessage(inv)).catch(() => {});
+      showToast('Windows에서는 KakaoTalk 파일 공유가 제한됩니다. PDF 저장 + 메시지 복사 완료', 'info');
+      return;
+    }
+
+    const shareData = {
+      title: '거래명세서',
+      text: invoiceShareMessage(inv),
+      files: [file]
+    };
+    try {
+      if (navigator.canShare?.(shareData) && navigator.share) {
+        await navigator.share(shareData);
+        showToast('공유 창을 열었습니다', 'success');
+      } else {
+        downloadFile(file);
+        showToast('이 브라우저는 파일 공유를 지원하지 않아 PDF를 저장했습니다', 'info');
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        downloadFile(file);
+        showToast('공유가 취소/실패되어 PDF를 저장했습니다', 'info');
+      }
+    }
+  }
 
   /* ════════════════════════════════════════════
      조회 — PENDING ITEMS MODAL
@@ -9029,8 +10137,8 @@ ${pdfLink}
         const badge = isPartialOrder(o)
           ? '<span style="font-size:10px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd8fe;border-radius:99px;padding:1px 8px;font-weight:700">부분출고</span>'
           : o.status === 'pending'
-          ? '<span style="font-size:10px;background:#e1f0ff;color:#007aff;border:1px solid #c2e0ff;border-radius:99px;padding:1px 8px;font-weight:700">출고대기</span>'
-          : '<span style="font-size:10px;background:#e1f0ff;color:#007aff;border:1px solid #c2e0ff;border-radius:99px;padding:1px 8px;font-weight:700">신규</span>';
+            ? '<span style="font-size:10px;background:#e1f0ff;color:#007aff;border:1px solid #c2e0ff;border-radius:99px;padding:1px 8px;font-weight:700">출고대기</span>'
+            : '<span style="font-size:10px;background:#e1f0ff;color:#007aff;border:1px solid #c2e0ff;border-radius:99px;padding:1px 8px;font-weight:700">신규</span>';
 
         let itemsHTML = '';
         if (itemsArr && itemsArr.length > 0) {
@@ -9262,10 +10370,10 @@ ${pdfLink}
         : `<div class="history-photo-stack"><div style="width:54px;height:54px;border-radius:8px;background:var(--parchment2);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--border)">📦</div></div>`}
         <div class="history-amount-box">
           <div style="font-size:16px;font-weight:700;color:var(--blue)">${fmt(event.amount)}원</div>
-          ${pdfUrl 
-            ? `<a href="${pdfUrl}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;margin-top:2px;display:block">📄 명세서</a>` 
-            : `<a href="javascript:void(0)" onclick="openDetail(${o.id})" style="font-size:11px;color:var(--ink-muted);text-decoration:none;margin-top:2px;display:block">📄 명세서 발행</a>`
-          }
+          ${pdfUrl
+        ? `<a href="${pdfUrl}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;margin-top:2px;display:block">📄 명세서</a>`
+        : `<a href="javascript:void(0)" onclick="openDetail(${o.id})" style="font-size:11px;color:var(--ink-muted);text-decoration:none;margin-top:2px;display:block">📄 명세서 발행</a>`
+      }
         </div>
       </div>
       <div class="history-body">
@@ -9456,8 +10564,8 @@ ${pdfLink}
     UI.dataSignature = allDataSignature();
     if (UI.orderRefreshTimer) clearInterval(UI.orderRefreshTimer);
     if (UI.fullRefreshTimer) clearInterval(UI.fullRefreshTimer);
-    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 15000);
-    UI.fullRefreshTimer = setInterval(refreshAllLight, 30000);
+    UI.orderRefreshTimer = setInterval(refreshOrdersOnly, 2000);
+    UI.fullRefreshTimer = setInterval(refreshAllLight, 8000);
     startPaymentRequestPolling();
 
     // Realtime WebSocket이 꺼져 있어도 위의 lightweight polling으로 모바일 출고 변경을 따라잡음
@@ -9585,7 +10693,7 @@ ${pdfLink}
     requestNotifPermission();
     loadCurrentUserProfile().catch(() => { });
     // Load per-user notification read-state from Supabase (fixes badge after login)
-    loadShipNotiLastCheck().catch(() => {});
+    loadShipNotiLastCheck().catch(() => { });
   }
 
   async function checkLogin() {

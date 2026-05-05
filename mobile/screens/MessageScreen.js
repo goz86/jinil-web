@@ -9,7 +9,6 @@ import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as SMS from 'expo-sms';
-import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import { supabase, fmt, BUCKETS, uploadFile, C } from '../lib/supabase';
 
@@ -81,28 +80,25 @@ function broadcastOrdersChanged(payload = {}) {
 }
 
 // ── Message builder ───────────────────────────────────
-function buildMessage({ customer, items, trackingNo, pdfUrl, shipDate }) {
-  // Auto-detect carrier: Kyunggi Express for 16 chars, Lotte otherwise
+// Clean message — image sent as actual file, only PDF link included
+function buildMessage({ customer, items, trackingNo, shipDate, pdfUrl }) {
   const isKyunggi = (trackingNo && trackingNo.length === 16);
   const carrier = isKyunggi ? '경기택배' : '롯데택배';
 
   const itemLines = items
-    .map((i, n) => `           ${n + 1}. ${i.name}${i.spec ? ` (${i.spec})` : ''} × ${i.qty}개`)
+    .map((i, n) => `  ${n + 1}. ${i.name}${i.spec ? ` (${i.spec})` : ''} × ${i.qty}개`)
     .join('\n');
 
-  return `[출고 알림]
-안녕하세요, ${customer.name} 고객님.
-주문하신 상품이 금일(${shipDate}) 출고되었습니다.
+  return `[출고 알림] ${customer.name} 고객님
+금일(${shipDate}) 출고되었습니다.
 
-🚚 택배 정보
 택배사: ${carrier}
 📦 송장번호: ${trackingNo || '(확인 중)'}
 
- 품목명 :
+품목:
 ${itemLines}
 
 📑 거래명세서: ${pdfUrl || ''}
-📅 출고일: ${shipDate}
 감사합니다.`;
 }
 
@@ -118,7 +114,7 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
   // PDF에 실제로 들어가는 품목 (최대 20개)
   const pdfItems  = items.slice(0, MAX_PDF_ITEMS);
   // 14개 이하면 14행, 그 이상이면 실제 품목 수만큼 행 생성
-  const rowCount  = Math.max(14, pdfItems.length);
+  const rowCount  = Math.max(1, pdfItems.length);
   // 15개 이상이면 행 높이를 줄여서 한 페이지에 맞춤
   const compact   = pdfItems.length > 14;
   const tdPadding = compact ? '1px 2px' : '3px 3px';
@@ -292,7 +288,7 @@ export default function MessageScreen({ route, navigation }) {
     }
   };
 
-  const message = buildMessage({ customer, items, trackingNo, pdfUrl, shipDate });
+  const message = buildMessage({ customer, items, trackingNo, shipDate, pdfUrl });
 
   const copyAndMark = async () => {
     await Clipboard.setStringAsync(message);
@@ -300,26 +296,24 @@ export default function MessageScreen({ route, navigation }) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  // SMS — Open message app directly with number + text (Text only for maximum reliability)
+  // SMS — Opens message app with pre-filled number + text
+  // Message already includes photo URLs and PDF link — no MMS needed
   const sendSMS = async () => {
     const phone = (customer.tel || '').replace(/[^0-9]/g, '');
-    
+
     setStep('marking_shipped');
-    setStepMsg('출고 정보 lưu hệ thống...');
-    
+    setStepMsg('출고 정보 저장 중...');
+
     try {
-      // 1. Mark as shipped in DB first
+      // 1. Save shipped status to DB
       await performMarkShipped();
 
-      // 2. Copy to clipboard
-      await Clipboard.setStringAsync(message);
-
-      // 3. Open SMS
+      // 2. Open SMS app with pre-filled message (includes photo + PDF links)
       const sep = Platform.OS === 'ios' ? '&' : '?';
       const url = `sms:${phone}${sep}body=${encodeURIComponent(message)}`;
       await Linking.openURL(url);
 
-      // 3. Go home automatically
+      // 3. Go home
       navigation.navigate('Home');
     } catch (e) {
       Alert.alert('오류', e.message);
@@ -327,49 +321,80 @@ export default function MessageScreen({ route, navigation }) {
     }
   };
 
-  // 사진 1장씩 순차 공유 (expo-sharing은 1파일씩만 지원)
-  const sharePhotoSequential = async (photos, idx = 0) => {
-    if (idx >= photos.length) return; // 모두 완료
-    const ok = await Sharing.isAvailableAsync();
-    if (!ok) return;
-    try {
-      await Sharing.shareAsync(photos[idx], {
-        dialogTitle: `송장 사진 ${idx + 1}/${photos.length}장`,
-        mimeType: 'image/jpeg',
-      });
-    } catch (e) {
-      if (e.message === 'User did not share') return; // 취소 시 중단
-    }
-    // 다음 사진이 있으면 연속 공유 여부 확인
-    if (idx + 1 < photos.length) {
+  const askShareNextPhoto = (nextIndex, total) => new Promise(resolve => {
+    navigation.navigate('Home');
+    setTimeout(() => {
       Alert.alert(
-        `📷 ${idx + 1}/${photos.length}장 완료`,
-        `다음 사진(${idx + 2}/${photos.length}장)을 공유하시겠습니까?`,
+        '다음 송장 사진',
+        `${nextIndex + 1}/${total}번째 사진을 계속 보내시겠습니까?\n카카오톡에서 돌아온 뒤 계속을 누르세요.`,
         [
-          { text: '완료', style: 'cancel' },
-          { text: '다음 사진 공유 →', onPress: () => sharePhotoSequential(photos, idx + 1) },
+          { text: '완료', style: 'cancel', onPress: () => resolve(false) },
+          { text: '계속 보내기 →', onPress: () => resolve(true) },
         ]
       );
+    }, 250);
+  });
+
+  // 사진은 KakaoTalk에서 직접 보이도록 1장씩 수동 공유한다.
+  const sharePhotoSequential = async (photos, idx = 0) => {
+    const ok = await Sharing.isAvailableAsync();
+    if (!ok) return false;
+
+    for (let i = idx; i < photos.length; i += 1) {
+      try {
+        await Sharing.shareAsync(photos[i], {
+          dialogTitle: `송장 사진 ${i + 1}/${photos.length}장`,
+          mimeType: 'image/jpeg',
+        });
+      } catch (e) {
+        if (e.message === 'User did not share') return false;
+        throw e;
+      }
+
+      if (i + 1 < photos.length) {
+        const shouldContinue = await askShareNextPhoto(i + 1, photos.length);
+        if (!shouldContinue) return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Compress photo for sending — small enough for messaging, no quality needed
+  // 480px wide, 55% quality → ~15-40KB, fast to send via Kakao/SMS
+  const compressForShare = async (uri) => {
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 480 } }],
+        { compress: 0.55, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      return result.uri;
+    } catch (e) {
+      return uri;
     }
   };
 
-  // KakaoTalk / Share sheet — copy text FIRST then share photos sequentially
+  // KakaoTalk / Share — Expo Go compatible: copy message, then open native share sheet for the photo
   const shareKakao = async () => {
     setStep('marking_shipped');
-    setStepMsg('출고 정보 lưu hệ thống...');
+    setStepMsg('출고 정보 저장 중...');
 
     try {
-      // 1. Mark as shipped in DB first
+      // 1. Save shipped status to DB
       await performMarkShipped();
 
-      // 2. Copy to clipboard
+      // 2. Copy text first so user can paste it in KakaoTalk after choosing the photo.
       await Clipboard.setStringAsync(message);
 
-      // 3. Share
       if (allPhotos.length > 0) {
+        const shareUris = [];
+        for (const uri of allPhotos) {
+          shareUris.push(await compressForShare(uri));
+        }
         const ok = await Sharing.isAvailableAsync();
         if (ok) {
-          await sharePhotoSequential(allPhotos, 0);
+          await sharePhotoSequential(shareUris, 0);
         } else {
           await Share.share({ message, title: `[출고 알림] ${customer.name}` });
         }
@@ -377,10 +402,11 @@ export default function MessageScreen({ route, navigation }) {
         await Share.share({ message, title: `[출고 알림] ${customer.name}` });
       }
 
-      // 3. Go home
       navigation.navigate('Home');
     } catch (e) {
-      if (e.message !== 'User did not share') Alert.alert('오류', e.message);
+      if (e?.message !== 'User did not share') {
+        Alert.alert('오류', e.message || '공유 실패');
+      }
       setStep('ready');
     }
   };
@@ -510,7 +536,7 @@ export default function MessageScreen({ route, navigation }) {
           <Text style={styles.processingTitle}>준비 중...</Text>
           <Text style={styles.processingMsg}>{stepMsg}</Text>
           <View style={styles.processingSteps}>
-            {['거래명세서 생성', 'PDF 업로드', photoUri ? '사진 업로드' : null]
+            {['거래명세서 생성', 'PDF 업로드', allPhotos.length > 0 ? '사진 업로드' : null]
               .filter(Boolean).map((s, i) => (
                 <View key={i} style={styles.processingStep}>
                   <View style={styles.processingDot} />
@@ -616,7 +642,7 @@ export default function MessageScreen({ route, navigation }) {
         <SendBtn
           icon={<Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2111/2111466.png' }} style={{ width: 30, height: 30 }} resizeMode="contain" />}
           label="카카오톡 공유"
-          sub={photoUri ? '사진 + 메시지 공유' : '메시지 공유'}
+          sub={allPhotos.length > 0 ? '사진 + 메시지 공유' : '메시지 공유'}
           color="#3a1d1d"
           onPress={shareKakao}
         />

@@ -18,7 +18,12 @@
       "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\screens\" /b)",
       "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\components\" /b)",
       "Bash(dir \"C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\mobile\\\\lib\" /b)",
-      "Bash(powershell -command \"\\(Get-Content 'C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\index.html'\\).Count\")"
+      "Bash(powershell -command \"\\(Get-Content 'C:\\\\Users\\\\Hhung\\\\Desktop\\\\app cong ty\\\\index.html'\\).Count\")",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
