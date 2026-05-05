@@ -4329,7 +4329,7 @@
         </div>
         <div class="search-bar">
           <span style="color:var(--ink-muted)">🔍</span>
-          <input type="text" placeholder="거래처, 품목, 송장번호 검색..." id="order-q" oninput="renderOrders()">
+          <input type="text" placeholder="거래처, 품목, 송장번호 검색..." id="order-q" oninput="scheduleOrderSearchSync()">
         </div>
         <div class="tabs">
           <button class="tab active" onclick="setTab('all',this)">전체</button>
@@ -4339,10 +4339,10 @@
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:12px;color:var(--ink-muted);font-weight:600">기간:</span>
-          <input type="date" id="order-date-from" onchange="renderOrders()"
+          <input type="date" id="order-date-from" onchange="resetOrdersPage();ensureOrdersDateRange();renderOrders()"
             style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
           <span style="font-size:12px;color:var(--ink-muted)">~</span>
-          <input type="date" id="order-date-to" onchange="renderOrders()"
+          <input type="date" id="order-date-to" onchange="resetOrdersPage();ensureOrdersDateRange();renderOrders()"
             style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--ink);background:var(--canvas);cursor:pointer">
           <button class="btn btn-ghost btn-xs" onclick="clearOrderDateFilter()" style="color:var(--ink-muted)">✕
             초기화</button>
@@ -4370,6 +4370,8 @@
             </table>
           </div>
         </div>
+        <div id="order-page-controls"
+          style="display:none;align-items:center;justify-content:center;gap:8px;padding:12px 0 0"></div>
         <!-- 이전 데이터 더 불러오기 -->
         <div style="text-align:center;padding:16px 0">
           <button id="load-more-btn" onclick="loadMoreOrders()" style="display:none;padding:9px 24px;border-radius:99px;border:1.5px solid var(--border);
@@ -5182,6 +5184,25 @@
     return null;
   }
 
+  function safeStorageName(name = 'image') {
+    return String(name).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'image';
+  }
+
+  async function uploadOrderImageToStorage(file, custId = 'unknown') {
+    if (!file) return '';
+    const ext = (file.name || '').split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `orders/${today()}/${custId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${safeStorageName(ext)}`;
+    const { error } = await _supa.storage
+      .from('photos')
+      .upload(path, file, {
+        contentType: file.type || 'image/jpeg',
+        upsert: false,
+      });
+    if (error) throw error;
+    const { data } = _supa.storage.from('photos').getPublicUrl(path);
+    return data?.publicUrl || '';
+  }
+
   // Like supa() but strips optional columns and retries if Supabase returns a column-not-found error
   // optionalKeys: array of field names that might not exist in the DB yet
   async function supaResilient(method, table, body, query, optionalKeys = []) {
@@ -5239,6 +5260,10 @@
     currentOrderId: null,
     currentCustId: null,
     orderImgBase64: null,
+    orderImgFile: null,
+    orderImgPreviewUrl: null,
+    ordersPage: 1,
+    ordersPageSize: 80,
     supplierLocked: true,
     privacyMode: false,
     chartMode: 'day',      // 'day' | 'week' | 'month'
@@ -5340,25 +5365,25 @@
           } else {
             DB.orders.unshift(payload.new);
           }
-          renderAll();
+          renderOrderDependentViews();
         } else if (payload.eventType === 'DELETE' && payload.old?.id) {
           DB.orders = DB.orders.filter(o => o.id != payload.old.id);
-          renderAll();
+          renderOrderDependentViews();
         } else if (payload.eventType === 'INSERT' && payload.new?.id) {
           if (!DB.orders.find(o => o.id == payload.new.id)) {
             DB.orders.unshift(payload.new);
           }
-          renderAll();
+          renderOrderDependentViews();
         } else {
           // Fallback: full reload only when we can't do smart update
-          loadAll().then(renderAll);
+          loadAll(loadedDaysAgo()).then(renderAll);
         }
         renderPaymentRequestButton(false);
         if (shipmentNotice) handleShipmentNotification(shipmentNotice);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, payload => {
         console.log('🔔 Realtime Change (Customers):', payload.eventType);
-        loadAll().then(renderAll);
+        loadAll(loadedDaysAgo()).then(renderAll);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, payload => {
         handleSettingsChange(payload.new?.key || payload.old?.key, payload.new?.value, true);
@@ -5924,7 +5949,7 @@
     showLoading(true);
     try {
       await ensureTables();
-      await loadAll();
+      await loadAll(loadedDaysAgo());
       document.getElementById('db-dot').style.background = 'var(--green)';
       document.getElementById('db-label').textContent = '데이터 연결됨';
       showToast('데이터 동기화 완료 ✓', 'success');
@@ -6209,11 +6234,19 @@ END $$;
   // 기본: 최근 90일 주문만 로드 (빠름, 메모리 절약)
   // 필요시 loadMoreOrders()로 더 불러올 수 있음
   const LOAD_DAYS = 90;
+  const ARCHIVE_CHUNK_DAYS = 90;
+  const ORDER_PAGE_SIZE = 80;
 
   function getDateFrom(daysAgo) {
     const d = new Date();
     d.setDate(d.getDate() - daysAgo);
     return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+
+  function loadedDaysAgo() {
+    const ms = dateToMs(DB.loadedFrom || '');
+    if (!ms) return LOAD_DAYS;
+    return Math.max(LOAD_DAYS, Math.ceil((Date.now() - ms) / (24 * 60 * 60 * 1000)) + 1);
   }
 
   async function loadStaffNotifications() {
@@ -6253,11 +6286,11 @@ END $$;
   }
 
   async function loadMoreOrders() {
-    // 현재 로드된 범위보다 90일 더 이전 데이터 추가 로드
+    // 현재 로드된 범위보다 archive chunk만큼 더 이전 데이터 추가 로드
     const currentFrom = DB.loadedFrom || getDateFrom(LOAD_DAYS);
     const prevFrom = (() => {
       const d = new Date(currentFrom);
-      d.setDate(d.getDate() - 90);
+      d.setDate(d.getDate() - ARCHIVE_CHUNK_DAYS);
       return d.toISOString().split('T')[0];
     })();
 
@@ -6270,6 +6303,7 @@ END $$;
         DB.orders = [...DB.orders, ...older];
         DB.loadedFrom = prevFrom;
         DB.hasMore = older.length === 1000;
+        resetOrdersPage();
         renderAll();
         showToast(`${older.length}건 추가 로드됨 ✓`);
       } else {
@@ -7383,10 +7417,109 @@ END $$;
   /* ════════════════════════════════════════════
      ORDERS
      ════════════════════════════════════════════ */
+  function resetOrdersPage() {
+    UI.ordersPage = 1;
+  }
+
+  function setOrderPage(page) {
+    UI.ordersPage = Math.max(1, page);
+    renderOrders();
+  }
+
+  function renderOrderPageControls(total, page, totalPages, start, end) {
+    const el = document.getElementById('order-page-controls');
+    if (!el) return;
+    if (totalPages <= 1) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+    el.style.display = 'flex';
+    el.innerHTML = `
+      <button class="btn btn-ghost btn-xs" ${page <= 1 ? 'disabled' : ''} onclick="setOrderPage(${page - 1})">‹ 이전</button>
+      <span style="font-size:12px;color:var(--ink-muted);font-weight:700">${start + 1}-${end} / ${total}건 · ${page}/${totalPages}</span>
+      <button class="btn btn-ghost btn-xs" ${page >= totalPages ? 'disabled' : ''} onclick="setOrderPage(${page + 1})">다음 ›</button>
+    `;
+  }
+
+  async function ensureOrdersDateRange() {
+    const dateFrom = document.getElementById('order-date-from')?.value;
+    if (!dateFrom || !DB.loadedFrom || dateFrom >= DB.loadedFrom) return;
+    showToast('선택한 기간 데이터 로드 중...', 'info');
+    try {
+      const older = await supa('GET', 'orders', null,
+        `?order=order_date.desc&order_date=gte.${dateFrom}&order_date=lt.${DB.loadedFrom}&limit=1000`
+      );
+      if (older?.length) {
+        const seen = new Set(DB.orders.map(o => String(o.id)));
+        DB.orders = [...DB.orders, ...older.filter(o => !seen.has(String(o.id)))];
+        DB.loadedFrom = dateFrom;
+        DB.hasMore = older.length === 1000;
+        updateLoadMoreBtn();
+        renderOrders();
+        renderDashboard();
+        renderCalendar();
+      }
+    } catch (e) {
+      console.warn('date range order load failed:', e.message);
+    }
+  }
+
+  function mergeOrdersIntoDb(rows = []) {
+    if (!rows?.length) return false;
+    const seen = new Set(DB.orders.map(o => String(o.id)));
+    const fresh = rows.filter(o => o?.id && !seen.has(String(o.id)));
+    if (!fresh.length) return false;
+    DB.orders = [...DB.orders, ...fresh];
+    return true;
+  }
+
+  function orderDateQueryPart() {
+    const dateFrom = document.getElementById('order-date-from')?.value;
+    const dateTo = document.getElementById('order-date-to')?.value;
+    let q = '';
+    if (dateFrom) q += `&order_date=gte.${dateFrom}`;
+    if (dateTo) q += `&order_date=lte.${dateTo}%2023:59`;
+    return q;
+  }
+
+  let _orderSearchTimer = null;
+  function scheduleOrderSearchSync() {
+    resetOrdersPage();
+    renderOrders();
+    if (_orderSearchTimer) clearTimeout(_orderSearchTimer);
+    _orderSearchTimer = setTimeout(ensureOrdersSearchCoverage, 350);
+  }
+
+  async function ensureOrdersSearchCoverage() {
+    const raw = (document.getElementById('order-q')?.value || '').trim();
+    if (raw.length < 2) return;
+    const term = encodeURIComponent(raw);
+    const datePart = orderDateQueryPart();
+    try {
+      const [custRows, trackingRows] = await Promise.all([
+        supa('GET', 'customers', null, `?select=id&name=ilike.*${term}*&limit=50`).catch(() => []),
+        supa('GET', 'orders', null, `?order=order_date.desc&tracking=ilike.*${term}*${datePart}&limit=200`).catch(() => []),
+      ]);
+      let changed = mergeOrdersIntoDb(trackingRows || []);
+      const ids = (custRows || []).map(c => c.id).filter(Boolean).slice(0, 50);
+      if (ids.length) {
+        const byCustomer = await supa('GET', 'orders', null,
+          `?order=order_date.desc&customer_id=in.(${ids.join(',')})${datePart}&limit=300`
+        ).catch(() => []);
+        changed = mergeOrdersIntoDb(byCustomer || []) || changed;
+      }
+      if (changed) renderOrders();
+    } catch (e) {
+      console.warn('order search sync failed:', e.message);
+    }
+  }
+
   function setTab(f, btn) {
     UI.orderFilter = f;
     document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
+    resetOrdersPage();
     renderOrders();
   }
 
@@ -7414,11 +7547,20 @@ END $$;
       const c = getCust(o.customer_id);
       return (c?.name || '').toLowerCase().includes(q) || orderItems(o).some(i => (i.name || '').toLowerCase().includes(q)) || (shipmentTracking(o) || '').includes(q);
     });
+    const totalMatches = list.length;
+    const pageSize = UI.ordersPageSize || ORDER_PAGE_SIZE;
+    const totalPages = Math.max(1, Math.ceil(totalMatches / pageSize));
+    if ((UI.ordersPage || 1) > totalPages) UI.ordersPage = totalPages;
+    const page = UI.ordersPage || 1;
+    const start = (page - 1) * pageSize;
+    const end = Math.min(start + pageSize, totalMatches);
+    const pageList = list.slice(start, end);
     const rangeInfo = DB.loadedFrom ? ` · ${DB.loadedFrom} 이후` : '';
-    document.getElementById('orders-count').textContent = `총 ${list.length}건${rangeInfo}`;
+    document.getElementById('orders-count').textContent = `총 ${totalMatches}건${rangeInfo}${totalMatches ? ` · ${start + 1}-${end} 표시` : ''}`;
     const ri = document.getElementById('data-range-info');
     if (ri) ri.textContent = DB.loadedFrom ? `현재 ${DB.loadedFrom} 이후 데이터 표시 중` : '';
-    document.getElementById('orders-tb').innerHTML = list.map(o => {
+    renderOrderPageControls(totalMatches, page, totalPages, start, end);
+    document.getElementById('orders-tb').innerHTML = pageList.map(o => {
       const c = getCust(o.customer_id);
       const col = custColor(c);
       const dt = fmtOrderDateTime(o);
@@ -7461,6 +7603,7 @@ END $$;
     const t = document.getElementById('order-date-to');
     if (f) f.value = '';
     if (t) t.value = '';
+    resetOrdersPage();
     renderOrders();
   }
   function setOrderDateFilterMonth(offset) {
@@ -7473,6 +7616,8 @@ END $$;
     const to = document.getElementById('order-date-to');
     if (from) from.value = `${y}-${m}-01`;
     if (to) to.value = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
+    resetOrdersPage();
+    ensureOrdersDateRange();
     renderOrders();
   }
 
@@ -7619,6 +7764,9 @@ END $$;
     ['o-addr', 'o-tel', 'o-track', 'o-memo', 'o-rep', 'o-contact', 'o-biz-no'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('o-items-tb').innerHTML = '';
     UI.orderImgBase64 = null;
+    UI.orderImgFile = null;
+    if (UI.orderImgPreviewUrl) URL.revokeObjectURL(UI.orderImgPreviewUrl);
+    UI.orderImgPreviewUrl = null;
     document.getElementById('img-prev').style.display = 'none';
     document.getElementById('img-placeholder').style.display = 'block';
     document.getElementById('img-remove-btn').style.display = 'none';
@@ -7771,12 +7919,18 @@ END $$;
 
     if (o.img_url) {
       UI.orderImgBase64 = o.img_url;
+      UI.orderImgFile = null;
+      if (UI.orderImgPreviewUrl) URL.revokeObjectURL(UI.orderImgPreviewUrl);
+      UI.orderImgPreviewUrl = null;
       document.getElementById('img-prev').src = o.img_url;
       document.getElementById('img-prev').style.display = 'block';
       document.getElementById('img-placeholder').style.display = 'none';
       document.getElementById('img-remove-btn').style.display = 'flex';
     } else {
       UI.orderImgBase64 = null;
+      UI.orderImgFile = null;
+      if (UI.orderImgPreviewUrl) URL.revokeObjectURL(UI.orderImgPreviewUrl);
+      UI.orderImgPreviewUrl = null;
       document.getElementById('img-prev').style.display = 'none';
       document.getElementById('img-placeholder').style.display = 'block';
       document.getElementById('img-remove-btn').style.display = 'none';
@@ -7852,17 +8006,16 @@ END $$;
       showToast('이미지 파일만 업로드할 수 있습니다', 'error');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = e => {
-      UI.orderImgBase64 = e.target.result;
-      document.getElementById('img-prev').src = e.target.result;
-      document.getElementById('img-prev').style.display = 'block';
-      document.getElementById('img-placeholder').style.display = 'none';
-      document.getElementById('img-remove-btn').style.display = 'flex';
-      document.getElementById('img-zone')?.classList.remove('drag-over');
-      showToast('송장 이미지가 추가되었습니다 ✓', 'success');
-    };
-    reader.readAsDataURL(file);
+    UI.orderImgFile = file;
+    UI.orderImgBase64 = '';
+    if (UI.orderImgPreviewUrl) URL.revokeObjectURL(UI.orderImgPreviewUrl);
+    UI.orderImgPreviewUrl = URL.createObjectURL(file);
+    document.getElementById('img-prev').src = UI.orderImgPreviewUrl;
+    document.getElementById('img-prev').style.display = 'block';
+    document.getElementById('img-placeholder').style.display = 'none';
+    document.getElementById('img-remove-btn').style.display = 'flex';
+    document.getElementById('img-zone')?.classList.remove('drag-over');
+    showToast('송장 이미지가 추가되었습니다 ✓', 'success');
   }
 
   function focusImageZone() {
@@ -7871,6 +8024,9 @@ END $$;
 
   function clearOrderImage() {
     UI.orderImgBase64 = null;
+    UI.orderImgFile = null;
+    if (UI.orderImgPreviewUrl) URL.revokeObjectURL(UI.orderImgPreviewUrl);
+    UI.orderImgPreviewUrl = null;
     const inp = document.getElementById('o-img-inp');
     if (inp) inp.value = '';
     document.getElementById('img-prev').removeAttribute('src');
@@ -7949,6 +8105,14 @@ END $$;
     const OPTIONAL_ORDER_COLS = ['rep', 'contact', 'biz_no'];   // columns added later, may not exist yet
 
     try {
+      if (UI.orderImgFile) {
+        showToast('송장 이미지 업로드 중...', 'info');
+        order.img_url = await uploadOrderImageToStorage(UI.orderImgFile, custId);
+        UI.orderImgBase64 = order.img_url;
+        UI.orderImgFile = null;
+        if (UI.orderImgPreviewUrl) URL.revokeObjectURL(UI.orderImgPreviewUrl);
+        UI.orderImgPreviewUrl = null;
+      }
       if (UI.editOrderId) {
         await supaResilient('PATCH', 'orders', order, `?id=eq.${UI.editOrderId}`, OPTIONAL_ORDER_COLS);
         const idx = DB.orders.findIndex(o => o.id == UI.editOrderId);
@@ -8092,7 +8256,7 @@ END $$;
       </div>`;
     }).join('')}
     <div style="text-align:right;margin-top:10px;font-weight:700;font-size:15px;color:var(--blue)">합계: ${fmt(orderTotal(o))}원</div>
-    ${detailImages.length ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><div style="display:flex;flex-wrap:wrap;gap:8px">${detailImages.map((src, imgIdx) => `<img src="${esc(src)}" title="송장 이미지 ${imgIdx + 1}" style="width:120px;height:150px;border-radius:var(--r-md);object-fit:cover;border:1px solid var(--hairline)">`).join('')}</div></div>` : ''}
+    ${detailImages.length ? `<div style="margin-top:14px"><div style="font-size:10px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;margin-bottom:7px">송장 이미지</div><div style="display:flex;flex-wrap:wrap;gap:8px">${detailImages.map((src, imgIdx) => `<img src="${esc(src)}" title="송장 이미지 ${imgIdx + 1}" onclick="openFullImg('${esc(src).replace(/'/g, "\\'")}')" style="width:120px;height:150px;border-radius:var(--r-md);object-fit:cover;border:1px solid var(--hairline);cursor:zoom-in">`).join('')}</div></div>` : ''}
     
     ${o.status === 'shipped' ? `
       <div style="margin-top:20px; padding: 12px; background: var(--blue-tint); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
@@ -10556,6 +10720,20 @@ ${pdfLink}
   }
 
   let _renderAllTimer = null;
+  let _renderOrderViewsTimer = null;
+  function renderOrderDependentViews() {
+    if (_renderOrderViewsTimer) return;
+    _renderOrderViewsTimer = setTimeout(() => {
+      _renderOrderViewsTimer = null;
+      renderDashboard();
+      renderOrders();
+      renderHistory();
+      renderDebt();
+      if (UI.selectedDate) renderDayDetail(UI.selectedDate);
+      renderCalendar();
+    }, 80);
+  }
+
   function renderAll() {
     if (_renderAllTimer) return;
     _renderAllTimer = setTimeout(() => {
@@ -10574,7 +10752,7 @@ ${pdfLink}
   function ordersSignature(orders) {
     return JSON.stringify((orders || []).map(o => [
       o.id, o.status, o.tracking, o.shipped_date, o.partial_shipped_date,
-      o.img_url, o.pdf_url, JSON.stringify(o.items || [])
+      o.img_url, JSON.stringify(o.img_urls || []), o.pdf_url, JSON.stringify(o.items || [])
     ]));
   }
 
@@ -10588,7 +10766,7 @@ ${pdfLink}
       if (nextSig !== UI.ordersSignature) {
         DB.orders = ords || [];
         UI.ordersSignature = nextSig;
-        renderAll();
+        renderOrderDependentViews();
         renderPaymentRequestButton(false);
         const dot = document.getElementById('db-dot');
         if (dot) { dot.style.transform = 'scale(1.4)'; setTimeout(() => dot.style.transform = '', 400); }
@@ -10617,7 +10795,7 @@ ${pdfLink}
     UI.fullRefreshing = true;
     const before = UI.dataSignature || allDataSignature();
     try {
-      await loadAll();
+      await loadAll(loadedDaysAgo());
       const next = allDataSignature();
       if (next !== before) {
         UI.dataSignature = next;
@@ -10653,7 +10831,7 @@ ${pdfLink}
         // 5분 이상 탭 비활성 상태였을 때는 전체 데이터도 새로고침
         if (elapsed > 5 * 60 * 1000) {
           lastRefresh = Date.now();
-          loadAll().then(() => {
+          loadAll(loadedDaysAgo()).then(() => {
             UI.ordersSignature = ordersSignature(DB.orders);
             renderAll();
             const dot = document.getElementById('db-dot');
