@@ -10846,7 +10846,7 @@ ${pdfLink}
   }
 
   /* ─── 페이지별 HTML 빌더 (멀티페이지 PDF용) ─── */
-  function buildInvoicePageHTML(inv, pageItems, { isFirstPage, isLastPage, pageNum, totalPages }) {
+  function buildInvoicePageHTML(inv, pageItems, { isFirstPage, isLastPage, pageNum, totalPages, contentHeightPx }) {
     const { d, toName, toRep, toAddr, toBiz, toTel, total, supplier } = inv;
     const yr  = d.getFullYear();
     const mo  = String(d.getMonth() + 1).padStart(2, '0');
@@ -10918,13 +10918,16 @@ ${pdfLink}
       </div>`)
     : `<div style="text-align:right;font-size:8pt;color:#aaa;padding:5px 32px 2px 0">— 다음 페이지 계속 (${pageNum}/${totalPages}쪽) —</div>`;
 
-    return `<div class="inv-mobile-wrap">
-      <div class="inv-mobile-copy">
+    const wrapH = contentHeightPx ? `${contentHeightPx}px` : '100%';
+    return `<div class="inv-mobile-wrap" style="height:${wrapH}">
+      <div class="inv-mobile-copy" style="justify-content:space-between">
         ${headerBlock}
-        <table class="inv-mobile-table">
-          <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
-          <tbody>${itemRows}</tbody>
-        </table>
+        <div style="flex:1">
+          <table class="inv-mobile-table">
+            <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </div>
         ${totalBlock}
       </div>
       <div class="inv-mobile-side">
@@ -10961,30 +10964,50 @@ ${pdfLink}
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const totalPages = pages.length;
 
+      // A4 tỉ lệ cố định: width=1123px → height=1588px (= 1123 × 297/210)
+      const PAGE_W_PX = 1123;
+      const PAGE_H_PX = Math.round(PAGE_W_PX * 297 / 210); // 1588px
+      // imgW/imgH cố định cho mọi trang → căn lề đều nhau trong PDF
+      const imgW = INVOICE_PRINT_WIDTH_MM;              // 185mm
+      const imgH = imgW * 297 / 210;                   // ≈ 261.7mm
+      const marginX = INVOICE_PRINT_MARGIN_X_MM;       // 12.5mm
+      const marginY = Math.round(((297 - imgH) / 2) * 10) / 10; // ~17.6mm (cân bằng trên/dưới)
+
+      // khoảng đệm trên/dưới: dùng table layout (html2canvas render table chính xác)
+      const PAGE_PAD_PX  = 70;                            // ≈ 11.5mm trong PDF
+      const CONTENT_H_PX = PAGE_H_PX - PAGE_PAD_PX * 2;  // vùng content
+
       for (let i = 0; i < totalPages; i++) {
         const host = document.createElement('div');
-        host.style.cssText = 'position:fixed;left:-10000px;top:0;width:1123px;background:#fff;padding:0;z-index:-1;zoom:1;';
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'display:block;width:1123px;background:#fff;';
-        wrap.innerHTML = buildInvoicePageHTML(inv, pages[i], {
-          isFirstPage: i === 0,
-          isLastPage:  i === totalPages - 1,
-          pageNum:     i + 1,
-          totalPages,
-        });
-        host.appendChild(wrap);
+        host.style.cssText = `position:fixed;left:-10000px;top:0;width:${PAGE_W_PX}px;height:${PAGE_H_PX}px;background:#fff;z-index:-1;zoom:1;overflow:hidden;`;
+
+        // Table layout: 3 rows = padding-top / content / padding-bottom
+        host.innerHTML = `
+          <table style="width:${PAGE_W_PX}px;height:${PAGE_H_PX}px;border-collapse:collapse;background:#fff;table-layout:fixed;">
+            <tr style="height:${PAGE_PAD_PX}px"><td style="background:#fff;height:${PAGE_PAD_PX}px;padding:0;"></td></tr>
+            <tr><td style="vertical-align:top;background:#fff;padding:0;height:${CONTENT_H_PX}px;">
+              ${buildInvoicePageHTML(inv, pages[i], {
+                isFirstPage:     i === 0,
+                isLastPage:      i === totalPages - 1,
+                pageNum:         i + 1,
+                totalPages,
+                contentHeightPx: CONTENT_H_PX,
+              })}
+            </td></tr>
+            <tr style="height:${PAGE_PAD_PX}px"><td style="background:#fff;height:${PAGE_PAD_PX}px;padding:0;"></td></tr>
+          </table>
+        `;
         document.body.appendChild(host);
 
-        const canvas = await html2canvas(wrap, {
-          scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+        const canvas = await html2canvas(host, {
+          scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
+          width: PAGE_W_PX, height: PAGE_H_PX,
         });
         document.body.removeChild(host);
 
-        const img  = canvas.toDataURL('image/jpeg', 0.95);
-        const imgW = INVOICE_PRINT_WIDTH_MM;
-        const imgH = canvas.height * imgW / canvas.width;
+        const img = canvas.toDataURL('image/jpeg', 0.95);
         if (i > 0) pdf.addPage();
-        pdf.addImage(img, 'JPEG', INVOICE_PRINT_MARGIN_X_MM, 10, imgW, imgH);
+        pdf.addImage(img, 'JPEG', marginX, marginY, imgW, imgH);
       }
 
       const blob = pdf.output('blob');
