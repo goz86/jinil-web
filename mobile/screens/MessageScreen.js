@@ -106,9 +106,10 @@ ${itemLines}
 // MAX_PDF_ITEMS: portrait A4 단면 기준 최대 30개
 const MAX_PDF_ITEMS = 30;
 
-function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
+function generateInvoiceHTML(customer, items, shipDate, supplier = {}, includeTax = false) {
   // 전체 합계는 선택된 모든 품목 기준
-  const total = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
+  const total    = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
+  const totalTax = includeTax ? Math.round(total * 0.1) : 0;
   const [yr, mo, dy] = shipDate.split('-');
 
   // PDF에 실제로 들어가는 품목 (최대 20개)
@@ -124,13 +125,15 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
   const rows = Array.from({ length: rowCount }).map((_, i) => {
     const it = pdfItems[i];
     if (it) {
+      const sub    = it.qty * it.price;
+      const taxAmt = includeTax ? Math.round(sub * 0.1) : '';
       return `<tr>
         <td>${mo}/${dy}</td>
         <td style="text-align:left;padding-left:6px">${it.name}${it.spec ? ` (${it.spec})` : ''}</td>
         <td></td><td>${it.qty}</td>
         <td style="text-align:right">${fmt(it.price)}</td>
-        <td style="text-align:right">${fmt(it.qty * it.price)}</td>
-        <td></td><td></td>
+        <td style="text-align:right">${fmt(sub)}</td>
+        <td style="text-align:right">${taxAmt !== '' ? fmt(taxAmt) : ''}</td><td></td>
       </tr>`;
     }
     return `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
@@ -163,6 +166,10 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
     .total { display:flex; border:1.5px solid #1a6b3a; margin-top:6px; width:calc(100% - 32px); }
     .total-lbl { background:#e8f5e8; color:#1a6b3a; font-weight:700; padding:5px 12px; border-right:1.5px solid #1a6b3a; font-size:10pt; }
     .total-val { flex:1; padding:5px 12px; text-align:right; font-weight:700; font-size:10pt; }
+    .total-sub { display:flex; border:1px dashed #1a6b3a; border-bottom:none; width:calc(100% - 32px); }
+    .total-sub:first-child { margin-top:6px; }
+    .total-sub-lbl { background:#f0fdf4; color:#1a6b3a; font-weight:600; padding:3px 12px; border-right:1px dashed #1a6b3a; font-size:8pt; min-width:90px; }
+    .total-sub-val { flex:1; padding:3px 12px; text-align:right; font-size:8pt; color:#333; }
   `;
 
   const copyHtml = (label) => `
@@ -199,9 +206,18 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
         <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      ${includeTax ? `
+      <div class="total-sub">
+        <div class="total-sub-lbl">공급가액 합계</div>
+        <div class="total-sub-val">${fmt(total)}원</div>
+      </div>
+      <div class="total-sub">
+        <div class="total-sub-lbl">세액 합계 (10%)</div>
+        <div class="total-sub-val">${fmt(totalTax)}원</div>
+      </div>` : ''}
       <div class="total">
         <div class="total-lbl">합 계</div>
-        <div class="total-val">${fmt(total)}원</div>
+        <div class="total-val">${fmt(includeTax ? total + totalTax : total)}원</div>
       </div>
     </div>
     <div class="side">
@@ -241,7 +257,8 @@ export default function MessageScreen({ route, navigation }) {
   // Normalize: accept both `photos` array (new) and legacy `photoUri` (single)
   const allPhotos = photos || (photoUri ? [photoUri] : []);
 
-  const [step,         setStep]         = useState('processing');
+  const [step,         setStep]         = useState('tax_prompt'); // 세액 선택 먼저
+  const [includeTax,   setIncludeTax]   = useState(false);
   const [pdfUrl,       setPdfUrl]       = useState(null);
   const [imgUrls,      setImgUrls]      = useState([]); // all uploaded photo URLs
   const [stepMsg,      setStepMsg]      = useState('PDF 생성 중...');
@@ -249,9 +266,9 @@ export default function MessageScreen({ route, navigation }) {
   const [pdfTruncated, setPdfTruncated] = useState(false);
   const [skipConfirmVisible, setSkipConfirmVisible] = useState(false);
 
-  useEffect(() => { processAssets(); }, []);
-
-  const processAssets = async () => {
+  // processAssets는 세액 선택 후 수동으로 호출
+  const processAssets = async (taxIncluded = false) => {
+    setStep('processing');
     try {
       if (items.length > MAX_PDF_ITEMS) setPdfTruncated(true);
 
@@ -261,7 +278,7 @@ export default function MessageScreen({ route, navigation }) {
 
       // 2. Generate + upload PDF
       setStepMsg('거래명세서 PDF 생성 중...');
-      const html = generateInvoiceHTML(customer, items, shipDate, supplier);
+      const html = generateInvoiceHTML(customer, items, shipDate, supplier, taxIncluded);
       const { uri: pdfUri } = await Print.printToFileAsync({ html, base64: false });
 
       setStepMsg('PDF 업로드 중...');
@@ -550,6 +567,57 @@ export default function MessageScreen({ route, navigation }) {
 
   const total = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
 
+  // ── Tax prompt screen ─────────────────────────────────
+  if (step === 'tax_prompt') {
+    return (
+      <View style={styles.processingRoot}>
+        <View style={styles.taxPromptCard}>
+          <Text style={styles.taxPromptIcon}>🧾</Text>
+          <Text style={styles.taxPromptTitle}>부가세 포함 여부</Text>
+          <Text style={styles.taxPromptSub}>거래명세서 PDF에 세액(10%)을{'\n'}포함하시겠습니까?</Text>
+
+          {/* 미리보기: 공급가액 → 세액 → 합계 */}
+          <View style={styles.taxPreviewBox}>
+            <View style={styles.taxPreviewRow}>
+              <Text style={styles.taxPreviewLbl}>공급가액</Text>
+              <Text style={styles.taxPreviewVal}>{fmt(total)}원</Text>
+            </View>
+            <View style={styles.taxPreviewRow}>
+              <Text style={styles.taxPreviewLbl}>세액 (10%)</Text>
+              <Text style={[styles.taxPreviewVal, { color: '#b36a00' }]}>+{fmt(Math.round(total * 0.1))}원</Text>
+            </View>
+            <View style={[styles.taxPreviewRow, { borderTopWidth: 1, borderTopColor: '#e0e0e0', paddingTop: 8, marginTop: 4 }]}>
+              <Text style={[styles.taxPreviewLbl, { fontWeight: '700', color: '#111' }]}>합계</Text>
+              <Text style={[styles.taxPreviewVal, { color: '#0066cc', fontWeight: '800', fontSize: 16 }]}>
+                {fmt(total + Math.round(total * 0.1))}원
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.taxBtnRow}>
+            <TouchableOpacity
+              style={[styles.taxBtn, styles.taxBtnNo]}
+              onPress={() => { setIncludeTax(false); processAssets(false); }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.taxBtnNoText}>포함 안 함</Text>
+              <Text style={styles.taxBtnSub}>{fmt(total)}원</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.taxBtn, styles.taxBtnYes]}
+              onPress={() => { setIncludeTax(true); processAssets(true); }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.taxBtnYesText}>세액 포함 ✓</Text>
+              <Text style={[styles.taxBtnSub, { color: '#fff' }]}>{fmt(total + Math.round(total * 0.1))}원</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   // ── Processing screen ─────────────────────────────────
   if (step === 'processing') {
     return (
@@ -737,6 +805,30 @@ export default function MessageScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  // ── Tax prompt
+  taxPromptCard: {
+    backgroundColor: C.canvas, borderRadius: 24,
+    borderWidth: 1, borderColor: C.hairline,
+    padding: 28, alignItems: 'center', gap: 12,
+  },
+  taxPromptIcon: { fontSize: 40 },
+  taxPromptTitle: { fontSize: 20, fontWeight: '800', color: C.ink, letterSpacing: -0.3 },
+  taxPromptSub: { fontSize: 14, color: C.inkMuted, textAlign: 'center', lineHeight: 20 },
+  taxPreviewBox: {
+    alignSelf: 'stretch', backgroundColor: '#f8f8f8',
+    borderRadius: 12, padding: 14, gap: 8, marginTop: 4,
+  },
+  taxPreviewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  taxPreviewLbl: { fontSize: 13, color: C.inkMuted, fontWeight: '500' },
+  taxPreviewVal: { fontSize: 14, color: C.ink, fontWeight: '600' },
+  taxBtnRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', marginTop: 6 },
+  taxBtn: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 4 },
+  taxBtnNo: { backgroundColor: '#f0f0f0', borderWidth: 1, borderColor: '#ddd' },
+  taxBtnYes: { backgroundColor: C.blue },
+  taxBtnNoText: { fontSize: 14, fontWeight: '700', color: C.ink },
+  taxBtnYesText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  taxBtnSub: { fontSize: 12, color: C.inkMuted, fontWeight: '500' },
+
   // ── Processing
   processingRoot: { flex: 1, backgroundColor: C.bg, justifyContent: 'center', padding: 32 },
   processingCard: {
