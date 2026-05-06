@@ -2383,6 +2383,23 @@
       font-weight: 600;
     }
 
+    .login-remember {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: #555;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 4px;
+    }
+    .login-remember input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: #2563eb;
+    }
+
     .login-btn {
       width: 100%;
       padding: 15px;
@@ -3954,6 +3971,10 @@
         </div>
       </div>
       <div class="login-error" id="login-err" style="display:none">아이디 또는 비밀번호가 올바르지 않습니다</div>
+      <label class="login-remember">
+        <input type="checkbox" id="l-remember">
+        <span>아이디 저장</span>
+      </label>
       <button class="login-btn" onclick="doLogin()">로그인</button>
     </div>
   </div>
@@ -11587,8 +11608,26 @@ ${pdfLink}
     ov.getBoundingClientRect();
     ov.style.opacity = '1';
     ov.classList.add('visible');
+
+    // Pre-fill saved credentials
+    const savedUser = localStorage.getItem('savedLoginUser');
+    const savedPass = localStorage.getItem('savedLoginPass');
+    if (savedUser) {
+      const uf = document.getElementById('l-user');
+      const pf = document.getElementById('l-pass');
+      const cb = document.getElementById('l-remember');
+      if (uf) uf.value = savedUser;
+      if (pf && savedPass) pf.value = savedPass;
+      if (cb) cb.checked = true;
+    }
+
     // focus vào field anh mắt
-    setTimeout(() => document.getElementById('l-user')?.focus(), 300);
+    setTimeout(() => {
+      const uf = document.getElementById('l-user');
+      const pf = document.getElementById('l-pass');
+      if (uf?.value) pf?.focus();
+      else uf?.focus();
+    }, 300);
   }
 
   function hideLoginOverlay() {
@@ -11689,6 +11728,15 @@ ${pdfLink}
         document.getElementById('l-user').style.borderColor = '#ef4444';
         setTimeout(() => document.getElementById('l-user').style.borderColor = '', 1500);
       } else {
+        // Save or clear credentials based on remember checkbox
+        const rememberCb = document.getElementById('l-remember');
+        if (rememberCb?.checked) {
+          localStorage.setItem('savedLoginUser', username);
+          localStorage.setItem('savedLoginPass', pass);
+        } else {
+          localStorage.removeItem('savedLoginUser');
+          localStorage.removeItem('savedLoginPass');
+        }
         // ⚡ Set JWT FIRST — trước khi bất kỳ DB call nào (quan trọng cho RLS)
         _jwtToken = data.session?.access_token || null;
         syncRealtimeAuth();
