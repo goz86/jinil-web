@@ -10824,33 +10824,148 @@ ${pdfLink}
     return `거래명세서_${name}_${inv.date || today()}.pdf`;
   }
 
+  /* ─── 페이지별 HTML 빌더 (멀티페이지 PDF용) ─── */
+  function buildInvoicePageHTML(inv, pageItems, { isFirstPage, isLastPage, pageNum, totalPages }) {
+    const { d, toName, toRep, toAddr, toBiz, toTel, total, supplier } = inv;
+    const yr  = d.getFullYear();
+    const mo  = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const includeTax = document.getElementById('inv-tax-check')?.checked;
+    const totalTax   = includeTax ? Math.round(total * 0.1) : 0;
+
+    const itemRows = pageItems.map(it => {
+      const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
+      return `<tr>
+        <td>${mo}/${day}</td>
+        <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
+        <td></td><td>${it.qty}</td>
+        <td style="text-align:right">${fmt(it.price)}</td>
+        <td style="text-align:right">${fmt(it.sub)}</td>
+        <td style="text-align:right">${includeTax ? fmt(taxAmt) : ''}</td>
+        <td></td>
+      </tr>`;
+    }).join('');
+
+    const headerBlock = isFirstPage ? `
+      <div style="font-size:6.5pt;color:#888;margin-bottom:2px">${yr}년 ${mo}월 ${day}일</div>
+      <div class="inv-mobile-parties">
+        <div class="inv-mobile-party">
+          <div class="inv-mobile-party-title">공 급 자</div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">등록번호</div><div class="inv-mobile-party-val">${supplier.biz||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">상 호</div><div class="inv-mobile-party-val" style="font-weight:700">${supplier.name||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">성 명</div><div class="inv-mobile-party-val">${supplier.rep||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">주 소</div><div class="inv-mobile-party-val">${supplier.addr||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">업 태</div><div class="inv-mobile-party-val">${supplier.bizType||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">종 목</div><div class="inv-mobile-party-val">${supplier.itemType||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">Tel</div><div class="inv-mobile-party-val">${supplier.tel||''}</div></div>
+        </div>
+        <div class="inv-mobile-party">
+          <div class="inv-mobile-party-title">공 급 받 는 자</div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">등록번호</div><div class="inv-mobile-party-val">${toBiz||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">상 호</div><div class="inv-mobile-party-val" style="font-weight:700">${toName||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">성 명</div><div class="inv-mobile-party-val">${toRep||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">주 소</div><div class="inv-mobile-party-val">${toAddr||''}</div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">업 태</div><div class="inv-mobile-party-val"></div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">종 목</div><div class="inv-mobile-party-val"></div></div>
+          <div class="inv-mobile-party-row"><div class="inv-mobile-party-lbl">Tel</div><div class="inv-mobile-party-val">${toTel||''}</div></div>
+        </div>
+      </div>
+      ${supplier.bank ? `<div class="inv-mobile-bank"><div class="inv-mobile-bank-lbl">입금 계좌</div><div class="inv-mobile-bank-val">${supplier.bank}</div></div>` : ''}
+    ` : `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0 7px;margin-bottom:6px;border-bottom:1.5px solid #1a6b3a">
+        <div style="font-size:9pt;font-weight:700;color:#1a6b3a">${esc(toName||'')} | ${yr}년 ${mo}월 ${day}일</div>
+        <div style="font-size:8pt;color:#888">${pageNum} / ${totalPages} 쪽</div>
+      </div>
+    `;
+
+    const totalBlock = isLastPage ? (includeTax ? `
+      <div class="inv-mobile-total" style="border-bottom:1px dashed #1a6b3a">
+        <div class="inv-mobile-total-lbl" style="font-size:8pt">공급가액 합계</div>
+        <div class="inv-mobile-total-val" style="font-size:9pt">${fmt(total)}원</div>
+      </div>
+      <div class="inv-mobile-total" style="border-bottom:1px dashed #1a6b3a">
+        <div class="inv-mobile-total-lbl" style="font-size:8pt">세액 합계 (10%)</div>
+        <div class="inv-mobile-total-val" style="font-size:9pt">${fmt(totalTax)}원</div>
+      </div>
+      <div class="inv-mobile-total">
+        <div class="inv-mobile-total-lbl">합 계</div>
+        <div class="inv-mobile-total-val">${fmt(total + totalTax)}원</div>
+      </div>` : `
+      <div class="inv-mobile-total">
+        <div class="inv-mobile-total-lbl">합 계</div>
+        <div class="inv-mobile-total-val">${fmt(total)}원</div>
+      </div>`)
+    : `<div style="text-align:right;font-size:8pt;color:#aaa;padding:5px 32px 2px 0">— 다음 페이지 계속 (${pageNum}/${totalPages}쪽) —</div>`;
+
+    return `<div class="inv-mobile-wrap">
+      <div class="inv-mobile-copy">
+        ${headerBlock}
+        <table class="inv-mobile-table">
+          <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        ${totalBlock}
+      </div>
+      <div class="inv-mobile-side">
+        ${invVertChars('거래명세서', 'font-size:15pt;font-weight:700;color:#1a6b3a;')}
+        ${invVertChars('공급받는자용', 'font-size:7pt;color:#555;margin-top:6px;')}
+      </div>
+    </div>`;
+  }
+
+  /* ─── 멀티페이지 PDF 생성 ─── */
   async function createInvoicePdfFile(inv = getInvoiceData()) {
     if (!inv.items.length) { showToast('품목을 입력하세요', 'error'); return null; }
     showLoading(true);
     try {
       await ensurePdfLibs();
-      const host = document.createElement('div');
-      host.style.cssText = 'position:fixed;left:-10000px;top:0;width:1123px;background:#fff;padding:0;z-index:-1;zoom:1;';
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'display:block;width:1123px;background:#fff;';
-      wrap.innerHTML = buildInvoiceHTML(inv, '공급받는자용');
-      host.appendChild(wrap);
-      document.body.appendChild(host);
 
-      const canvas = await html2canvas(wrap, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false
-      });
-      document.body.removeChild(host);
+      // 페이지당 품목 수 (첫 페이지는 헤더 공간 때문에 더 작게)
+      const FIRST_PAGE_ITEMS = 30;
+      const REST_PAGE_ITEMS  = 42;
+      const all = inv.items;
+
+      // 페이지 분할
+      const pages = [];
+      if (all.length <= FIRST_PAGE_ITEMS) {
+        pages.push(all.slice());
+      } else {
+        pages.push(all.slice(0, FIRST_PAGE_ITEMS));
+        for (let s = FIRST_PAGE_ITEMS; s < all.length; s += REST_PAGE_ITEMS) {
+          pages.push(all.slice(s, s + REST_PAGE_ITEMS));
+        }
+      }
 
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const img = canvas.toDataURL('image/jpeg', 0.95);
-      const imgW = INVOICE_PRINT_WIDTH_MM;
-      const imgH = Math.min(277, canvas.height * imgW / canvas.width);
-      pdf.addImage(img, 'JPEG', INVOICE_PRINT_MARGIN_X_MM, 10, imgW, imgH);
+      const totalPages = pages.length;
+
+      for (let i = 0; i < totalPages; i++) {
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-10000px;top:0;width:1123px;background:#fff;padding:0;z-index:-1;zoom:1;';
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:block;width:1123px;background:#fff;';
+        wrap.innerHTML = buildInvoicePageHTML(inv, pages[i], {
+          isFirstPage: i === 0,
+          isLastPage:  i === totalPages - 1,
+          pageNum:     i + 1,
+          totalPages,
+        });
+        host.appendChild(wrap);
+        document.body.appendChild(host);
+
+        const canvas = await html2canvas(wrap, {
+          scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+        });
+        document.body.removeChild(host);
+
+        const img  = canvas.toDataURL('image/jpeg', 0.95);
+        const imgW = INVOICE_PRINT_WIDTH_MM;
+        const imgH = canvas.height * imgW / canvas.width;
+        if (i > 0) pdf.addPage();
+        pdf.addImage(img, 'JPEG', INVOICE_PRINT_MARGIN_X_MM, 10, imgW, imgH);
+      }
+
       const blob = pdf.output('blob');
       return new File([blob], invoiceFileName(inv), { type: 'application/pdf' });
     } catch (e) {
