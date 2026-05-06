@@ -4596,8 +4596,8 @@
                 <button class="btn btn-ghost btn-sm" onclick="buildInvoicePreview()" title="미리보기 새로고침">🔄 미리보기</button>
                 <button class="btn btn-ghost btn-sm" onclick="printInvoice()">🖨 인쇄</button>
                 <button class="btn btn-ghost btn-sm" onclick="shareInvoiceKakao()">💬 카카오톡</button>
-                <button class="btn btn-ghost btn-sm" onclick="downloadInvoiceImage()" title="이미지로 저장 + 클립보드 복사">📷 이미지</button>
-                <button class="btn btn-primary btn-sm" onclick="downloadInvoicePDF()">⬇ PDF 저장</button>
+                <button class="btn btn-ghost btn-sm" onclick="openTaxConfirm('image')" title="이미지로 저장 + 클립보드 복사">📷 이미지</button>
+                <button class="btn btn-primary btn-sm" onclick="openTaxConfirm('pdf')">⬇ PDF 저장</button>
               </div>
             </div>
             <div id="inv-preview" style="transform-origin:top left;overflow:hidden"></div>
@@ -5036,6 +5036,45 @@
       </div>
       <!-- hidden input kept for applyNewAddr() compat -->
       <input type="text" id="addr-pick-new" style="display:none">
+    </div>
+  </div>
+</div>
+
+<!-- Tax Confirm Modal -->
+<div class="modal-overlay" id="modal-tax-confirm">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:36px;margin-bottom:8px">🧾</div>
+    <div class="modal-title" style="margin-bottom:6px">부가세 포함 여부</div>
+    <div style="font-size:13px;color:var(--ink-muted);margin-bottom:18px;line-height:1.6">거래명세서에 세액(10%)을<br>포함하시겠습니까?</div>
+
+    <!-- 금액 미리보기 -->
+    <div id="tax-preview-box" style="background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:18px;text-align:left;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--ink-muted);font-weight:600">공급가액</span>
+        <span id="tax-preview-supply" style="font-size:13px;font-weight:600;color:var(--ink)">0원</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--ink-muted);font-weight:600">세액 (10%)</span>
+        <span id="tax-preview-tax" style="font-size:13px;font-weight:600;color:#b36a00">+0원</span>
+      </div>
+      <div style="height:1px;background:var(--hairline);margin:2px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;font-weight:700;color:var(--ink)">합계</span>
+        <span id="tax-preview-total" style="font-size:16px;font-weight:800;color:var(--blue)">0원</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1;padding:12px;font-size:14px;font-weight:600;border-radius:12px"
+        onclick="confirmTaxAndRun(false)">
+        포함 안 함
+        <div id="tax-no-amount" style="font-size:11px;color:var(--ink-muted);font-weight:400;margin-top:2px"></div>
+      </button>
+      <button class="btn btn-primary" style="flex:1;padding:12px;font-size:14px;font-weight:700;border-radius:12px"
+        onclick="confirmTaxAndRun(true)">
+        세액 포함 ✓
+        <div id="tax-yes-amount" style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:400;margin-top:2px"></div>
+      </button>
     </div>
   </div>
 </div>
@@ -10688,6 +10727,38 @@ ${pdfLink}
   <div class="wrap">${body}</div>
 </body></html>`);
     win.document.close();
+  }
+
+  let _taxConfirmAction = 'pdf'; // 'pdf' | 'image'
+
+  function openTaxConfirm(action) {
+    const inv = getInvoiceData();
+    if (!inv.items.length) { showToast('품목을 입력하세요', 'error'); return; }
+    _taxConfirmAction = action;
+
+    // 현재 공급가액 합계 계산
+    const supply = inv.total;
+    const tax    = Math.round(supply * 0.1);
+    const g = id => document.getElementById(id);
+    if (g('tax-preview-supply')) g('tax-preview-supply').textContent = fmt(supply) + '원';
+    if (g('tax-preview-tax'))    g('tax-preview-tax').textContent    = '+' + fmt(tax) + '원';
+    if (g('tax-preview-total'))  g('tax-preview-total').textContent  = fmt(supply + tax) + '원';
+    if (g('tax-no-amount'))      g('tax-no-amount').textContent      = fmt(supply) + '원';
+    if (g('tax-yes-amount'))     g('tax-yes-amount').textContent     = fmt(supply + tax) + '원';
+
+    openModal('modal-tax-confirm');
+  }
+
+  async function confirmTaxAndRun(includeTax) {
+    // checkbox 상태 동기화
+    const cb = document.getElementById('inv-tax-check');
+    if (cb) { cb.checked = includeTax; calcInvTotal(); }
+    closeModal('modal-tax-confirm');
+    if (_taxConfirmAction === 'pdf') {
+      await downloadInvoicePDF();
+    } else {
+      await downloadInvoiceImage();
+    }
   }
 
   async function downloadInvoicePDF() {
