@@ -144,8 +144,9 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
     .copy { flex:1; padding:10px; border-right:2px solid #1a6b3a; position:relative; display:flex; flex-direction:column; }
     .copy:last-child { border-right:none; }
     .side { width:28px; flex-shrink:0; border-left:2px solid #1a6b3a; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f0fdf4; }
-    .side-title { writing-mode:vertical-rl; font-size:15pt; font-weight:700; color:#1a6b3a; letter-spacing:4px; }
-    .side-label { writing-mode:vertical-rl; font-size:7pt; color:#555; margin-top:8px; }
+    .side-title { display:flex; flex-direction:column; align-items:center; font-size:15pt; font-weight:700; color:#1a6b3a; line-height:1.15; }
+    .side-label { display:flex; flex-direction:column; align-items:center; font-size:7pt; color:#555; margin-top:6px; line-height:1.2; }
+    .side-title div, .side-label div { text-align:center; line-height:1.15; }
     .parties { display:flex; gap:4px; margin-right:32px; margin-bottom:4px; }
     .party { flex:1; border:1px solid #1a6b3a; }
     .party-title { background:#e8f5e8; color:#1a6b3a; font-weight:700; text-align:center; font-size:9pt; padding:3px 0; border-bottom:1px solid #1a6b3a; }
@@ -204,8 +205,8 @@ function generateInvoiceHTML(customer, items, shipDate, supplier = {}) {
       </div>
     </div>
     <div class="side">
-      <div class="side-title">거래명세서</div>
-      <div class="side-label">(${label})</div>
+      <div class="side-title">${'거래명세서'.split('').map(c=>`<div>${c}</div>`).join('')}</div>
+      <div class="side-label">${`(${label})`.split('').map(c=>`<div>${c}</div>`).join('')}</div>
     </div>
   `;
 
