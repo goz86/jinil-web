@@ -4556,9 +4556,21 @@
                   <tbody id="inv-items-tb"></tbody>
                 </table>
               </div>
-              <div
-                style="text-align:right;margin-top:10px;font-size:15px;font-weight:700;color:var(--blue);letter-spacing:-0.2px">
-                합계: <span id="inv-grand">0</span>원
+              <div style="margin-top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                <div style="font-size:15px;font-weight:700;color:var(--blue);letter-spacing:-0.2px">
+                  공급가액 합계: <span id="inv-grand">0</span>원
+                </div>
+                <div id="inv-tax-total-line" style="display:none;font-size:13px;font-weight:600;color:var(--ink-muted)">
+                  세액 (10%): <span id="inv-tax-total">0</span>원
+                </div>
+                <div id="inv-grand-with-tax-line" style="display:none;font-size:16px;font-weight:800;color:var(--red);border-top:2px solid var(--border);padding-top:4px">
+                  최종 합계: <span id="inv-grand-with-tax">0</span>원
+                </div>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-muted);cursor:pointer;margin-top:4px">
+                  <input type="checkbox" id="inv-tax-check" style="width:15px;height:15px;accent-color:var(--blue)"
+                    onchange="calcInvTotal();buildInvoicePreview()">
+                  부가세 10% 포함 (세액 자동 계산)
+                </label>
               </div>
               <hr class="div">
               <div class="form-group">
@@ -4575,10 +4587,11 @@
                 style="font-size:11px;color:var(--ink-muted);font-weight:600;letter-spacing:0.5px;text-transform:uppercase">
                 미리보기 (A4 세로)
               </div>
-              <div style="display:flex;gap:6px">
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
                 <button class="btn btn-ghost btn-sm" onclick="buildInvoicePreview()" title="미리보기 새로고침">🔄 미리보기</button>
                 <button class="btn btn-ghost btn-sm" onclick="printInvoice()">🖨 인쇄</button>
                 <button class="btn btn-ghost btn-sm" onclick="shareInvoiceKakao()">💬 카카오톡</button>
+                <button class="btn btn-ghost btn-sm" onclick="downloadInvoiceImage()" title="이미지로 저장 + 클립보드 복사">📷 이미지</button>
                 <button class="btn btn-primary btn-sm" onclick="downloadInvoicePDF()">⬇ PDF 저장</button>
               </div>
             </div>
@@ -10426,7 +10439,14 @@ ${pdfLink}
       tr.querySelector('.item-total-cell').textContent = fmt(s);
       total += s;
     });
-    document.getElementById('inv-grand').textContent = fmt(total);
+    const includeTax = document.getElementById('inv-tax-check')?.checked;
+    const tax = includeTax ? Math.round(total * 0.1) : 0;
+    const g = id => document.getElementById(id);
+    if (g('inv-grand')) g('inv-grand').textContent = fmt(total);
+    if (g('inv-tax-total-line'))     g('inv-tax-total-line').style.display     = includeTax ? '' : 'none';
+    if (g('inv-tax-total'))          g('inv-tax-total').textContent            = fmt(tax);
+    if (g('inv-grand-with-tax-line'))g('inv-grand-with-tax-line').style.display= includeTax ? '' : 'none';
+    if (g('inv-grand-with-tax'))     g('inv-grand-with-tax').textContent       = fmt(total + tax);
   }
 
   function getSupplierData() {
@@ -10490,16 +10510,40 @@ ${pdfLink}
     const yr = d.getFullYear();
     const mo = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
+    const includeTax = document.getElementById('inv-tax-check')?.checked;
+    const totalTax = includeTax ? Math.round(total * 0.1) : 0;
 
-    const itemRows = items.map(it => `<tr>
-      <td>${mo}/${day}</td>
-      <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
-      <td></td>
-      <td>${it.qty}</td>
-      <td style="text-align:right">${fmt(it.price)}</td>
-      <td style="text-align:right">${fmt(it.sub)}</td>
-      <td></td><td></td>
-    </tr>`).join('');
+    const itemRows = items.map(it => {
+      const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
+      return `<tr>
+        <td>${mo}/${day}</td>
+        <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
+        <td></td>
+        <td>${it.qty}</td>
+        <td style="text-align:right">${fmt(it.price)}</td>
+        <td style="text-align:right">${fmt(it.sub)}</td>
+        <td style="text-align:right">${includeTax ? fmt(taxAmt) : ''}</td>
+        <td></td>
+      </tr>`;
+    }).join('');
+
+    const totalBlock = includeTax ? `
+      <div class="inv-mobile-total" style="border-bottom:1px dashed #1a6b3a">
+        <div class="inv-mobile-total-lbl" style="font-size:8pt">공급가액 합계</div>
+        <div class="inv-mobile-total-val" style="font-size:9pt">${fmt(total)}원</div>
+      </div>
+      <div class="inv-mobile-total" style="border-bottom:1px dashed #1a6b3a">
+        <div class="inv-mobile-total-lbl" style="font-size:8pt">세액 합계 (10%)</div>
+        <div class="inv-mobile-total-val" style="font-size:9pt">${fmt(totalTax)}원</div>
+      </div>
+      <div class="inv-mobile-total">
+        <div class="inv-mobile-total-lbl">합 계</div>
+        <div class="inv-mobile-total-val">${fmt(total + totalTax)}원</div>
+      </div>` : `
+      <div class="inv-mobile-total">
+        <div class="inv-mobile-total-lbl">합 계</div>
+        <div class="inv-mobile-total-val">${fmt(total)}원</div>
+      </div>`;
 
     return `<div class="inv-mobile-wrap">
       <div class="inv-mobile-copy">
@@ -10531,10 +10575,7 @@ ${pdfLink}
           <thead><tr><th>날짜</th><th>품목명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th><th>비고</th></tr></thead>
           <tbody>${itemRows}</tbody>
         </table>
-        <div class="inv-mobile-total">
-          <div class="inv-mobile-total-lbl">합 계</div>
-          <div class="inv-mobile-total-val">${fmt(total)}원</div>
-        </div>
+        ${totalBlock}
       </div>
       <div class="inv-mobile-side">
         <div class="inv-mobile-side-title">거래명세서</div>
@@ -10641,6 +10682,57 @@ ${pdfLink}
     if (!file) return;
     downloadFile(file);
     showToast('PDF가 저장되었습니다', 'success');
+  }
+
+  async function downloadInvoiceImage() {
+    const inv = getInvoiceData();
+    if (!inv.items.length) { showToast('품목을 입력하세요', 'error'); return; }
+    showLoading(true);
+    try {
+      await ensurePdfLibs(); // html2canvas가 여기서 로드됨
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:-10000px;top:0;width:820px;background:#fff;z-index:-1;';
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:block;width:820px;background:#fff;';
+      wrap.innerHTML = buildInvoiceHTML(inv, '공급받는자용');
+      host.appendChild(wrap);
+      document.body.appendChild(host);
+
+      const canvas = await html2canvas(wrap, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false
+      });
+      document.body.removeChild(host);
+
+      // PNG blob 생성
+      canvas.toBlob(async (blob) => {
+        // 1) 파일 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const custName = (inv.toName || inv.c?.name || '거래처').replace(/[\\/:*?"<>|]/g, '_').trim();
+        a.href = url;
+        a.download = `거래명세서_${custName}_${inv.date || today()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+        // 2) 클립보드에 이미지 복사
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showToast('📷 이미지 저장 완료! 클립보드에 복사됨 → Ctrl+V로 바로 붙여넣기 가능', 'success');
+        } catch (e) {
+          showToast('📷 이미지 저장 완료 (클립보드 복사는 HTTPS에서 지원됩니다)', 'info');
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.warn('downloadInvoiceImage failed:', e);
+      showToast('이미지 생성에 실패했습니다', 'error');
+    } finally {
+      showLoading(false);
+    }
   }
 
   function invoiceFileName(inv) {
