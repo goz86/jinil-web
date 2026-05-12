@@ -4441,7 +4441,7 @@
           <!-- Left: customer list -->
           <div class="card" style="padding:14px;display:flex;flex-direction:column;max-height:calc(100vh - 160px)">
             <div class="search-bar" style="flex-shrink:0"><span style="color:var(--ink-muted)">🔍</span><input
-                type="text" placeholder="거래처 검색..." id="cust-q" oninput="renderCustomers()"></div>
+                type="text" placeholder="거래처 검색..." id="cust-q" oninput="debounce(renderCustomers,'cust-q')"></div>
             <div id="cust-list" style="overflow-y:auto;flex:1;margin-top:8px"></div>
           </div>
           <!-- Right: customer detail -->
@@ -4762,7 +4762,7 @@
 
         <div class="search-bar" style="margin-bottom:14px">
           <span style="color:var(--ink-muted)">🔍</span>
-          <input type="text" id="history-q" placeholder="거래처 이름 검색..." oninput="renderHistory()">
+          <input type="text" id="history-q" placeholder="거래처 이름 검색..." oninput="debounce(renderHistory,'history-q')">
         </div>
         <div id="history-cards"></div>
       </div>
@@ -4777,7 +4777,7 @@
           <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ 제품 추가</button>
         </div>
         <div style="margin-bottom:12px">
-          <input type="text" id="product-q" class="search-input" placeholder="제품명 검색..." oninput="renderProducts()"
+          <input type="text" id="product-q" class="search-input" placeholder="제품명 검색..." oninput="debounce(renderProducts,'product-q')"
             style="max-width:320px">
         </div>
         <div class="card" style="padding:0;overflow:hidden">
@@ -5781,15 +5781,15 @@
           } else {
             DB.orders.unshift(payload.new);
           }
-          renderOrderDependentViews();
+          buildIndexes(); renderOrderDependentViews();
         } else if (payload.eventType === 'DELETE' && payload.old?.id) {
           DB.orders = DB.orders.filter(o => o.id != payload.old.id);
-          renderOrderDependentViews();
+          buildIndexes(); renderOrderDependentViews();
         } else if (payload.eventType === 'INSERT' && payload.new?.id) {
           if (!DB.orders.find(o => o.id == payload.new.id)) {
             DB.orders.unshift(payload.new);
           }
-          renderOrderDependentViews();
+          buildIndexes(); renderOrderDependentViews();
         } else {
           // Fallback: full reload only when we can't do smart update
           loadAll(loadedDaysAgo()).then(renderAll);
@@ -6687,6 +6687,7 @@ END $$;
     DB.orders = ords || [];
     DB.expenses = exps || [];
     DB.products = prods || [];
+    buildIndexes();
     // Load staff notifications from settings (only useful for admin)
     if (UI.currentUser?.role === 'admin') {
       loadStaffNotifications().catch(() => { });
@@ -6721,6 +6722,7 @@ END $$;
       );
       if (older?.length) {
         DB.orders = [...DB.orders, ...older];
+        buildIndexes();
         DB.loadedFrom = prevFrom;
         DB.hasMore = older.length === 1000;
         resetOrdersPage();
@@ -6772,8 +6774,46 @@ END $$;
   };
   const fmt = n => Number(n || 0).toLocaleString('ko-KR');
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const getCust = id => DB.customers.find(c => c.id == id);
-  const getOrder = id => DB.orders.find(o => o.id == id);
+  // ── Index maps (O(1) lookup) ──────────────────────────────────────
+  function buildIndexes() {
+    const custById = {};
+    DB.customers.forEach(c => { custById[c.id] = c; });
+
+    const orderById = {};
+    const ordersByCust = {};
+    const totalByCust = {};
+    const lastDateByCust = {};
+
+    DB.orders.forEach(o => {
+      orderById[o.id] = o;
+
+      const cid = o.customer_id;
+      if (!ordersByCust[cid]) ordersByCust[cid] = [];
+      ordersByCust[cid].push(o);
+
+      const t = orderTotal(o);
+      totalByCust[cid] = (totalByCust[cid] || 0) + t;
+
+      const d = o.order_date || '';
+      if (!lastDateByCust[cid] || d > lastDateByCust[cid]) lastDateByCust[cid] = d;
+    });
+
+    DB._custById      = custById;
+    DB._orderById     = orderById;
+    DB._ordersByCust  = ordersByCust;
+    DB._totalByCust   = totalByCust;
+    DB._lastDateByCust = lastDateByCust;
+  }
+
+  // ── Debounce helper ───────────────────────────────────────────────
+  const _debounceTimers = {};
+  function debounce(fn, key, ms = 180) {
+    clearTimeout(_debounceTimers[key]);
+    _debounceTimers[key] = setTimeout(fn, ms);
+  }
+
+  const getCust  = id => DB._custById?.[id]  ?? DB.customers.find(c => c.id == id);
+  const getOrder = id => DB._orderById?.[id] ?? DB.orders.find(o => o.id == id);
   function orderItems(o) {
     const raw = o?.items;
     if (Array.isArray(raw)) return raw;
@@ -7092,7 +7132,13 @@ END $$;
   /* ════════════════════════════════════════════
      DASHBOARD
      ════════════════════════════════════════════ */
+  let _dashCacheKey = '';
   function renderDashboard() {
+    // Skip expensive re-calc when data hasn't changed (privacyMode change bypasses via key)
+    const cacheKey = `${DB.orders.length}|${DB.expenses.length}|${DB.customers.length}|${UI.privacyMode}`;
+    if (cacheKey === _dashCacheKey) return;
+    _dashCacheKey = cacheKey;
+
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -9771,21 +9817,18 @@ ${pdfLink}
     const list = DB.customers
       .filter(c => (c.name || '').toLowerCase().includes(q) || (c.tel || '').includes(q))
       .sort((a, b) => {
-        const aCount = DB.orders.filter(o => o.customer_id == a.id).length;
-        const bCount = DB.orders.filter(o => o.customer_id == b.id).length;
+        const aCount = DB._ordersByCust?.[a.id]?.length ?? DB.orders.filter(o => o.customer_id == a.id).length;
+        const bCount = DB._ordersByCust?.[b.id]?.length ?? DB.orders.filter(o => o.customer_id == b.id).length;
         return bCount - aCount;
       });
 
     document.getElementById('cust-list').innerHTML = list.map(c => {
       const col = custColor(c);
-      const ords = DB.orders.filter(o => o.customer_id == c.id);
-      const total = ords.reduce((s, o) => s + orderTotal(o), 0);
-      // Last order date
-      const lastOrd = ords.length
-        ? ords.reduce((best, o) => o.order_date > best ? o.order_date : best, ords[0].order_date)
-        : null;
+      const ords = DB._ordersByCust?.[c.id] || DB.orders.filter(o => o.customer_id == c.id);
+      const total = DB._totalByCust?.[c.id] ?? ords.reduce((s, o) => s + orderTotal(o), 0);
+      const lastOrd = DB._lastDateByCust?.[c.id] || null;
       const lastUsedStr = lastOrd
-        ? `최근 ${lastOrd.replace(/-/g, '.')} 사용`
+        ? `최근 ${lastOrd.slice(0, 10).replace(/-/g, '.')} 사용`
         : '';
       return `<div class="cust-item ${UI.currentCustId == c.id ? 'active' : ''}" onclick="selectCust(${c.id})">
       <div class="cust-avatar" style="background:${col}18;color:${col}" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})">${esc(c.name[0])}</div>
