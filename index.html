@@ -250,6 +250,9 @@
       letter-spacing: -0.374px;
       flex: 1;
       color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .topbar-right {
@@ -4432,7 +4435,7 @@
       <div class="page" id="page-customers">
         <div class="section-head">
           <div class="section-title">거래처 관리</div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-cust')">+ 거래처 추가</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddCustModal()">+ 거래처 추가</button>
         </div>
         <div class="grid-2" style="align-items:start">
           <!-- Left: customer list -->
@@ -9777,12 +9780,20 @@ ${pdfLink}
       const col = custColor(c);
       const ords = DB.orders.filter(o => o.customer_id == c.id);
       const total = ords.reduce((s, o) => s + orderTotal(o), 0);
+      // Last order date
+      const lastOrd = ords.length
+        ? ords.reduce((best, o) => o.order_date > best ? o.order_date : best, ords[0].order_date)
+        : null;
+      const lastUsedStr = lastOrd
+        ? `최근 ${lastOrd.replace(/-/g, '.')} 사용`
+        : '';
       return `<div class="cust-item ${UI.currentCustId == c.id ? 'active' : ''}" onclick="selectCust(${c.id})">
       <div class="cust-avatar" style="background:${col}18;color:${col}" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})">${esc(c.name[0])}</div>
       <div style="flex:1;min-width:0">
         <div class="cust-name" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})" style="cursor:pointer">${esc(c.name)}</div>
         <div class="cust-tel">${esc(c.tel)}</div>
-        ${c.notes ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">📝 ${esc(c.notes)}</div>` : ''}
+        ${c.addr ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px">📍 ${esc(c.addr)}</div>` : ''}
+        ${lastUsedStr ? `<div style="font-size:10px;color:var(--green);margin-top:1px">${lastUsedStr}</div>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total) + '원'}</div>
@@ -9897,6 +9908,17 @@ ${pdfLink}
         renderCustomers(); refreshCustSelects(); renderOrders(); renderDashboard();
       }
     });
+  }
+
+  function openAddCustModal() {
+    UI.editCustId = null;
+    UI.custSavedForOrder = false;
+    ['c-name', 'c-rep', 'c-contact', 'c-tel', 'c-addr', 'c-biz', 'c-kakao', 'c-notes'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('modal-cust-title').textContent = '거래처 추가';
+    openModal('modal-cust');
   }
 
   function openQuickAddCust() {
