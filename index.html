@@ -9792,8 +9792,8 @@ ${pdfLink}
       <div style="flex:1;min-width:0">
         <div class="cust-name" title="클릭 → 업체 정보 복사" onclick="event.stopPropagation();copyCustInfo(${c.id})" style="cursor:pointer">${esc(c.name)}</div>
         <div class="cust-tel">${esc(c.tel)}</div>
-        ${c.addr ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px">📍 ${esc(c.addr)}</div>` : ''}
-        ${lastUsedStr ? `<div style="font-size:10px;color:var(--green);margin-top:1px">${lastUsedStr}</div>` : ''}
+        ${c.addr ? `<div style="font-size:10px;color:var(--ink-muted);margin-top:1px;word-break:break-all;line-height:1.4">${esc(c.addr)}</div>` : ''}
+        ${lastUsedStr ? `<div style="font-size:10px;color:var(--ink-light);margin-top:1px">${lastUsedStr}</div>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;color:var(--blue);font-weight:700">${UI.privacyMode ? '••••원' : fmt(total) + '원'}</div>
