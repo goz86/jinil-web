@@ -8966,7 +8966,7 @@ ${pdfLink}
     const c = getCust(o.customer_id);
     refreshCustSelects();
     setSSValue('inv-cust', o.customer_id);
-    document.getElementById('inv-date').value = o.order_date || today();
+    document.getElementById('inv-date').value = (o.order_date || '').slice(0, 10) || today();
     document.getElementById('inv-to-name').value = c?.name || '';
     document.getElementById('inv-to-rep').value = c?.rep || '';
     document.getElementById('inv-to-addr').value = o.addr || c?.addr || '';
@@ -10501,7 +10501,7 @@ ${pdfLink}
     setSSValue('inv-cust', o.customer_id);
     // 가장 최근 주문 날짜를 발행일로 사용
     const latestDate = selectedOrders.map(ord => ord.order_date || '').sort().pop() || today();
-    document.getElementById('inv-date').value = latestDate;
+    document.getElementById('inv-date').value = latestDate.slice(0, 10) || today();
     document.getElementById('inv-to-name').value = c?.name || '';
     document.getElementById('inv-to-rep').value = c?.rep || '';
     document.getElementById('inv-to-addr').value = o.addr || c?.addr || '';
@@ -10657,7 +10657,7 @@ ${pdfLink}
 
     const itemRows = items.map(it => {
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
-      const rowDate = it.date ? it.date.slice(5).split('T')[0].replace('-', '/') : `${mo}/${day}`;
+      const rowDate = it.date ? it.date.slice(0, 10).slice(5).replace('-', '/') : `${mo}/${day}`;
       return `<tr>
         <td>${rowDate}</td>
         <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
@@ -10926,7 +10926,7 @@ ${pdfLink}
 
     const itemRows = pageItems.map(it => {
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
-      const rowDate = it.date ? it.date.slice(5).split('T')[0].replace('-', '/') : `${mo}/${day}`;
+      const rowDate = it.date ? it.date.slice(0, 10).slice(5).replace('-', '/') : `${mo}/${day}`;
       return `<tr>
         <td>${rowDate}</td>
         <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
