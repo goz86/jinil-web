@@ -8943,13 +8943,13 @@ ${pdfLink}
     document.getElementById('inv-note').value =
       `미수금 합산 명세서 (${unpaid.length}건 / ${unpaid.map(o => o.order_date).join(', ')})`;
 
-    // 모든 미결제 주문의 품목을 하나로 합산
+    // 모든 미결제 주문의 품목을 하나로 합산 (주문별 날짜 유지)
     const tb = document.getElementById('inv-items-tb');
     tb.innerHTML = '';
     unpaid
       .sort((a, b) => (a.order_date || '').localeCompare(b.order_date || ''))
       .forEach(o => {
-        (o.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price));
+        (o.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price, o.order_date || ''));
       });
     calcInvTotal();
 
@@ -8966,7 +8966,7 @@ ${pdfLink}
     const c = getCust(o.customer_id);
     refreshCustSelects();
     setSSValue('inv-cust', o.customer_id);
-    document.getElementById('inv-date').value = today();
+    document.getElementById('inv-date').value = o.order_date || today();
     document.getElementById('inv-to-name').value = c?.name || '';
     document.getElementById('inv-to-rep').value = c?.rep || '';
     document.getElementById('inv-to-addr').value = o.addr || c?.addr || '';
@@ -8974,7 +8974,7 @@ ${pdfLink}
     document.getElementById('inv-to-tel').value = o.tel || c?.tel || '';
     document.getElementById('inv-note').value = o.memo || '';
     const tb = document.getElementById('inv-items-tb'); tb.innerHTML = '';
-    (o.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price));
+    (o.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price, o.order_date || ''));
     calcInvTotal();
 
     // Navigate to invoice page by REPLACING the modal state in history
@@ -10499,7 +10499,9 @@ ${pdfLink}
     const c = getCust(o.customer_id);
     refreshCustSelects();
     setSSValue('inv-cust', o.customer_id);
-    document.getElementById('inv-date').value = today();
+    // 가장 최근 주문 날짜를 발행일로 사용
+    const latestDate = selectedOrders.map(ord => ord.order_date || '').sort().pop() || today();
+    document.getElementById('inv-date').value = latestDate;
     document.getElementById('inv-to-name').value = c?.name || '';
     document.getElementById('inv-to-rep').value = c?.rep || '';
     document.getElementById('inv-to-addr').value = o.addr || c?.addr || '';
@@ -10507,7 +10509,7 @@ ${pdfLink}
     document.getElementById('inv-to-tel').value = o.tel || c?.tel || '';
     const tb = document.getElementById('inv-items-tb'); tb.innerHTML = '';
     selectedOrders.forEach(ord => {
-      (ord?.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price));
+      (ord?.items || []).forEach(i => addInvItemData(i.name, i.spec || '', i.qty, i.price, ord.order_date || ''));
     });
     calcInvTotal();
     document.getElementById('modal-inv-wiz')?.classList.remove('open');
@@ -10541,8 +10543,9 @@ ${pdfLink}
   }
 
   function addInvItem() { addInvItemData('', '', 1, 0); }
-  function addInvItemData(name, spec, qty, price) {
+  function addInvItemData(name, spec, qty, price, date = '') {
     const tr = document.createElement('tr');
+    if (date) tr.dataset.itemDate = date;
     tr.innerHTML = `
     <td>
       <div class="ss-container item-suggest">
@@ -10624,7 +10627,8 @@ ${pdfLink}
       const spec = ins[0].dataset.spec || '';
       const qty = parseInt(ins[1].value) || 0;
       const price = parseInt(ins[2].value) || 0;
-      if (name) items.push({ name, spec, qty, price, sub: qty * price });
+      const itemDate = tr.dataset.itemDate || '';
+      if (name) items.push({ name, spec, qty, price, sub: qty * price, date: itemDate });
     });
     const total = items.reduce((s, i) => s + i.sub, 0);
     const d = new Date(date);
@@ -10653,8 +10657,9 @@ ${pdfLink}
 
     const itemRows = items.map(it => {
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
+      const rowDate = it.date ? it.date.slice(5).replace('-', '/') : `${mo}/${day}`;
       return `<tr>
-        <td>${mo}/${day}</td>
+        <td>${rowDate}</td>
         <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
         <td></td>
         <td>${it.qty}</td>
@@ -10921,8 +10926,9 @@ ${pdfLink}
 
     const itemRows = pageItems.map(it => {
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
+      const rowDate = it.date ? it.date.slice(5).replace('-', '/') : `${mo}/${day}`;
       return `<tr>
-        <td>${mo}/${day}</td>
+        <td>${rowDate}</td>
         <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
         <td></td><td>${it.qty}</td>
         <td style="text-align:right">${fmt(it.price)}</td>
