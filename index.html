@@ -11200,10 +11200,11 @@ ${pdfLink}
             itemsHTML += `
               <div style="display:flex;align-items:center;gap:12px;padding:14px 12px;border-bottom:1px solid #eee;cursor:pointer" 
                    onclick="const ck=this.querySelector('input'); if(ck) ck.checked=!ck.checked">
-                <input type="checkbox" value="${o.id}__${idx}" 
-                  data-name="${name}" 
+                <input type="checkbox" value="${o.id}__${idx}"
+                  data-name="${name}"
                   data-spec="${spec}"
                   data-qty="${qty}" data-price="${price}"
+                  data-date="${o.order_date || ''}"
                   onclick="event.stopPropagation()"
                   style="width:24px;height:24px;accent-color:var(--blue);flex-shrink:0;cursor:pointer;appearance:auto;-webkit-appearance:checkbox">
                 <div style="flex:1;min-width:0">
@@ -11247,7 +11248,7 @@ ${pdfLink}
     const checked = document.querySelectorAll('#pending-items-list input[type=checkbox]:checked');
     if (!checked.length) { showToast('품목을 선택하세요', 'error'); return; }
     checked.forEach(cb => {
-      addInvItemData(cb.dataset.name, cb.dataset.spec, parseInt(cb.dataset.qty) || 1, parseInt(cb.dataset.price) || 0);
+      addInvItemData(cb.dataset.name, cb.dataset.spec, parseInt(cb.dataset.qty) || 1, parseInt(cb.dataset.price) || 0, cb.dataset.date || '');
     });
     calcInvTotal();
     buildInvoicePreview();
