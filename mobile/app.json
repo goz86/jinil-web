@@ -45,11 +45,6 @@
         }
       ]
     ],
-    "extra": {
-      "eas": {
-        "projectId": "4ca19ef6-f353-45f1-9969-93c66712c2c2"
-      }
-    },
     "web": {
       "bundler": "metro",
       "display": "standalone",
@@ -69,6 +64,11 @@
         }
       }
     },
-    "owner": "seoultech98"
+    "extra": {
+      "eas": {
+        "projectId": "aab949d6-3911-4e2d-8558-a8c9ab81486e"
+      }
+    },
+    "owner": "hungsuxi"
   }
 }

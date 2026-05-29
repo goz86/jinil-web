@@ -23,7 +23,17 @@
       "Bash(git pull *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python -m http.server 8000)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "Bash(mkdir -p \"C:\\\\Users\\\\junwi\\\\AppData\\\\Roaming\\\\Claude\\\\skills\\\\jinil-style\")",
+      "Read(//c/Users/junwi/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/89c4ba4f-71ae-4ef6-a11b-82dd26c54b7d/56fcefbe-9cb9-4dd2-ae57-c19c047866cc/skills/skill-creator/**)",
+      "Bash(python -m scripts.package_skill \"C:\\\\Users\\\\junwi\\\\AppData\\\\Roaming\\\\Claude\\\\skills\\\\jinil-style\" --output \"C:\\\\Users\\\\junwi\\\\Desktop\\\\jinil-style.skill\")",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "Bash(git commit *)"
     ]
   }
 }
