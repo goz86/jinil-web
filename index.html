@@ -10657,7 +10657,7 @@ ${pdfLink}
 
     const itemRows = items.map(it => {
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
-      const rowDate = it.date ? it.date.slice(5).replace('-', '/') : `${mo}/${day}`;
+      const rowDate = it.date ? it.date.slice(5).split('T')[0].replace('-', '/') : `${mo}/${day}`;
       return `<tr>
         <td>${rowDate}</td>
         <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
@@ -10926,7 +10926,7 @@ ${pdfLink}
 
     const itemRows = pageItems.map(it => {
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
-      const rowDate = it.date ? it.date.slice(5).replace('-', '/') : `${mo}/${day}`;
+      const rowDate = it.date ? it.date.slice(5).split('T')[0].replace('-', '/') : `${mo}/${day}`;
       return `<tr>
         <td>${rowDate}</td>
         <td style="text-align:left;padding-left:6px">${esc(it.name)}${it.spec ? ` (${esc(it.spec)})` : ''}</td>
