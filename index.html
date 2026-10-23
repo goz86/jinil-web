@@ -881,6 +881,10 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <span id="txtLockBtn">잠금</span>
           </button>
+          <button type="button" class="btn" onclick="restoreDefaultSupplier(true)" title="진일 라벨 기본 정보(주교동 19-1)로 복원" style="color: #475569; font-size: 12px; height: 32px; padding: 0 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <span>기본값 복원</span>
+          </button>
           <button type="button" class="btn" onclick="lockScreenSession()" title="화면 보안 잠금 (PIN 재인증)" style="color: #64748b; font-size: 12px; height: 32px; padding: 0 10px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <span>보안 잠금</span>
@@ -1249,7 +1253,7 @@
 <div id="toast">알림</div>
 
 <!-- PIN Security Lock Modal Overlay (Apple iOS Minimal Style) -->
-<div id="pinSecurityModalOverlay" class="no-print">
+<div id="pinSecurityModalOverlay" class="no-print" style="display: none;">
   <!-- PIN Card Dialog -->
   <div id="pinModalCard">
     <!-- Clean Lock Outline Icon -->
@@ -1375,7 +1379,7 @@
 
   // ─── BẢO MẬT & MÃ HÓA PIN (PBKDF2 + AES-GCM 256-bit) ───
   const PIN_HASH_DEFAULT = 'd102a5e24978f472c57411fb2d5a04a7e23451955316112d8276637bda628eb0'; // SHA-256('0106')
-  const ENCRYPTED_SEED_PROFILE = 'CnHdHMFZ3hIPM00W7vknDtUeYep0M17KCZVH2dqFIEqhdjSCRMJPxB8lV9Fvz/XUURqE7pQM9J29mJM4NNN5GTCiCURV1OCM2jrO6BHHBlFH0WLUA0AIboOvbjgvfnI8EBylo3cioQIY59b/lSNE16cC+/af6Tnx7ATURVV7Co/ORq5Xv93++m/M7eTMOdS6/9UVTwViIermwoawhwC42QReN5GwGm1bB5g470R2o/kp99VaUhiJsGV9oEQdPxhY7xeR2LZEAw60yc1Pv6CkUFK1O3wT+BeokdKj21sEqNU214RQp8Z3rVh1Kn9UwIbUEvwfizeKFIcRo/K+FoCE4L73/IgYFwMZ2dBGW1odIzhYtLftbH6WCSXgmY4OCLGRW5Gd2buoWys9HCCKBlUPQhXNlQIgaq9ReFQb59Gs1KjJLVjd210T2rN4imOzmeGd512kIuP25WQOVAk9Cio1O5sLKz+7W2zk8Y+Ecrj/fl3+4k76rKGG8dS8uwW+zAApcR6IJrRdD9hkjghU/KoTUC0gemTo2ODImMCHF0eZjQ==';
+  const ENCRYPTED_SEED_PROFILE = 'CnHdHMFZ3hIPM00W7vknDtUeYep0M17KCZVH2dqFIEqhdjSCj7Ruk0Y/3d9hn+LBAwKcIeAYlfWIwtI6vt13TyGrR1xNxuKTxTrK6ArYDFtDxWzaQEUIeNO3dvZHZgJKMknDkQCxyUoCkUO/EV4N3uGXgLqYm7x4PqtRgtQMmh8Q5DZXqcX+w0oHDZN2SkQJ/MfLzEURP3QhWWgyaf3hmFFI4Cvkk9ObhEp9fp+LODuv79uUm/AAfIEoO6677p0QUINfNkYNgsdVUg31bjTIIXTJUGaTNqYSGBZVW8++ZqETlvFTOQbIT9SNyH1d115TjyadB+86pFi1GeK5A18vXWNefVefjxMHyJMHC9bmz6e5UC4r5maYQyLhmZxWRu2aeY6Vk+rwVyssCCPBQgsUQgnbmUcpe6tVfkUZ6Y66zPuXawXb3kwQ2aFupCip1PmTtkyOIvf26H4Ydw0mRHVIIaMgLgztbXLu69qceLeVXn3P5Gy2kYmxtr+krSbbvFgRsDsNlBtrBB2K+zjfThrhDw==';
 
   let enteredPin = '';
   let isAuthenticating = false;
@@ -1432,7 +1436,7 @@
     }
   }
 
-  async function decryptProfileWithPin(pin) {
+  async function decryptProfileWithPin(pin, forceSeed = false) {
     try {
       const enc = new TextEncoder();
       const salt = enc.encode('jinil-salt-2026');
@@ -1460,7 +1464,7 @@
       );
 
       // Ưu tiên bản dữ liệu đã chỉnh sửa và tự động tái mã hóa an toàn của người dùng (nếu có)
-      const cipherToDecrypt = localStorage.getItem('jinil_custom_encrypted_profile') || ENCRYPTED_SEED_PROFILE;
+      const cipherToDecrypt = forceSeed ? ENCRYPTED_SEED_PROFILE : (localStorage.getItem('jinil_custom_encrypted_profile') || ENCRYPTED_SEED_PROFILE);
       const binaryStr = atob(cipherToDecrypt);
       const decBuffer = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) {
@@ -1694,9 +1698,18 @@
   }
 
   window.addEventListener('keydown', (e) => {
-    const modal = document.getElementById('pinSecurityModalOverlay');
-    if (!modal || modal.style.display === 'none') return;
+    // 1. Tuyệt đối không can thiệp nếu người dùng đang nhập liệu trong bất kỳ ô input/textarea nào (trừ txtPinInput)
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target.id !== 'txtPinInput') {
+      return;
+    }
 
+    // 2. Chỉ kích hoạt khi Modal PIN đang thực sự hiển thị trên màn hình
+    const modal = document.getElementById('pinSecurityModalOverlay');
+    if (!modal) return;
+    const isVisible = modal.style.display === 'flex' || (modal.style.display !== 'none' && window.getComputedStyle(modal).display !== 'none');
+    if (!isVisible) return;
+
+    // 3. Xử lý nhập phím số và phím xóa cho Modal PIN
     if (e.key >= '0' && e.key <= '9') {
       e.preventDefault();
       handlePinKey(e.key);
@@ -1849,23 +1862,64 @@
     }, 350);
   }
 
+  const DEFAULT_SUPPLIER_PROFILE = {
+    biz: '104-06-54611',
+    name: '진일 라벨',
+    rep: '홍성모',
+    tel: '02-2266-2826',
+    addr: '서울시 중구 주교동 19-1, 방산시장 A동 3/221호',
+    bizType: '제조,도매',
+    itemType: '인쇄,의류부자재',
+    bank: '국민은행 352201-04-022304 홍성모'
+  };
+
+  async function restoreDefaultSupplier(showNotification = true) {
+    if (showNotification && !confirm('공급자 정보를 진일 라벨 기본 정보(주교동 19-1)로 복원하시겠습니까?')) {
+      return;
+    }
+    localStorage.removeItem('jinil_custom_encrypted_profile');
+    localStorage.setItem('jinil_supplier_info', JSON.stringify(DEFAULT_SUPPLIER_PROFILE));
+
+    document.getElementById('supBiz').value = DEFAULT_SUPPLIER_PROFILE.biz;
+    document.getElementById('supName').value = DEFAULT_SUPPLIER_PROFILE.name;
+    document.getElementById('supRep').value = DEFAULT_SUPPLIER_PROFILE.rep;
+    document.getElementById('supTel').value = DEFAULT_SUPPLIER_PROFILE.tel;
+    document.getElementById('supAddr').value = DEFAULT_SUPPLIER_PROFILE.addr;
+    document.getElementById('supBizType').value = DEFAULT_SUPPLIER_PROFILE.bizType;
+    document.getElementById('supItemType').value = DEFAULT_SUPPLIER_PROFILE.itemType;
+    document.getElementById('supBank').value = DEFAULT_SUPPLIER_PROFILE.bank;
+
+    renderStatement();
+    if (showNotification) {
+      showToast('공급자 정보가 기본값으로 복원되었습니다.');
+    }
+  }
+
   function loadSupplierData() {
-    const saved = localStorage.getItem('jinil_supplier_info');
+    let saved = localStorage.getItem('jinil_supplier_info');
+    let data = null;
     if (saved) {
       try {
-        const data = JSON.parse(saved);
-        if (data.biz) document.getElementById('supBiz').value = data.biz;
-        if (data.name) document.getElementById('supName').value = data.name;
-        if (data.rep) document.getElementById('supRep').value = data.rep;
-        if (data.tel) document.getElementById('supTel').value = data.tel;
-        if (data.addr) document.getElementById('supAddr').value = data.addr;
-        if (data.bizType) document.getElementById('supBizType').value = data.bizType;
-        if (data.itemType) document.getElementById('supItemType').value = data.itemType;
-        if (data.bank) document.getElementById('supBank').value = data.bank;
+        data = JSON.parse(saved);
       } catch (e) {
         console.error('Failed to parse supplier info', e);
       }
     }
+
+    // Nếu chưa có dữ liệu, hoặc dữ liệu chứa địa chỉ khác (마른내로) hoặc có ký tự rác test ở tài khoản ngân hàng, chuyển về đúng địa chỉ mặc định
+    if (!data || !data.addr || data.addr.includes('마른내로') || (data.bank && data.bank.includes('34 ㅇㅎ'))) {
+      restoreDefaultSupplier(false);
+      return;
+    }
+
+    if (data.biz) document.getElementById('supBiz').value = data.biz;
+    if (data.name) document.getElementById('supName').value = data.name;
+    if (data.rep) document.getElementById('supRep').value = data.rep;
+    if (data.tel) document.getElementById('supTel').value = data.tel;
+    if (data.addr) document.getElementById('supAddr').value = data.addr;
+    if (data.bizType) document.getElementById('supBizType').value = data.bizType;
+    if (data.itemType) document.getElementById('supItemType').value = data.itemType;
+    if (data.bank) document.getElementById('supBank').value = data.bank;
   }
 
   // Quản lý dòng 품목 (Add / Remove / Update)
