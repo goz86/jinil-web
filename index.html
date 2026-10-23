@@ -505,6 +505,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="lib/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -713,6 +715,12 @@
         <button class="btn" onclick="exportImage()">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <span>이미지</span>
+        </button>
+
+        <!-- Excel Button (Direct Download Current Invoice as .xlsx) -->
+        <button class="btn" onclick="exportCurrentToExcel()" title="현재 거래명세서를 엑셀(.xlsx) 파일로 저장" style="color: #16a34a; border-color: #bbf7d0; background: #f0fdf4;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>엑셀</span>
         </button>
 
         <!-- History Modal Button -->
@@ -2183,7 +2191,150 @@
     }, 250);
   }
 
-  // Xuất toàn bộ danh sách lịch sử ra file Excel/CSV chuẩn UTF-8 BOM
+  // Lưu bảng dữ liệu thành file Excel (.xlsx) chuẩn với độ rộng cột, định dạng số và ngày tháng chuẩn
+  function saveRowsAsExcel(rowsData, filenameBase) {
+    if (window.XLSX) {
+      try {
+        const ws = XLSX.utils.aoa_to_sheet(rowsData);
+
+        // Định dạng kiểu ô để Excel hiển thị đúng ngày dạng chuỗi (không bị đổi thành số 46318)
+        // và các cột số tiền có dấu phân cách hàng nghìn (3,230)
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = 0; R <= range.e.r; ++R) {
+          for (let C = 0; C <= range.e.c; ++C) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            const cell = ws[addr];
+            if (!cell) continue;
+
+            if (R === 0) {
+              cell.t = 's';
+              continue;
+            }
+
+            // Cột ngày & chữ (발행일자, 상호, 대표자, Tel, 주소, 사업자등록번호, 품목 날짜, 품목명, 규격, 비고)
+            if (C === 0 || C === 1 || C === 2 || C === 3 || C === 4 || C === 5 || C === 6 || C === 7 || C === 8 || C === 14) {
+              cell.t = 's';
+              cell.v = String(cell.v === undefined || cell.v === null ? '' : cell.v);
+            } else {
+              // Cột số (수량, 단가, 공급가액, 세액, 합계금액)
+              cell.t = 'n';
+              cell.v = Number(cell.v) || 0;
+              cell.z = '#,##0';
+            }
+          }
+        }
+
+        // Tự động căn chỉnh độ rộng cột chuẩn
+        ws['!cols'] = [
+          { wch: 13 }, // 발행일자
+          { wch: 20 }, // 상호(거래처명)
+          { wch: 12 }, // 대표자
+          { wch: 15 }, // Tel
+          { wch: 35 }, // 주소
+          { wch: 16 }, // 사업자등록번호
+          { wch: 13 }, // 품목 날짜
+          { wch: 26 }, // 품목명
+          { wch: 12 }, // 규격
+          { wch: 9 },  // 수량
+          { wch: 13 }, // 단가
+          { wch: 13 }, // 공급가액
+          { wch: 11 }, // 세액
+          { wch: 15 }, // 합계금액
+          { wch: 22 }  // 비고
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '거래명세서');
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const filename = `${filenameBase}.xlsx`;
+        saveFileLocally(blob, filename);
+        showToast(`'${filename}' 엑셀(.xlsx) 파일 저장 완료!`);
+        return;
+      } catch (err) {
+        console.error('XLSX export failed, fallback to CSV', err);
+      }
+    }
+
+    // Fallback: Xuất CSV nếu thư viện XLSX chưa tải xong
+    const csvRows = [];
+    rowsData.forEach((row, rIdx) => {
+      const line = row.map((cell, cIdx) => {
+        if (rIdx === 0) {
+          return `"${String(cell).replace(/"/g, '""')}"`;
+        }
+        // Với ngày hoặc số điện thoại, dùng công thức ="..." để Excel không tự đổi format thành số serial
+        if (cIdx === 0 || cIdx === 3 || cIdx === 5 || cIdx === 6) {
+          const val = String(cell || '');
+          return val ? `="${val.replace(/"/g, '""')}"` : '""';
+        }
+        if (typeof cell === 'number') {
+          return cell;
+        }
+        return `"${String(cell || '').replace(/"/g, '""')}"`;
+      });
+      csvRows.push(line.join(','));
+    });
+
+    const csvContent = '\uFEFF' + csvRows.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const filename = `${filenameBase}.csv`;
+    saveFileLocally(blob, filename);
+    showToast(`'${filename}' 엑셀(CSV) 저장 완료!`);
+  }
+
+  // Xuất 거래명세서 hiện tại ra file Excel (.xlsx)
+  function exportCurrentToExcel() {
+    saveCurrentToHistory();
+    const toName = (document.getElementById('toName')?.value || '거래처').trim();
+    const toRep = (document.getElementById('toRep')?.value || '').trim();
+    const toTel = (document.getElementById('toTel')?.value || '').trim();
+    const toAddr = (document.getElementById('toAddr')?.value || '').trim();
+    const toBiz = (document.getElementById('toBiz')?.value || '').trim();
+    const invDate = document.getElementById('invDate')?.value || getLocalTodayDate();
+    const memo = document.getElementById('memo')?.value || '';
+    const includeTax = document.getElementById('includeTaxCheck')?.checked ?? true;
+
+    if (!items || items.length === 0) {
+      showToast('내보낼 품목이 없습니다.');
+      return;
+    }
+
+    const headers = [
+      '발행일자', '상호(거래처명)', '대표자', 'Tel', '주소', '사업자등록번호',
+      '품목 날짜', '품목명', '규격', '수량', '단가', '공급가액', '세액', '합계금액', '비고'
+    ];
+
+    const rows = [headers];
+    items.forEach(it => {
+      const sub = Number(it.sub || 0);
+      const itemTax = includeTax ? Math.round(sub * 0.1) : 0;
+      const itemTotal = sub + itemTax;
+
+      rows.push([
+        invDate,
+        toName,
+        toRep,
+        toTel,
+        toAddr,
+        toBiz,
+        it.date || invDate,
+        it.name || '',
+        it.spec || '',
+        Number(it.qty) || 0,
+        Number(it.price) || 0,
+        sub,
+        itemTax,
+        itemTotal,
+        it.note || memo
+      ]);
+    });
+
+    const filenameBase = `거래명세서_${toName}_${invDate}`;
+    saveRowsAsExcel(rows, filenameBase);
+  }
+
+  // Xuất danh sách 발행 내역 (Lịch sử) ra file Excel (.xlsx) chuẩn
   function exportHistoryToExcel() {
     const history = getFilteredHistory();
     if (history.length === 0) {
@@ -2196,48 +2347,38 @@
       '품목 날짜', '품목명', '규격', '수량', '단가', '공급가액', '세액', '합계금액', '비고'
     ];
 
-    const rows = [];
-    rows.push(headers.join(','));
-
+    const rows = [headers];
     history.forEach(h => {
       const includeTax = Boolean(h.includeTax);
       (h.items || []).forEach(it => {
-        const itemTax = includeTax ? Math.round(Number(it.sub || 0) * 0.1) : 0;
-        const itemTotal = Number(it.sub || 0) + itemTax;
-        
-        const clean = (val) => {
-          const str = String(val === undefined || val === null ? '' : val).replace(/"/g, '""');
-          return `"${str}"`;
-        };
+        const sub = Number(it.sub || 0);
+        const itemTax = includeTax ? Math.round(sub * 0.1) : 0;
+        const itemTotal = sub + itemTax;
 
-        const row = [
-          clean(h.date),
-          clean(h.toName),
-          clean(h.toRep),
-          clean(h.toTel),
-          clean(h.toAddr),
-          clean(h.toBiz),
-          clean(it.date),
-          clean(it.name),
-          clean(it.spec),
-          clean(it.qty),
-          clean(it.price),
-          clean(it.sub),
-          clean(itemTax),
-          clean(itemTotal),
-          clean(it.note || h.note)
-        ];
-        rows.push(row.join(','));
+        rows.push([
+          h.date || '',
+          h.toName || '',
+          h.toRep || '',
+          h.toTel || '',
+          h.toAddr || '',
+          h.toBiz || '',
+          it.date || '',
+          it.name || '',
+          it.spec || '',
+          Number(it.qty) || 0,
+          Number(it.price) || 0,
+          sub,
+          itemTax,
+          itemTotal,
+          it.note || h.note || ''
+        ]);
       });
     });
 
-    const csvContent = '\uFEFF' + rows.join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const selMonth = document.getElementById('selHistoryMonth');
     const monthSuffix = (selMonth && selMonth.value !== 'ALL') ? `_${selMonth.value}` : `_전체_${getLocalTodayDate()}`;
-    const filename = `거래명세서_발행내역${monthSuffix}.csv`;
-    saveFileLocally(blob, filename);
-    showToast(`'${filename}' 엑셀 파일 내보내기 완료!`);
+    const filenameBase = `거래명세서_발행내역${monthSuffix}`;
+    saveRowsAsExcel(rows, filenameBase);
   }
 
   // Sao lưu toàn bộ dữ liệu lịch sử ra file JSON
