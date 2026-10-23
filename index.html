@@ -720,7 +720,7 @@
           <input type="date" id="invDate" onchange="renderStatement()">
         </div>
         <div class="form-group" style="position: relative;">
-          <label for="toName">수신자 상호 <span style="font-size: 11px; color: var(--accent-blue); font-weight: 600;">(거래처 검색)</span></label>
+          <label for="toName" style="cursor: pointer;" onclick="document.getElementById('toName').focus(); handleClientSearch('');">수신자 상호 <span style="font-size: 11px; color: var(--accent-blue); font-weight: 600;">(거래처 검색)</span></label>
           <input type="text" id="toName" placeholder="거래처명 입력" autocomplete="off" oninput="handleClientSearch(this.value); renderStatement();" onfocus="handleClientSearch(this.value)">
           <div id="clientAutocompleteDropdown" class="autocomplete-dropdown" style="display: none;"></div>
         </div>
@@ -2341,51 +2341,101 @@
   let clientAddressBook = [
     { name: '진일 라벨', rep: '홍성모', tel: '02-2266-2826', addr: '서울시 중구 주교동 19-1 방산시장 A동 3/221호', biz: '104-06-54611', bizType: '의류부자재', itemType: '제조,도매' }
   ];
+  let currentClientMatches = [];
 
-  // Tải danh sách 거래처 주소록 (từ LocalStorage & Supabase)
+  function normalizeClientItem(raw) {
+    if (!raw) return null;
+    const name = (raw.name || raw.company_name || raw.location_name || '').trim();
+    if (!name || name === '미지정') return null;
+
+    return {
+      name: name,
+      rep: (raw.rep || raw.representative || raw.representative_name || raw.contactName || raw.recipient_name || '').trim(),
+      tel: (raw.tel || raw.phone || raw.courier_phone || '').trim(),
+      addr: (raw.addr || raw.address || raw.recipient_address || raw.default_address || '').trim(),
+      biz: (raw.biz || raw.business_number || raw.bizNumber || '').trim(),
+      bizType: (raw.bizType || raw.biz_type || '').trim(),
+      itemType: (raw.itemType || raw.item_type || '').trim()
+    };
+  }
+
+  function mergeClientsIntoBook(clientList) {
+    if (!Array.isArray(clientList)) return;
+    clientList.forEach(item => {
+      const norm = normalizeClientItem(item);
+      if (!norm) return;
+      const idx = clientAddressBook.findIndex(c => c.name.toLowerCase() === norm.name.toLowerCase());
+      if (idx >= 0) {
+        clientAddressBook[idx] = {
+          ...clientAddressBook[idx],
+          rep: norm.rep || clientAddressBook[idx].rep,
+          tel: norm.tel || clientAddressBook[idx].tel,
+          addr: norm.addr || clientAddressBook[idx].addr,
+          biz: norm.biz || clientAddressBook[idx].biz,
+          bizType: norm.bizType || clientAddressBook[idx].bizType,
+          itemType: norm.itemType || clientAddressBook[idx].itemType
+        };
+      } else {
+        clientAddressBook.push(norm);
+      }
+    });
+  }
+
+  // Tải danh sách 거래처 주소록 (từ LocalStorage cache của App chính, Invoice app & lịch sử hóa đơn)
   async function loadClientAddressBook() {
-    let clients = [...clientAddressBook];
-    
-    // 1. Tải từ LocalStorage jinil_client_address_book
-    const saved = localStorage.getItem('jinil_client_address_book');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(item => {
-            const name = (item.name || item.company_name || '').trim();
-            if (!name) return;
-            if (!clients.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-              clients.push({
-                name: name,
-                rep: item.rep || item.representative || item.representative_name || item.contactName || '',
-                tel: item.tel || item.phone || '',
-                addr: item.addr || item.address || '',
-                biz: item.biz || item.business_number || '',
-                bizType: item.bizType || item.biz_type || '',
-                itemType: item.itemType || item.item_type || ''
-              });
-            }
-          });
-        }
-      } catch (e) {}
-    }
+    // 1. Tải từ LocalStorage jinil_client_address_book_cache (của APP JINIL chính)
+    try {
+      const mainCache = localStorage.getItem('jinil_client_address_book_cache');
+      if (mainCache) {
+        const parsed = JSON.parse(mainCache);
+        if (Array.isArray(parsed)) mergeClientsIntoBook(parsed);
+      }
+    } catch (e) {}
 
-    clientAddressBook = clients;
+    // 2. Tải từ LocalStorage jinil_client_address_book (của Invoice app)
+    try {
+      const invSaved = localStorage.getItem('jinil_client_address_book');
+      if (invSaved) {
+        const parsed = JSON.parse(invSaved);
+        if (Array.isArray(parsed)) mergeClientsIntoBook(parsed);
+      }
+    } catch (e) {}
+
+    // 3. Tải từ lịch sử hóa đơn jinil_invoice_history
+    try {
+      const history = getInvoiceHistory();
+      if (Array.isArray(history)) {
+        history.forEach(h => {
+          if (h && h.toName) {
+            mergeClientsIntoBook([{
+              name: h.toName,
+              rep: h.toRep,
+              tel: h.toTel,
+              addr: h.toAddr,
+              biz: h.toBiz,
+              bizType: h.toBizType,
+              itemType: h.toItemType
+            }]);
+          }
+        });
+      }
+    } catch (e) {}
   }
 
   // Lưu 거래처 mới vào 주소록
   function saveClientToAddressBook(clientObj) {
-    if (!clientObj || !clientObj.name || !clientObj.name.trim()) return;
-    const cleanName = clientObj.name.trim();
+    const norm = normalizeClientItem(clientObj);
+    if (!norm) return;
 
-    const existingIdx = clientAddressBook.findIndex(c => c.name.toLowerCase() === cleanName.toLowerCase());
+    const existingIdx = clientAddressBook.findIndex(c => c.name.toLowerCase() === norm.name.toLowerCase());
     if (existingIdx >= 0) {
-      clientAddressBook[existingIdx] = { ...clientAddressBook[existingIdx], ...clientObj };
+      clientAddressBook[existingIdx] = { ...clientAddressBook[existingIdx], ...norm };
     } else {
-      clientAddressBook.push(clientObj);
+      clientAddressBook.push(norm);
     }
-    localStorage.setItem('jinil_client_address_book', JSON.stringify(clientAddressBook));
+    try {
+      localStorage.setItem('jinil_client_address_book', JSON.stringify(clientAddressBook));
+    } catch (e) {}
   }
 
   // Lắng nghe dữ liệu danh sách 거래처 từ React Parent Component (InvoiceModal)
@@ -2394,19 +2444,12 @@
     if (event.data.type === 'OPEN_HISTORY_MODAL') {
       openHistoryModal();
     }
-    if (event.data.type === 'SET_CLIENT_ADDRESS_BOOK' && Array.isArray(event.data.clients)) {
-      event.data.clients.forEach(item => {
-        const name = (item.name || '').trim();
-        if (!name) return;
-        const existingIdx = clientAddressBook.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
-        if (existingIdx >= 0) {
-          clientAddressBook[existingIdx] = { ...clientAddressBook[existingIdx], ...item };
-        } else {
-          clientAddressBook.push(item);
-        }
-      });
-      const inputVal = document.getElementById('toName').value;
-      if (inputVal) handleClientSearch(inputVal);
+    if ((event.data.type === 'SET_CLIENT_ADDRESS_BOOK' || event.data.type === 'INIT_CLIENTS') && Array.isArray(event.data.clients)) {
+      mergeClientsIntoBook(event.data.clients);
+      const inputVal = document.getElementById('toName')?.value || '';
+      if (document.activeElement === document.getElementById('toName')) {
+        handleClientSearch(inputVal);
+      }
     }
     if (event.data.type === 'SET_INVOICE_HISTORY' && Array.isArray(event.data.history)) {
       const localHistory = getInvoiceHistory();
@@ -2417,6 +2460,20 @@
       try {
         localStorage.setItem('jinil_invoice_history', JSON.stringify(merged));
       } catch (e) {}
+      // Cập nhật thêm các 거래처 từ lịch sử mới vào 주소록
+      event.data.history.forEach(h => {
+        if (h && h.toName) {
+          mergeClientsIntoBook([{
+            name: h.toName,
+            rep: h.toRep,
+            tel: h.toTel,
+            addr: h.toAddr,
+            biz: h.toBiz,
+            bizType: h.toBizType,
+            itemType: h.toItemType
+          }]);
+        }
+      });
       const modal = document.getElementById('historyModalOverlay');
       if (modal && modal.style.display === 'flex') {
         populateMonthFilter();
@@ -2425,59 +2482,78 @@
     }
   });
 
-  // Tìm kiếm 거래처 khi người dùng gõ vào ô '수신자 상호'
+  // Tìm kiếm 거래처 khi người dùng gõ vào ô '수신자 상호' hoặc click vào ô
   function handleClientSearch(val) {
     const dropdown = document.getElementById('clientAutocompleteDropdown');
-    if (!val || !val.trim()) {
-      dropdown.style.display = 'none';
-      return;
-    }
+    if (!dropdown) return;
 
-    const queryRaw = val.trim().toLowerCase();
+    const queryRaw = (val || '').trim().toLowerCase();
     const queryClean = queryRaw.replace(/\s+/g, '');
 
-    const matches = clientAddressBook.filter(c => {
-      const nameRaw = (c.name || '').toLowerCase();
-      const nameClean = nameRaw.replace(/\s+/g, '');
-      const repClean = (c.rep || '').toLowerCase().replace(/\s+/g, '');
-      const addrClean = (c.addr || '').toLowerCase().replace(/\s+/g, '');
-      const telClean = (c.tel || '').toLowerCase().replace(/\s+/g, '');
+    if (!queryClean) {
+      // Khi ô tìm kiếm trống mà click/focus vào, hiện danh sách gợi ý toàn bộ 거래처
+      currentClientMatches = clientAddressBook.slice(0, 25);
+    } else {
+      currentClientMatches = clientAddressBook.filter(c => {
+        const nameRaw = (c.name || '').toLowerCase();
+        const nameClean = nameRaw.replace(/\s+/g, '');
+        const repClean = (c.rep || '').toLowerCase().replace(/\s+/g, '');
+        const addrClean = (c.addr || '').toLowerCase().replace(/\s+/g, '');
+        const telClean = (c.tel || '').toLowerCase().replace(/\s+/g, '');
+        const bizClean = (c.biz || '').toLowerCase().replace(/\s+/g, '');
 
-      return nameRaw.includes(queryRaw) || nameClean.includes(queryClean) || repClean.includes(queryClean) || addrClean.includes(queryClean) || telClean.includes(queryClean);
-    });
+        return nameRaw.includes(queryRaw) ||
+               nameClean.includes(queryClean) ||
+               repClean.includes(queryClean) ||
+               addrClean.includes(queryClean) ||
+               telClean.includes(queryClean) ||
+               bizClean.includes(queryClean);
+      }).slice(0, 30);
+    }
 
-    if (matches.length === 0) {
+    if (currentClientMatches.length === 0) {
       dropdown.style.display = 'none';
       return;
     }
 
-    dropdown.innerHTML = matches.slice(0, 20).map(c => `
-      <div class="autocomplete-item" onclick="selectClient('${esc(c.name)}', '${esc(c.rep || '')}', '${esc(c.tel || '')}', '${esc(c.addr || '')}', '${esc(c.biz || '')}', '${esc(c.bizType || '')}', '${esc(c.itemType || '')}')">
+    dropdown.innerHTML = currentClientMatches.map((c, idx) => `
+      <div class="autocomplete-item" data-idx="${idx}">
         <div class="comp-title">
           <span>${esc(c.name)}</span>
           <span style="font-size: 11px; color: var(--accent-blue); font-weight: 600;">선택</span>
         </div>
         <div class="comp-info">
-          ${c.rep ? '대표: ' + esc(c.rep) : ''} ${c.tel ? ' | Tel: ' + esc(c.tel) : ''}
-          ${c.addr ? ' | 주소: ' + esc(c.addr) : ''}
+          ${c.rep ? '대표: ' + esc(c.rep) : ''}
+          ${c.tel ? ' | Tel: ' + esc(c.tel) : ''}
+          ${c.addr ? '<br><span style="color: #475569;">주소: ' + esc(c.addr) + '</span>' : ''}
         </div>
       </div>
     `).join('');
+
+    dropdown.querySelectorAll('.autocomplete-item').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // Ngăn blur input trước khi click xử lý
+        const idx = parseInt(el.getAttribute('data-idx'), 10);
+        const item = currentClientMatches[idx];
+        if (item) selectClient(item.name, item.rep, item.tel, item.addr, item.biz, item.bizType, item.itemType);
+      });
+    });
 
     dropdown.style.display = 'block';
   }
 
   // Khi chọn 1 거래처 từ danh sách gợi ý
   function selectClient(name, rep, tel, addr, biz, bizType, itemType) {
-    document.getElementById('toName').value = name;
-    document.getElementById('toRep').value = rep;
-    document.getElementById('toTel').value = tel;
-    document.getElementById('toAddr').value = addr;
-    document.getElementById('toBiz').value = biz;
-    document.getElementById('toBizType').value = bizType;
-    document.getElementById('toItemType').value = itemType;
+    document.getElementById('toName').value = name || '';
+    document.getElementById('toRep').value = rep || '';
+    document.getElementById('toTel').value = tel || '';
+    document.getElementById('toAddr').value = addr || '';
+    document.getElementById('toBiz').value = biz || '';
+    document.getElementById('toBizType').value = bizType || '';
+    document.getElementById('toItemType').value = itemType || '';
 
-    document.getElementById('clientAutocompleteDropdown').style.display = 'none';
+    const dropdown = document.getElementById('clientAutocompleteDropdown');
+    if (dropdown) dropdown.style.display = 'none';
     renderStatement();
     showToast(`'${name}' 거래처 정보가 입력되었습니다.`);
   }
