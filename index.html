@@ -1124,6 +1124,14 @@
         hideTableSuggest();
       }
     });
+
+    // Báo cho React Parent Component (nếu chạy trong iframe APP JINIL) biết đã sẵn sàng nhận dữ liệu
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+        window.parent.postMessage({ type: 'GET_CLIENT_ADDRESS_BOOK' }, '*');
+      }
+    } catch (e) {}
   });
 
   // Hiển thị thông báo Toast
@@ -2400,6 +2408,21 @@
       const inputVal = document.getElementById('toName').value;
       if (inputVal) handleClientSearch(inputVal);
     }
+    if (event.data.type === 'SET_INVOICE_HISTORY' && Array.isArray(event.data.history)) {
+      const localHistory = getInvoiceHistory();
+      const map = new Map();
+      localHistory.forEach(h => { if (h && h.id) map.set(h.id, h); });
+      event.data.history.forEach(h => { if (h && h.id && !map.has(h.id)) map.set(h.id, h); });
+      const merged = Array.from(map.values());
+      try {
+        localStorage.setItem('jinil_invoice_history', JSON.stringify(merged));
+      } catch (e) {}
+      const modal = document.getElementById('historyModalOverlay');
+      if (modal && modal.style.display === 'flex') {
+        populateMonthFilter();
+        renderHistoryList();
+      }
+    }
   });
 
   // Tìm kiếm 거래처 khi người dùng gõ vào ô '수신자 상호'
@@ -2535,6 +2558,18 @@
     }
 
     localStorage.setItem('jinil_invoice_history', JSON.stringify(history));
+
+    // Báo cho React Parent component để đồng bộ lưu trữ
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'SAVE_INVOICE_HISTORY',
+          history: history,
+          item: historyItem
+        }, '*');
+      }
+    } catch (e) {}
+
     saveClientToAddressBook({
       name: toName,
       rep: historyItem.toRep,
@@ -3170,6 +3205,16 @@
     let history = getInvoiceHistory();
     history = history.filter(h => h.id !== id);
     localStorage.setItem('jinil_invoice_history', JSON.stringify(history));
+
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'SYNC_INVOICE_HISTORY',
+          history: history
+        }, '*');
+      }
+    } catch (e) {}
+
     populateMonthFilter();
     renderHistoryList();
     showToast('발행 내역이 삭제되었습니다.');
@@ -3178,6 +3223,16 @@
   function clearAllHistory() {
     if (confirm('모든 발행 내역을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.\n(미리 [백업] 버튼으로 저장해 두시는 것을 권장합니다.)')) {
       localStorage.removeItem('jinil_invoice_history');
+
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'SYNC_INVOICE_HISTORY',
+            history: []
+          }, '*');
+        }
+      } catch (e) {}
+
       populateMonthFilter();
       renderHistoryList();
       showToast('전체 발행 내역이 삭제되었습니다.');
