@@ -967,6 +967,68 @@
   </div>
 </div>
 
+<!-- Custom Word / Suggestion Manage Modal (Thay thế prompt() để không bao giờ bị chặn) -->
+<div id="customWordModalOverlay" class="no-print" style="display: none; position: fixed; inset: 0; z-index: 9995; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(5px); align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #ffffff; width: 100%; max-width: 480px; border-radius: 20px; border: 1px solid var(--slate-200); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: fadeInPop 0.15s ease-out;">
+    
+    <!-- Modal Header -->
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--slate-200); display: flex; justify-content: space-between; align-items: center; background: var(--slate-50);">
+      <h3 id="customWordModalTitle" style="font-size: 15px; font-weight: 800; color: var(--slate-900); display: flex; align-items: center; gap: 8px; margin: 0;">
+        <span id="customWordModalIcon" style="font-size: 18px;">🏷️</span>
+        <span id="customWordModalTitleText">품목명 추천 단어 추가 및 관리</span>
+      </h3>
+      <button type="button" onclick="closeCustomWordModal()" style="background: none; border: none; font-size: 22px; color: var(--slate-400); cursor: pointer; padding: 0 4px; line-height: 1;" title="닫기">&times;</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px; background: #ffffff;">
+      <div>
+        <label id="customWordInputLabel" for="customWordInput" style="display: block; font-size: 13px; font-weight: 700; color: var(--slate-700); margin-bottom: 8px;">
+          새로 추가할 품목명 입력 (예: 직조라벨, 가죽패치 등):
+        </label>
+        <div style="display: flex; gap: 8px;">
+          <input 
+            type="text" 
+            id="customWordInput" 
+            placeholder="단어를 입력하세요..." 
+            style="flex: 1; height: 42px; padding: 0 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; transition: border-color 0.2s;"
+            onfocus="this.style.borderColor='#2563eb'" 
+            onblur="this.style.borderColor='#cbd5e1'"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitCustomWordModal();}"
+          />
+          <button 
+            type="button" 
+            id="btnSubmitCustomWord"
+            onclick="submitCustomWordModal()" 
+            style="height: 42px; padding: 0 18px; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+            추가
+          </button>
+        </div>
+        <p style="margin: 6px 0 0 0; font-size: 11px; color: var(--slate-400);">
+          💡 단어를 입력하고 <b>Enter</b>를 누르거나 <b>[추가]</b> 버튼을 누르면 즉시 등록됩니다.
+        </p>
+      </div>
+
+      <!-- Current Words List in Modal -->
+      <div style="border-top: 1px dashed var(--slate-200); padding-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: 700; color: var(--slate-600);">현재 등록된 추천어 목록:</span>
+          <span id="customWordModalCount" style="font-size: 11px; color: var(--slate-400); font-weight: 600;">0개</span>
+        </div>
+        <div id="customWordModalChips" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 160px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <!-- dynamic pills with × -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="padding: 12px 20px; border-top: 1px solid var(--slate-200); background: var(--slate-50); display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+      <button type="button" class="btn" onclick="closeCustomWordModal()" style="height: 36px; padding: 0 16px; font-size: 13px; font-weight: 600;">닫기</button>
+    </div>
+
+  </div>
+</div>
+
 <!-- Toast Alert -->
 <div id="toast">알림</div>
 
@@ -1248,12 +1310,16 @@
     }
   }
 
-  function deleteCustomSuggestion(field, value, e) {
+  let currentCustomModalType = 'name'; // 'name' hoặc 'spec'
+
+  function deleteCustomSuggestion(field, value, e, skipConfirm = false) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (!confirm(`'${value}' 단어를 추천 목록에서 삭제하시겠습니까?`)) return;
+    if (!skipConfirm) {
+      if (!confirm(`'${value}' 단어를 추천 목록에서 삭제하시겠습니까?`)) return;
+    }
 
     if (field === 'name') {
       const current = getItemSuggestions().filter(item => item !== value);
@@ -1268,21 +1334,116 @@
   }
 
   function promptAddNewItemName() {
-    const name = prompt('추천 목록에 새로 등록할 품목명을 입력하세요:\n(예: 직조라벨, 가죽패치 등)');
-    if (name && name.trim()) {
-      const clean = name.trim();
-      addCustomItemName(clean);
-      showToast(`'${clean}' 품목명이 추천 목록에 추가되었습니다.`);
-    }
+    openCustomWordModal('name');
   }
 
   function promptAddNewSpecSize() {
-    const spec = prompt('추천 목록에 새로 등록할 규격/사이즈를 입력하세요:\n(예: 3XL, FREE, 100 등)');
-    if (spec && spec.trim()) {
-      const clean = spec.trim();
-      addCustomSpecSize(clean);
-      showToast(`'${clean}' 규격이 추천 목록에 추가되었습니다.`);
+    openCustomWordModal('spec');
+  }
+
+  function openCustomWordModal(type) {
+    currentCustomModalType = type;
+    const modal = document.getElementById('customWordModalOverlay');
+    const titleText = document.getElementById('customWordModalTitleText');
+    const inputLabel = document.getElementById('customWordInputLabel');
+    const input = document.getElementById('customWordInput');
+    const submitBtn = document.getElementById('btnSubmitCustomWord');
+    const icon = document.getElementById('customWordModalIcon');
+
+    if (type === 'name') {
+      if (titleText) titleText.textContent = '품목명 추천 단어 추가 및 관리';
+      if (inputLabel) inputLabel.textContent = '새로 등록할 품목명 입력 (예: 직조라벨, 가죽패치 등):';
+      if (input) input.placeholder = '새 품목명 입력...';
+      if (submitBtn) {
+        submitBtn.style.background = '#2563eb';
+        submitBtn.textContent = '품목명 추가';
+      }
+      if (icon) icon.textContent = '🏷️';
+    } else {
+      if (titleText) titleText.textContent = '규격/사이즈 추천 단어 추가 및 관리';
+      if (inputLabel) inputLabel.textContent = '새로 등록할 규격/사이즈 입력 (예: 3XL, FREE, 100 등):';
+      if (input) input.placeholder = '새 규격/사이즈 입력...';
+      if (submitBtn) {
+        submitBtn.style.background = '#15803d';
+        submitBtn.textContent = '규격 추가';
+      }
+      if (icon) icon.textContent = '📏';
     }
+
+    renderCustomWordModalChips();
+
+    if (modal) {
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }, 60);
+    }
+  }
+
+  function closeCustomWordModal() {
+    const modal = document.getElementById('customWordModalOverlay');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function renderCustomWordModalChips() {
+    const chipsContainer = document.getElementById('customWordModalChips');
+    const countEl = document.getElementById('customWordModalCount');
+    if (!chipsContainer) return;
+
+    const list = currentCustomModalType === 'name' ? getItemSuggestions() : getSpecSuggestions();
+    if (countEl) countEl.textContent = `${list.length}개`;
+
+    if (list.length === 0) {
+      chipsContainer.innerHTML = '<span style="color: #94a3b8; font-size: 12px; padding: 4px;">등록된 단어가 없습니다.</span>';
+      return;
+    }
+
+    const isName = currentCustomModalType === 'name';
+    const tagBg = isName ? '#eff6ff' : '#f0fdf4';
+    const tagColor = isName ? '#1e40af' : '#15803d';
+    const tagBorder = isName ? '#bfdbfe' : '#bbf7d0';
+
+    chipsContainer.innerHTML = list.map(word => `
+      <span style="display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; background: ${tagBg}; color: ${tagColor}; border: 1px solid ${tagBorder}; border-radius: 9999px; font-size: 12px; font-weight: 600;">
+        <span>${esc(word)}</span>
+        <button type="button" onclick="deleteCustomWordFromModal('${esc(word)}', event)" title="이 단어 삭제" style="border: none; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; border-radius: 50%; font-weight: bold;">&times;</button>
+      </span>
+    `).join('');
+  }
+
+  function deleteCustomWordFromModal(word, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    deleteCustomSuggestion(currentCustomModalType, word, event, true);
+    renderCustomWordModalChips();
+  }
+
+  function submitCustomWordModal() {
+    const input = document.getElementById('customWordInput');
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) {
+      showToast('추가할 단어를 입력해 주세요.');
+      input.focus();
+      return;
+    }
+
+    if (currentCustomModalType === 'name') {
+      addCustomItemName(val);
+      showToast(`'${val}' 품목명이 추천 목록에 추가되었습니다.`);
+    } else {
+      addCustomSpecSize(val);
+      showToast(`'${val}' 규격이 추천 목록에 추가되었습니다.`);
+    }
+
+    input.value = '';
+    renderCustomWordModalChips();
+    input.focus();
   }
 
   function renderSuggestionPills() {
@@ -3034,17 +3195,33 @@
     }
   }
 
-  // Tự động nhảy sang ô nhập tiếp theo khi nhấn Enter (như phím Tab)
+  // Đóng modal khi click ra vùng nền tối bên ngoài
+  document.getElementById('customWordModalOverlay')?.addEventListener('click', function(e) {
+    if (e.target === this) closeCustomWordModal();
+  });
+  document.getElementById('historyModalOverlay')?.addEventListener('click', function(e) {
+    if (e.target === this) closeHistoryModal();
+  });
+
+  // Tự động nhảy sang ô nhập tiếp theo khi nhấn Enter (như phím Tab) & Phím Escape đóng modal
   document.addEventListener('keydown', function(e) {
+    // Phím Escape: Đóng các modal và popover đang mở
+    if (e.key === 'Escape') {
+      closeCustomWordModal();
+      closeHistoryModal();
+      hideTableSuggest();
+      return;
+    }
+
     if (e.key !== 'Enter') return;
 
     const target = e.target;
     // Bỏ qua nếu không phải thẻ input (ví dụ: textarea giữ nguyên hành vi xuống dòng tự nhiên)
     if (!target || target.tagName !== 'INPUT') return;
 
-    // Bỏ qua checkbox, radio, file, nút bấm, hoặc ô tìm kiếm lịch sử
+    // Bỏ qua checkbox, radio, file, nút bấm, ô tìm kiếm lịch sử hoặc ô nhập thêm từ gợi ý
     const ignoreTypes = ['checkbox', 'radio', 'button', 'submit', 'reset', 'file'];
-    if (ignoreTypes.includes(target.type) || target.id === 'txtHistorySearch') return;
+    if (ignoreTypes.includes(target.type) || target.id === 'txtHistorySearch' || target.id === 'customWordInput') return;
 
     // Đóng dropdown gợi ý 거래처 nếu đang mở
     const clientDropdown = document.getElementById('clientAutocompleteDropdown');
@@ -3086,7 +3263,7 @@
     }
 
     // 2. Trường hợp đang ở các ô nhập khác trong trang (thông tin 수신자 / 공급자)
-    const allFormInputs = Array.from(document.querySelectorAll('input:not([disabled]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not(#txtHistorySearch)'));
+    const allFormInputs = Array.from(document.querySelectorAll('input:not([disabled]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not(#txtHistorySearch):not(#customWordInput)'));
     const formIdx = allFormInputs.indexOf(target);
     if (formIdx !== -1) {
       if (e.shiftKey) {
