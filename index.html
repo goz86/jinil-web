@@ -308,6 +308,100 @@
       box-shadow: 0 1px 3px rgba(22, 163, 74, 0.15);
     }
 
+    .btn-add-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2.5px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px dashed #93c5fd;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-add-tag:hover {
+      background: #dbeafe;
+      border-color: #2563eb;
+      transform: scale(1.05);
+    }
+
+    /* Floating Autocomplete Dropdown for Table Inputs */
+    .table-suggest-popover {
+      position: absolute;
+      z-index: 99999;
+      background: #ffffff;
+      border: 1.5px solid #2563eb;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+      max-height: 250px;
+      overflow-y: auto;
+      min-width: 190px;
+      font-size: 13px;
+      animation: fadeInPop 0.12s ease-out;
+    }
+    @keyframes fadeInPop {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .table-suggest-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      font-weight: 500;
+      transition: background 0.1s ease;
+    }
+    .table-suggest-item:last-child {
+      border-bottom: none;
+    }
+    .table-suggest-item.highlighted,
+    .table-suggest-item:hover {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+    .table-suggest-item .match-text {
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+    .table-suggest-item .item-del-btn {
+      opacity: 0;
+      color: #94a3b8;
+      font-size: 14px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .table-suggest-item:hover .item-del-btn {
+      opacity: 1;
+    }
+    .table-suggest-item .item-del-btn:hover {
+      color: #ef4444;
+      background: #fee2e2;
+    }
+    .table-suggest-add-row {
+      padding: 8px 12px;
+      background: #f8fafc;
+      color: #2563eb;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 12px;
+    }
+    .table-suggest-add-row:hover {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
     /* History Item Card Styling */
     .history-item-card {
       transition: all 0.2s ease;
@@ -670,53 +764,22 @@
       </button>
     </header>
 
-    <!-- Datalist for Item Name Autocomplete Suggestions -->
-    <datalist id="commonItemNames">
-      <option value="메인 라벨"></option>
-      <option value="케어라벨"></option>
-      <option value="행택"></option>
-      <option value="샘플"></option>
-      <option value="택고리"></option>
-      <option value="스티커"></option>
-      <option value="사이즈 라벨"></option>
-      <option value="직조라벨"></option>
-      <option value="실크라벨"></option>
-      <option value="바코드스티커"></option>
-      <option value="품질표시라벨"></option>
-    </datalist>
+    <!-- Floating Popover Element for Table Autocomplete -->
+    <div id="tableSuggestPopover" class="table-suggest-popover" style="display: none;"></div>
 
-    <!-- Datalist for Size / Spec Autocomplete Suggestions -->
-    <datalist id="commonSpecSizes">
-      <option value="F"></option>
-      <option value="XS"></option>
-      <option value="S"></option>
-      <option value="M"></option>
-      <option value="L"></option>
-      <option value="XL"></option>
-      <option value="2XL"></option>
-      <option value="3XL"></option>
-      <option value="FREE"></option>
-    </datalist>
+    <!-- Quick Selection Bar (Không icon ⚡, hỗ trợ thêm từ mới) -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid var(--slate-200); font-size: 12px;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+        <span style="font-weight: 700; color: #1e40af; margin-right: 2px;">품목명:</span>
+        <div id="quickItemPills" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px;"></div>
+        <button type="button" class="btn-add-tag" onclick="promptAddNewItemName()" title="새 품목명 단어 추가">+ 추가</button>
+      </div>
 
-    <!-- Quick Selection Bar -->
-    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid var(--slate-200); font-size: 12px;">
-      <span style="font-weight: 700; color: #1e40af; margin-right: 2px;">⚡ 품목명:</span>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('메인 라벨')" title="품목명 '메인 라벨' 입력">메인 라벨</button>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('케어라벨')" title="품목명 '케어라벨' 입력">케어라벨</button>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('행택')" title="품목명 '행택' 입력">행택</button>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('샘플')" title="품목명 '샘플' 입력">샘플</button>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('택고리')" title="품목명 '택고리' 입력">택고리</button>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('스티커')" title="품목명 '스티커' 입력">스티커</button>
-      <button type="button" class="quick-item-btn" onclick="quickAddItemName('사이즈 라벨')" title="품목명 '사이즈 라벨' 입력">사이즈 라벨</button>
-      <span style="border-left: 1px solid var(--slate-300); height: 16px; margin: 0 4px;"></span>
-      <span style="font-weight: 700; color: #15803d; margin-right: 2px;">규격:</span>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('F')" title="규격 'F' 입력">F</button>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('XS')" title="규격 'XS' 입력">XS</button>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('S')" title="규격 'S' 입력">S</button>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('M')" title="규격 'M' 입력">M</button>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('L')" title="규격 'L' 입력">L</button>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('XL')" title="규격 'XL' 입력">XL</button>
-      <button type="button" class="quick-spec-btn" onclick="quickAddSpec('2XL')" title="규격 '2XL' 입력">2XL</button>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+        <span style="font-weight: 700; color: #15803d; margin-right: 2px;">규격:</span>
+        <div id="quickSpecPills" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px;"></div>
+        <button type="button" class="btn-add-tag" onclick="promptAddNewSpecSize()" title="새 규격/사이즈 단어 추가">+ 추가</button>
+      </div>
     </div>
 
     <div class="table-container">
@@ -988,6 +1051,17 @@
     // Render bảng 품목 và xem trước 거래명세서
     renderItemTable();
     renderStatement();
+
+    // Render danh sách nút gợi ý nhanh 품목명 & 규격
+    renderSuggestionPills();
+
+    // Đóng bảng gợi ý khi click ra ngoài bảng
+    document.addEventListener('click', (e) => {
+      const pop = document.getElementById('tableSuggestPopover');
+      if (pop && pop.style.display !== 'none' && !pop.contains(e.target) && !e.target.closest('#itemTableBody')) {
+        hideTableSuggest();
+      }
+    });
   });
 
   // Hiển thị thông báo Toast
@@ -1119,36 +1193,345 @@
     renderStatement();
   }
 
-  let activeItemRowIndex = 0;
+  // ─── HỆ THỐNG GỢI Ý & TỰ ĐỘNG KHỚP TÊN 품목명 & 규격 ───
+  const DEFAULT_ITEM_NAMES = ['메인 라벨', '케어라벨', '행택', '샘플', '택고리', '스티커', '사이즈 라벨'];
+  const DEFAULT_SPEC_SIZES = ['F', 'XS', 'S', 'M', 'L', 'XL', '2XL'];
 
-  // Gợi ý nhanh: Chọn 품목명
+  let activeItemRowIndex = 0;
+  let activeSuggestInput = null;
+  let activeSuggestIndex = -1;
+  let activeSuggestField = 'name'; // 'name' | 'spec'
+  let currentSuggestMatches = [];
+  let highlightedSuggestIndex = 0;
+
+  function getItemSuggestions() {
+    const saved = localStorage.getItem('jinil_custom_item_names');
+    if (saved) {
+      try {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr) && arr.length > 0) return arr;
+      } catch(e) {}
+    }
+    return [...DEFAULT_ITEM_NAMES];
+  }
+
+  function getSpecSuggestions() {
+    const saved = localStorage.getItem('jinil_custom_spec_sizes');
+    if (saved) {
+      try {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr) && arr.length > 0) return arr;
+      } catch(e) {}
+    }
+    return [...DEFAULT_SPEC_SIZES];
+  }
+
+  function addCustomItemName(name) {
+    const clean = (name || '').trim();
+    if (!clean) return;
+    const current = getItemSuggestions();
+    if (!current.some(c => c.toLowerCase() === clean.toLowerCase())) {
+      current.push(clean);
+      localStorage.setItem('jinil_custom_item_names', JSON.stringify(current));
+      renderSuggestionPills();
+    }
+  }
+
+  function addCustomSpecSize(spec) {
+    const clean = (spec || '').trim();
+    if (!clean) return;
+    const current = getSpecSuggestions();
+    if (!current.some(c => c.toLowerCase() === clean.toLowerCase())) {
+      current.push(clean);
+      localStorage.setItem('jinil_custom_spec_sizes', JSON.stringify(current));
+      renderSuggestionPills();
+    }
+  }
+
+  function deleteCustomSuggestion(field, value, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!confirm(`'${value}' 단어를 추천 목록에서 삭제하시겠습니까?`)) return;
+
+    if (field === 'name') {
+      const current = getItemSuggestions().filter(item => item !== value);
+      localStorage.setItem('jinil_custom_item_names', JSON.stringify(current));
+    } else {
+      const current = getSpecSuggestions().filter(item => item !== value);
+      localStorage.setItem('jinil_custom_spec_sizes', JSON.stringify(current));
+    }
+    renderSuggestionPills();
+    hideTableSuggest();
+    showToast(`'${value}' 단어가 추천 목록에서 삭제되었습니다.`);
+  }
+
+  function promptAddNewItemName() {
+    const name = prompt('추천 목록에 새로 등록할 품목명을 입력하세요:\n(예: 직조라벨, 가죽패치 등)');
+    if (name && name.trim()) {
+      const clean = name.trim();
+      addCustomItemName(clean);
+      showToast(`'${clean}' 품목명이 추천 목록에 추가되었습니다.`);
+    }
+  }
+
+  function promptAddNewSpecSize() {
+    const spec = prompt('추천 목록에 새로 등록할 규격/사이즈를 입력하세요:\n(예: 3XL, FREE, 100 등)');
+    if (spec && spec.trim()) {
+      const clean = spec.trim();
+      addCustomSpecSize(clean);
+      showToast(`'${clean}' 규격이 추천 목록에 추가되었습니다.`);
+    }
+  }
+
+  function renderSuggestionPills() {
+    const itemNames = getItemSuggestions();
+    const specSizes = getSpecSuggestions();
+
+    const itemPillsEl = document.getElementById('quickItemPills');
+    if (itemPillsEl) {
+      itemPillsEl.innerHTML = itemNames.map(name => `
+        <button type="button" class="quick-item-btn" onclick="quickAddItemName('${esc(name)}')" oncontextmenu="deleteCustomSuggestion('name', '${esc(name)}', event)" title="클릭: 입력 / 우클릭: 삭제">${esc(name)}</button>
+      `).join('');
+    }
+
+    const specPillsEl = document.getElementById('quickSpecPills');
+    if (specPillsEl) {
+      specPillsEl.innerHTML = specSizes.map(spec => `
+        <button type="button" class="quick-spec-btn" onclick="quickAddSpec('${esc(spec)}')" oncontextmenu="deleteCustomSuggestion('spec', '${esc(spec)}', event)" title="클릭: 입력 / 우클릭: 삭제">${esc(spec)}</button>
+      `).join('');
+    }
+  }
+
+  // Gợi ý nhanh từ thanh nút bấm: Điền 품목명
   function quickAddItemName(name) {
     if (items.length === 0) addItemRow();
     let targetIdx = (activeItemRowIndex >= 0 && activeItemRowIndex < items.length) ? activeItemRowIndex : items.length - 1;
-    // Nếu dòng hiện tại đã có 품목명, tạo thêm dòng mới
     if (items[targetIdx] && items[targetIdx].name && items[targetIdx].name.trim() !== '') {
       addItemRow();
       targetIdx = items.length - 1;
     }
     updateItem(targetIdx, 'name', name);
     renderItemTable();
-    // Chuyển focus sang ô 규격
+    // Chuyển focus sang ô 규격 của dòng đó
     setTimeout(() => {
       const tbody = document.getElementById('itemTableBody');
-      const specInput = tbody?.children[targetIdx]?.querySelector('input[list="commonSpecSizes"]');
+      const specInput = tbody?.children[targetIdx]?.querySelectorAll('input')[2];
       if (specInput) {
         specInput.focus();
-        try { specInput.showPicker(); } catch(e) {}
+        showTableSuggest(specInput, targetIdx, 'spec');
       }
     }, 50);
   }
 
-  // Gợi ý nhanh: Chọn 규격
+  // Gợi ý nhanh từ thanh nút bấm: Điền 규격
   function quickAddSpec(spec) {
     if (items.length === 0) addItemRow();
     const targetIdx = (activeItemRowIndex >= 0 && activeItemRowIndex < items.length) ? activeItemRowIndex : items.length - 1;
     updateItem(targetIdx, 'spec', spec);
     renderItemTable();
+    // Chuyển focus sang ô 수량
+    setTimeout(() => {
+      const tbody = document.getElementById('itemTableBody');
+      const qtyInput = tbody?.children[targetIdx]?.querySelectorAll('input')[3];
+      if (qtyInput) {
+        qtyInput.focus();
+        qtyInput.select();
+      }
+    }, 50);
+  }
+
+  // Hiển thị bảng xổ xuống gợi ý ngay dưới ô input khi gõ hoặc click
+  function showTableSuggest(inputEl, index, field) {
+    const pop = document.getElementById('tableSuggestPopover');
+    if (!pop) return;
+
+    activeSuggestInput = inputEl;
+    activeSuggestIndex = index;
+    activeSuggestField = field;
+    activeItemRowIndex = index;
+    highlightedSuggestIndex = 0;
+
+    const rawVal = inputEl.value || '';
+    const query = rawVal.trim().toLowerCase();
+
+    const allItems = field === 'name' ? getItemSuggestions() : getSpecSuggestions();
+
+    // Lọc theo từ khóa người dùng đang nhập
+    let matches = [];
+    if (!query) {
+      matches = [...allItems];
+    } else {
+      matches = allItems.filter(item => item.toLowerCase().includes(query));
+      // Tự động đưa từ khớp đúng hoặc bắt đầu bằng từ khóa lên đầu tiên
+      matches.sort((a, b) => {
+        const aExact = a.toLowerCase() === query;
+        const bExact = b.toLowerCase() === query;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+
+        const aStarts = a.toLowerCase().startsWith(query);
+        const bStarts = b.toLowerCase().startsWith(query);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.localeCompare(b);
+      });
+    }
+
+    currentSuggestMatches = matches;
+
+    let html = '';
+    if (matches.length > 0) {
+      html += matches.map((m, mIdx) => {
+        const reg = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const highlightedText = query ? esc(m).replace(reg, '<span class="match-text">$1</span>') : esc(m);
+        const isSelected = mIdx === 0 ? 'highlighted' : '';
+        return `
+          <div class="table-suggest-item ${isSelected}" data-idx="${mIdx}" onmousedown="selectTableSuggestItem('${esc(m)}', event)">
+            <span>${highlightedText}</span>
+            <span class="item-del-btn" title="이 단어 삭제" onmousedown="deleteCustomSuggestion('${field}', '${esc(m)}', event)">×</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      html += `<div style="padding: 10px 14px; color: #94a3b8; font-size: 12px; text-align: center;">일치하는 추천어가 없습니다</div>`;
+    }
+
+    // Nếu người dùng nhập từ mới chưa có trong danh sách -> Hiển thị nút thêm từ mới
+    const isExactExisting = allItems.some(i => i.toLowerCase() === query);
+    if (query && !isExactExisting) {
+      html += `
+        <div class="table-suggest-add-row" onmousedown="addAndSelectCustomSuggestion('${field}', '${esc(rawVal.trim())}', event)">
+          <span style="font-size: 14px;">➕</span>
+          <span>'${esc(rawVal.trim())}' 단어 추가하고 선택</span>
+        </div>
+      `;
+    }
+
+    pop.innerHTML = html;
+
+    // Định vị bảng popover ngay dưới ô input đang gõ
+    const rect = inputEl.getBoundingClientRect();
+    pop.style.top = (rect.bottom + window.scrollY + 2) + 'px';
+    pop.style.left = (rect.left + window.scrollX) + 'px';
+    pop.style.width = Math.max(rect.width, 190) + 'px';
+    pop.style.display = 'block';
+  }
+
+  function hideTableSuggest() {
+    const pop = document.getElementById('tableSuggestPopover');
+    if (pop) pop.style.display = 'none';
+  }
+
+  function updatePopoverHighlight(itemsEls) {
+    itemsEls.forEach((el, idx) => {
+      if (idx === highlightedSuggestIndex) {
+        el.classList.add('highlighted');
+        el.scrollIntoView({ block: 'nearest' });
+      } else {
+        el.classList.remove('highlighted');
+      }
+    });
+  }
+
+  function handleSuggestKeydown(e, inputEl, index, field) {
+    const pop = document.getElementById('tableSuggestPopover');
+    if (!pop || pop.style.display === 'none') {
+      if (e.key === 'ArrowDown') {
+        showTableSuggest(inputEl, index, field);
+        e.preventDefault();
+      }
+      return;
+    }
+
+    const itemsEls = pop.querySelectorAll('.table-suggest-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (itemsEls.length > 0) {
+        highlightedSuggestIndex = (highlightedSuggestIndex + 1) % itemsEls.length;
+        updatePopoverHighlight(itemsEls);
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (itemsEls.length > 0) {
+        highlightedSuggestIndex = (highlightedSuggestIndex - 1 + itemsEls.length) % itemsEls.length;
+        updatePopoverHighlight(itemsEls);
+      }
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      if (currentSuggestMatches.length > 0 && highlightedSuggestIndex >= 0 && highlightedSuggestIndex < currentSuggestMatches.length) {
+        e.preventDefault();
+        selectTableSuggestItem(currentSuggestMatches[highlightedSuggestIndex]);
+      } else {
+        hideTableSuggest();
+      }
+    } else if (e.key === 'Escape') {
+      hideTableSuggest();
+    }
+  }
+
+  function selectTableSuggestItem(value, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!activeSuggestInput) return;
+
+    activeSuggestInput.value = value;
+    updateItem(activeSuggestIndex, activeSuggestField, value);
+    hideTableSuggest();
+
+    const targetIndex = activeSuggestIndex;
+    const targetField = activeSuggestField;
+
+    if (targetField === 'name') {
+      setTimeout(() => {
+        const tbody = document.getElementById('itemTableBody');
+        const specInput = tbody?.children[targetIndex]?.querySelectorAll('input')[2];
+        if (specInput) {
+          specInput.focus();
+          showTableSuggest(specInput, targetIndex, 'spec');
+        }
+      }, 50);
+    } else if (targetField === 'spec') {
+      setTimeout(() => {
+        const tbody = document.getElementById('itemTableBody');
+        const qtyInput = tbody?.children[targetIndex]?.querySelectorAll('input')[3];
+        if (qtyInput) {
+          qtyInput.focus();
+          qtyInput.select();
+        }
+      }, 50);
+    }
+  }
+
+  function addAndSelectCustomSuggestion(field, value, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const cleanVal = (value || '').trim();
+    if (!cleanVal) return;
+
+    if (field === 'name') {
+      addCustomItemName(cleanVal);
+    } else {
+      addCustomSpecSize(cleanVal);
+    }
+    selectTableSuggestItem(cleanVal);
+    showToast(`'${cleanVal}' 단어가 추천 목록에 추가되었습니다.`);
+  }
+
+  function handleItemNameInput(inputEl, index) {
+    activeItemRowIndex = index;
+    updateItem(index, 'name', inputEl.value);
+    showTableSuggest(inputEl, index, 'name');
+  }
+
+  function handleSpecInput(inputEl, index) {
+    activeItemRowIndex = index;
+    updateItem(index, 'spec', inputEl.value);
+    showTableSuggest(inputEl, index, 'spec');
   }
 
   function renderItemTable() {
@@ -1164,13 +1547,13 @@
       }
 
       tr.innerHTML = `
-        <td><input type="date" value="${esc(normalizeToDateInput(item.date))}" oninput="updateItem(${index}, 'date', this.value)" onchange="updateItem(${index}, 'date', this.value)" onfocus="activeItemRowIndex = ${index}"></td>
-        <td><input type="text" list="commonItemNames" placeholder="품목명" value="${esc(item.name)}" oninput="updateItem(${index}, 'name', this.value)" onfocus="activeItemRowIndex = ${index}; try{this.showPicker()}catch(e){}" autocomplete="off"></td>
-        <td><input type="text" list="commonSpecSizes" placeholder="사이즈/규격" value="${esc(item.spec)}" oninput="updateItem(${index}, 'spec', this.value)" onfocus="activeItemRowIndex = ${index}; try{this.showPicker()}catch(e){}" autocomplete="off"></td>
-        <td><input type="number" style="text-align: right;" value="${item.qty}" oninput="updateItem(${index}, 'qty', this.value)" onfocus="activeItemRowIndex = ${index}"></td>
-        <td><input type="number" style="text-align: right;" value="${item.price}" oninput="updateItem(${index}, 'price', this.value)" onfocus="activeItemRowIndex = ${index}"></td>
-        <td><input type="number" id="sub_${index}" style="text-align: right;" value="${item.sub}" oninput="updateItem(${index}, 'sub', this.value)" onfocus="activeItemRowIndex = ${index}"></td>
-        <td><input type="text" placeholder="비고" value="${esc(item.note)}" oninput="updateItem(${index}, 'note', this.value)" onfocus="activeItemRowIndex = ${index}"></td>
+        <td><input type="date" value="${esc(normalizeToDateInput(item.date))}" oninput="updateItem(${index}, 'date', this.value)" onchange="updateItem(${index}, 'date', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
+        <td><input type="text" placeholder="품목명" value="${esc(item.name)}" oninput="handleItemNameInput(this, ${index})" onfocus="handleItemNameInput(this, ${index})" onkeydown="handleSuggestKeydown(event, this, ${index}, 'name')" autocomplete="off"></td>
+        <td><input type="text" placeholder="사이즈/규격" value="${esc(item.spec)}" oninput="handleSpecInput(this, ${index})" onfocus="handleSpecInput(this, ${index})" onkeydown="handleSuggestKeydown(event, this, ${index}, 'spec')" autocomplete="off"></td>
+        <td><input type="number" style="text-align: right;" value="${item.qty}" oninput="updateItem(${index}, 'qty', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
+        <td><input type="number" style="text-align: right;" value="${item.price}" oninput="updateItem(${index}, 'price', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
+        <td><input type="number" id="sub_${index}" style="text-align: right;" value="${item.sub}" oninput="updateItem(${index}, 'sub', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
+        <td><input type="text" placeholder="비고" value="${esc(item.note)}" oninput="updateItem(${index}, 'note', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
         <td style="text-align: center;">
           <button class="btn-delete" title="삭제" onclick="removeItemRow(${index})" tabindex="-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
