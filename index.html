@@ -1386,6 +1386,52 @@
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
+  async function encryptProfileWithPin(profileObj, pin = '0106') {
+    try {
+      const enc = new TextEncoder();
+      const salt = enc.encode('jinil-salt-2026');
+      const iv = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+      const keyMaterial = await window.crypto.subtle.importKey(
+        'raw',
+        enc.encode(pin),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+
+      const key = await window.crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt']
+      );
+
+      const plaintext = enc.encode(JSON.stringify(profileObj));
+      const ciphertextBuffer = await window.crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        plaintext
+      );
+
+      let binary = '';
+      const bytes = new Uint8Array(ciphertextBuffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    } catch(e) {
+      console.error('Auto encryption failed', e);
+      return null;
+    }
+  }
+
   async function decryptProfileWithPin(pin) {
     try {
       const enc = new TextEncoder();
@@ -1413,7 +1459,9 @@
         ['decrypt']
       );
 
-      const binaryStr = atob(ENCRYPTED_SEED_PROFILE);
+      // Ưu tiên bản dữ liệu đã chỉnh sửa và tự động tái mã hóa an toàn của người dùng (nếu có)
+      const cipherToDecrypt = localStorage.getItem('jinil_custom_encrypted_profile') || ENCRYPTED_SEED_PROFILE;
+      const binaryStr = atob(cipherToDecrypt);
       const decBuffer = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) {
         decBuffer[i] = binaryStr.charCodeAt(i);
@@ -1506,6 +1554,7 @@
     } else {
       sessionStorage.setItem('jinil_auth_token', authToken);
     }
+    sessionStorage.setItem('jinil_active_pin', pin);
 
     // 1. Phản hồi thành công ngay lập tức: Biến 4 chấm sang màu xanh ngọc & mở bung chốt khóa
     for (let i = 0; i < 4; i++) {
@@ -1760,7 +1809,8 @@
     }
   }
 
-  // Lưu thông tin 공급자 vào LocalStorage
+  // Lưu thông tin 공급자 vào LocalStorage & Tự động mã hóa AES-GCM 256-bit theo thông tin mới
+  let saveSupplierDebounce = null;
   function saveSupplierData() {
     if (supplierLocked) return;
     const data = {
@@ -1775,6 +1825,28 @@
     };
     localStorage.setItem('jinil_supplier_info', JSON.stringify(data));
     renderStatement();
+
+    // Tự động tái mã hóa an toàn bằng mã PIN của phiên hiện tại (mặc định 0106)
+    clearTimeout(saveSupplierDebounce);
+    saveSupplierDebounce = setTimeout(async () => {
+      let sbConfig = {};
+      try {
+        const savedSb = localStorage.getItem('jinil_supabase_config');
+        if (savedSb) sbConfig = JSON.parse(savedSb);
+      } catch(e) {}
+
+      const fullPayload = {
+        ...data,
+        supabaseUrl: sbConfig.url || '',
+        supabaseKey: sbConfig.key || ''
+      };
+
+      const currentPin = sessionStorage.getItem('jinil_active_pin') || '0106';
+      const encryptedBase64 = await encryptProfileWithPin(fullPayload, currentPin);
+      if (encryptedBase64) {
+        localStorage.setItem('jinil_custom_encrypted_profile', encryptedBase64);
+      }
+    }, 350);
   }
 
   function loadSupplierData() {
