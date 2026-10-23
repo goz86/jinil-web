@@ -1839,10 +1839,22 @@
     const tax = includeTax ? Math.round(subtotal * 0.1) : 0;
     const grandTotal = subtotal + tax;
 
+    const supplier = {
+      biz: document.getElementById('supBiz')?.value || '',
+      name: document.getElementById('supName')?.value || '',
+      rep: document.getElementById('supRep')?.value || '',
+      tel: document.getElementById('supTel')?.value || '',
+      addr: document.getElementById('supAddr')?.value || '',
+      bizType: document.getElementById('supBizType')?.value || '',
+      itemType: document.getElementById('supItemType')?.value || '',
+      bank: document.getElementById('supBank')?.value || ''
+    };
+
     const historyItem = {
       id: 'inv-' + Date.now(),
       date: dateStr,
       savedAt: new Date().toLocaleString('ko-KR'),
+      supplier: supplier,
       toName: toName,
       toRep: document.getElementById('toRep').value,
       toTel: document.getElementById('toTel').value,
@@ -2211,36 +2223,44 @@
               continue;
             }
 
-            // Cột ngày & chữ (발행일자, 상호, 대표자, Tel, 주소, 사업자등록번호, 품목 날짜, 품목명, 규격, 비고)
-            if (C === 0 || C === 1 || C === 2 || C === 3 || C === 4 || C === 5 || C === 6 || C === 7 || C === 8 || C === 14) {
-              cell.t = 's';
-              cell.v = String(cell.v === undefined || cell.v === null ? '' : cell.v);
-            } else {
-              // Cột số (수량, 단가, 공급가액, 세액, 합계금액)
+            // Cột số (Cột 17 đến 21: 수량, 단가, 공급가액, 세액, 합계금액)
+            if (C >= 17 && C <= 21) {
               cell.t = 'n';
               cell.v = Number(cell.v) || 0;
               cell.z = '#,##0';
+            } else {
+              // Cột ngày & chữ: lưu kiểu chuỗi để Excel không tự đổi format
+              cell.t = 's';
+              cell.v = String(cell.v === undefined || cell.v === null ? '' : cell.v);
             }
           }
         }
 
-        // Tự động căn chỉnh độ rộng cột chuẩn
+        // Tự động căn chỉnh độ rộng cột chuẩn (23 cột: 공급자 8 cột + 공급받는자 5 cột + 품목 9 cột + 날짜 1 cột)
         ws['!cols'] = [
-          { wch: 13 }, // 발행일자
-          { wch: 20 }, // 상호(거래처명)
-          { wch: 12 }, // 대표자
-          { wch: 15 }, // Tel
-          { wch: 35 }, // 주소
-          { wch: 16 }, // 사업자등록번호
-          { wch: 13 }, // 품목 날짜
-          { wch: 26 }, // 품목명
-          { wch: 12 }, // 규격
-          { wch: 9 },  // 수량
-          { wch: 13 }, // 단가
-          { wch: 13 }, // 공급가액
-          { wch: 11 }, // 세액
-          { wch: 15 }, // 합계금액
-          { wch: 22 }  // 비고
+          { wch: 13 }, // 0. 발행일자
+          { wch: 16 }, // 1. 공급자 상호
+          { wch: 16 }, // 2. 공급자 등록번호
+          { wch: 12 }, // 3. 공급자 대표자
+          { wch: 14 }, // 4. 공급자 Tel
+          { wch: 35 }, // 5. 공급자 주소
+          { wch: 12 }, // 6. 공급자 업태
+          { wch: 12 }, // 7. 공급자 종목
+          { wch: 32 }, // 8. 입금 계좌번호
+          { wch: 20 }, // 9. 공급받는자 상호(거래처명)
+          { wch: 12 }, // 10. 공급받는자 대표자
+          { wch: 14 }, // 11. 공급받는자 Tel
+          { wch: 30 }, // 12. 공급받는자 주소
+          { wch: 16 }, // 13. 공급받는자 사업자등록번호
+          { wch: 13 }, // 14. 품목 날짜
+          { wch: 26 }, // 15. 품목명
+          { wch: 12 }, // 16. 규격
+          { wch: 9 },  // 17. 수량
+          { wch: 13 }, // 18. 단가
+          { wch: 13 }, // 19. 공급가액
+          { wch: 11 }, // 20. 세액
+          { wch: 15 }, // 21. 합계금액
+          { wch: 22 }  // 22. 비고
         ];
 
         const wb = XLSX.utils.book_new();
@@ -2263,8 +2283,8 @@
         if (rIdx === 0) {
           return `"${String(cell).replace(/"/g, '""')}"`;
         }
-        // Với ngày hoặc số điện thoại, dùng công thức ="..." để Excel không tự đổi format thành số serial
-        if (cIdx === 0 || cIdx === 3 || cIdx === 5 || cIdx === 6) {
+        // Với ngày hoặc số điện thoại / mã số thuế, dùng công thức ="..." để Excel không tự đổi format
+        if (cIdx === 0 || cIdx === 2 || cIdx === 4 || cIdx === 8 || cIdx === 11 || cIdx === 13 || cIdx === 14) {
           const val = String(cell || '');
           return val ? `="${val.replace(/"/g, '""')}"` : '""';
         }
@@ -2283,9 +2303,18 @@
     showToast(`'${filename}' 엑셀(CSV) 저장 완료!`);
   }
 
-  // Xuất 거래명세서 hiện tại ra file Excel (.xlsx)
+  // Xuất 거래명세서 hiện tại ra file Excel (.xlsx) bao gồm cả 공급자 và 공급받는자
   function exportCurrentToExcel() {
     saveCurrentToHistory();
+    const supBiz = (document.getElementById('supBiz')?.value || '').trim();
+    const supName = (document.getElementById('supName')?.value || '').trim();
+    const supRep = (document.getElementById('supRep')?.value || '').trim();
+    const supTel = (document.getElementById('supTel')?.value || '').trim();
+    const supAddr = (document.getElementById('supAddr')?.value || '').trim();
+    const supBizType = (document.getElementById('supBizType')?.value || '').trim();
+    const supItemType = (document.getElementById('supItemType')?.value || '').trim();
+    const supBank = (document.getElementById('supBank')?.value || '').trim();
+
     const toName = (document.getElementById('toName')?.value || '거래처').trim();
     const toRep = (document.getElementById('toRep')?.value || '').trim();
     const toTel = (document.getElementById('toTel')?.value || '').trim();
@@ -2301,7 +2330,9 @@
     }
 
     const headers = [
-      '발행일자', '상호(거래처명)', '대표자', 'Tel', '주소', '사업자등록번호',
+      '발행일자',
+      '공급자 상호', '공급자 등록번호', '공급자 대표자', '공급자 Tel', '공급자 주소', '공급자 업태', '공급자 종목', '입금 계좌번호',
+      '공급받는자 상호(거래처명)', '공급받는자 대표자', '공급받는자 Tel', '공급받는자 주소', '공급받는자 사업자등록번호',
       '품목 날짜', '품목명', '규격', '수량', '단가', '공급가액', '세액', '합계금액', '비고'
     ];
 
@@ -2313,6 +2344,14 @@
 
       rows.push([
         invDate,
+        supName,
+        supBiz,
+        supRep,
+        supTel,
+        supAddr,
+        supBizType,
+        supItemType,
+        supBank,
         toName,
         toRep,
         toTel,
@@ -2334,7 +2373,7 @@
     saveRowsAsExcel(rows, filenameBase);
   }
 
-  // Xuất danh sách 발행 내역 (Lịch sử) ra file Excel (.xlsx) chuẩn
+  // Xuất danh sách 발행 내역 (Lịch sử) ra file Excel (.xlsx) chuẩn bao gồm cả 공급자 và 공급받는자
   function exportHistoryToExcel() {
     const history = getFilteredHistory();
     if (history.length === 0) {
@@ -2342,14 +2381,30 @@
       return;
     }
 
+    // Thông tin 공급자 mặc định từ màn hình hiện tại (dùng khi bản ghi cũ chưa lưu 공급자)
+    const curSup = {
+      biz: (document.getElementById('supBiz')?.value || '').trim(),
+      name: (document.getElementById('supName')?.value || '').trim(),
+      rep: (document.getElementById('supRep')?.value || '').trim(),
+      tel: (document.getElementById('supTel')?.value || '').trim(),
+      addr: (document.getElementById('supAddr')?.value || '').trim(),
+      bizType: (document.getElementById('supBizType')?.value || '').trim(),
+      itemType: (document.getElementById('supItemType')?.value || '').trim(),
+      bank: (document.getElementById('supBank')?.value || '').trim()
+    };
+
     const headers = [
-      '발행일자', '상호(거래처명)', '대표자', 'Tel', '주소', '사업자등록번호',
+      '발행일자',
+      '공급자 상호', '공급자 등록번호', '공급자 대표자', '공급자 Tel', '공급자 주소', '공급자 업태', '공급자 종목', '입금 계좌번호',
+      '공급받는자 상호(거래처명)', '공급받는자 대표자', '공급받는자 Tel', '공급받는자 주소', '공급받는자 사업자등록번호',
       '품목 날짜', '품목명', '규격', '수량', '단가', '공급가액', '세액', '합계금액', '비고'
     ];
 
     const rows = [headers];
     history.forEach(h => {
       const includeTax = Boolean(h.includeTax);
+      const sup = h.supplier || curSup;
+
       (h.items || []).forEach(it => {
         const sub = Number(it.sub || 0);
         const itemTax = includeTax ? Math.round(sub * 0.1) : 0;
@@ -2357,6 +2412,14 @@
 
         rows.push([
           h.date || '',
+          sup.name || curSup.name,
+          sup.biz || curSup.biz,
+          sup.rep || curSup.rep,
+          sup.tel || curSup.tel,
+          sup.addr || curSup.addr,
+          sup.bizType || curSup.bizType,
+          sup.itemType || curSup.itemType,
+          sup.bank || curSup.bank,
           h.toName || '',
           h.toRep || '',
           h.toTel || '',
