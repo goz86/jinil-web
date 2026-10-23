@@ -2402,6 +2402,32 @@
         });
       }
     } catch (e) {}
+
+    // 4. Đồng bộ nền từ Supabase B2B shipments (chung cơ sở dữ liệu với jinil-landing-page & APP JINIL)
+    try {
+      fetch('https://nwmdhkzdtedpqkquwqrd.supabase.co/rest/v1/rpc/search_public_b2b_shipments', {
+        method: 'POST',
+        headers: {
+          'apikey': 'sb_publishable_iZtuF4Zwyr4zfj5IzEsdxg_N5_bpIP9',
+          'Authorization': 'Bearer sb_publishable_iZtuF4Zwyr4zfj5IzEsdxg_N5_bpIP9',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ p_query: '25', p_limit: 150 })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const sbClients = data.map(s => ({
+            name: s.location_name || s.company_name,
+            rep: (s.company_name && s.company_name !== '미지정') ? s.company_name : (s.recipient_name || ''),
+            tel: s.courier_phone || '',
+            addr: s.recipient_address || ''
+          }));
+          mergeClientsIntoBook(sbClients);
+        }
+      })
+      .catch(() => {});
+    } catch (e) {}
   }
 
   // Lưu 거래처 mới vào 주소록
