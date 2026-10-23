@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="진일라벨">
+  <rect width="96" height="96" rx="24" fill="#171717"/>
+  <text x="48" y="67" text-anchor="middle" fill="#ffffff" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', Arial, sans-serif" font-size="58" font-weight="900" letter-spacing="-4">진</text>
+  <path d="M72 14h3c7.2 0 13 5.8 13 13v22H72z" fill="#ff5a1f"/>
+  <path d="M78 19h3.5" stroke="#ff8a4a" stroke-width="3" stroke-linecap="round"/>
+</svg>
