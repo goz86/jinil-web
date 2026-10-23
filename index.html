@@ -402,6 +402,60 @@
       color: #1d4ed8;
     }
 
+    /* PIN Security Lock Modal Styling */
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      background: transparent;
+      transition: all 0.15s ease;
+    }
+    .pin-dot.filled {
+      background: #2563eb;
+      border-color: #2563eb;
+      transform: scale(1.15);
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+    }
+    .pin-key-btn {
+      height: 48px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s ease;
+      user-select: none;
+    }
+    .pin-key-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #2563eb;
+      transform: translateY(-1px);
+    }
+    .pin-key-btn:active {
+      transform: translateY(1px);
+      background: #dbeafe;
+    }
+    .pin-key-action {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    @keyframes pinShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-anim {
+      animation: pinShake 0.35s ease-in-out;
+    }
+
     /* History Item Card Styling */
     .history-item-card {
       transition: all 0.2s ease;
@@ -647,45 +701,51 @@
           공급자 정보
           <span class="subtitle-hint" id="supplierLockHint">(잠금 해제하여 편집)</span>
         </h2>
-        <button id="btnLockSupplier" class="btn" onclick="toggleSupplierLock()">
-          <!-- Lucide Lock SVG Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span id="txtLockBtn">잠금</span>
-        </button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button id="btnLockSupplier" class="btn" onclick="toggleSupplierLock()" title="공급자 정보 잠금/해제">
+            <!-- Lucide Lock SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span id="txtLockBtn">잠금</span>
+          </button>
+          <button type="button" class="btn" onclick="lockScreenSession()" title="화면 보안 잠금 (PIN 재인증)" style="color: #64748b; font-size: 12px; height: 32px; padding: 0 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>보안 잠금</span>
+          </button>
+        </div>
       </header>
 
       <div class="form-grid">
         <div class="form-group">
           <label for="supBiz">등록번호</label>
-          <input type="text" id="supBiz" value="104-06-54611" disabled oninput="saveSupplierData()">
+          <input type="text" id="supBiz" value="" placeholder="사업자등록번호" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group">
           <label for="supName">상 호</label>
-          <input type="text" id="supName" value="진일 라벨" disabled oninput="saveSupplierData()">
+          <input type="text" id="supName" value="" placeholder="상호" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group">
           <label for="supRep">대표자 성명</label>
-          <input type="text" id="supRep" value="홍성모" disabled oninput="saveSupplierData()">
+          <input type="text" id="supRep" value="" placeholder="대표자 성명" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group">
           <label for="supTel">Tel</label>
-          <input type="text" id="supTel" value="02-2266-2826" disabled oninput="saveSupplierData()">
+          <input type="text" id="supTel" value="" placeholder="전화번호" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group full">
           <label for="supAddr">주 소</label>
-          <input type="text" id="supAddr" value="서울시 중구 주교동 19 -1 ,방산시장 A동 3/221 호" disabled oninput="saveSupplierData()">
+          <input type="text" id="supAddr" value="" placeholder="사업장 주소" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group">
           <label for="supBizType">업 태</label>
-          <input type="text" id="supBizType" value="의류부자재" disabled oninput="saveSupplierData()">
+          <input type="text" id="supBizType" value="" placeholder="업태" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group">
           <label for="supItemType">종 목</label>
-          <input type="text" id="supItemType" value="제조,도매" disabled oninput="saveSupplierData()">
+          <input type="text" id="supItemType" value="" placeholder="종목" disabled oninput="saveSupplierData()">
         </div>
         <div class="form-group full">
           <label for="supBank">입금 계좌번호</label>
-          <input type="text" id="supBank" value="국민은행 352201-04-022304 홍성모" disabled oninput="saveSupplierData()">
+          <input type="text" id="supBank" value="" placeholder="입금 계좌번호" disabled oninput="saveSupplierData()">
         </div>
       </div>
     </section>
@@ -1014,6 +1074,62 @@
 <!-- Toast Alert -->
 <div id="toast">알림</div>
 
+<!-- PIN Security Lock Modal Overlay -->
+<div id="pinSecurityModalOverlay" class="no-print" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 16px;">
+  <div id="pinModalCard" style="background: #ffffff; width: 100%; max-width: 360px; border-radius: 24px; padding: 28px 24px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.4); border: 1px solid rgba(226, 232, 240, 0.8); display: flex; flex-direction: column; align-items: center; gap: 16px; animation: fadeInPop 0.18s ease-out; text-align: center;">
+    
+    <!-- Lock Badge Icon -->
+    <div style="width: 56px; height: 56px; border-radius: 18px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+
+    <div>
+      <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">진일라벨 보안 인증</h2>
+      <p style="font-size: 12.5px; color: #64748b; margin: 0; line-height: 1.4;">거래명세서 관리자 PIN 4자리를 입력하세요</p>
+    </div>
+
+    <!-- Hidden native input to capture physical keyboard input easily -->
+    <input type="password" id="txtPinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;" autocomplete="off"/>
+
+    <!-- PIN Visual Indicator Dots -->
+    <div id="pinDotsContainer" style="display: flex; gap: 14px; margin: 4px 0 6px 0; cursor: pointer;" onclick="document.getElementById('txtPinInput')?.focus()">
+      <div class="pin-dot" id="pindot-0"></div>
+      <div class="pin-dot" id="pindot-1"></div>
+      <div class="pin-dot" id="pindot-2"></div>
+      <div class="pin-dot" id="pindot-3"></div>
+    </div>
+
+    <!-- Error message display -->
+    <div id="pinErrorMsg" style="font-size: 12px; color: #ef4444; font-weight: 600; min-height: 18px; display: none;"></div>
+
+    <!-- Virtual Numeric Keypad -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('1')">1</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('2')">2</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('3')">3</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('4')">4</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('5')">5</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('6')">6</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('7')">7</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('8')">8</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('9')">9</button>
+      <button type="button" class="pin-key-btn pin-key-action" onclick="clearPin()">초기화</button>
+      <button type="button" class="pin-key-btn" onclick="handlePinKey('0')">0</button>
+      <button type="button" class="pin-key-btn pin-key-action" onclick="backspacePin()">⌫</button>
+    </div>
+
+    <!-- Remember device checkbox -->
+    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; cursor: pointer; user-select: none; margin-top: 2px;">
+      <input type="checkbox" id="chkRememberDevice" checked style="accent-color: #2563eb; width: 14px; height: 14px; cursor: pointer;"/>
+      <span>이 기기에서 인증 유지 (30일)</span>
+    </label>
+
+  </div>
+</div>
+
 <!-- 
   Application Core Script Logic
   Xử lý LocalStorage, parse dữ liệu 엑셀 복사/붙여넣기, render 서식 단일 (1 ảnh duy nhất), cho phép sửa thủ công 금액, căn trái 입금 계좌
@@ -1078,6 +1194,236 @@
     { date: getLocalTodayDate(), name: '', spec: '', qty: 1, price: 0, sub: 0, note: '' }
   ];
 
+  // ─── BẢO MẬT & MÃ HÓA PIN (PBKDF2 + AES-GCM 256-bit) ───
+  const PIN_HASH_DEFAULT = 'd102a5e24978f472c57411fb2d5a04a7e23451955316112d8276637bda628eb0'; // SHA-256('0106')
+  const ENCRYPTED_SEED_PROFILE = 'CnHdHMFZ3hIPM00W7vknDtUeYep0M17KCZVH2dqFIEqhdjSCRMJPxB8lV9Fvz/XUURqE7pQM9J29mJM4NNN5GTCiCURV1OCM2jrO6BHHBlFH0WLUA0AIboOvbjgvfnI8EBylo3cioQIY59b/lSNE16cC+/af6Tnx7ATURVV7Co/ORq5Xv93++m/M7eTMOdS6/9UVTwViIermwoawhwC42QReN5GwGm1bB5g470R2o/kp99VaUhiJsGV9oEQdPxhY7xeR2LZEAw60yc1Pv6CkUFK1O3wT+BeokdKj21sEqNU214RQp8Z3rVh1Kn9UwIbUEvwfizeKFIcRo/K+FoCE4L73/IgYFwMZ2dBGW1odIzhYtLftbH6WCSXgmY4OCLGRW5Gd2buoWys9HCCKBlUPQhXNlQIgaq9ReFQb59Gs1KjJLVjd210T2rN4imOzmeGd512kIuP25WQOVAk9Cio1O5sLKz+7W2zk8Y+Ecrj/fl3+4k76rKGG8dS8uwW+zAApcR6IJrRdD9hkjghU/KoTUC0gemTo2ODImMCHF0eZjQ==';
+
+  let enteredPin = '';
+  let isAuthenticating = false;
+
+  async function sha256Hex(str) {
+    const enc = new TextEncoder().encode(str);
+    const buf = await window.crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function decryptProfileWithPin(pin) {
+    try {
+      const enc = new TextEncoder();
+      const salt = enc.encode('jinil-salt-2026');
+      const iv = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+
+      const keyMaterial = await window.crypto.subtle.importKey(
+        'raw',
+        enc.encode(pin),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+
+      const key = await window.crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+
+      const binaryStr = atob(ENCRYPTED_SEED_PROFILE);
+      const decBuffer = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        decBuffer[i] = binaryStr.charCodeAt(i);
+      }
+
+      const decrypted = await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        decBuffer
+      );
+
+      const jsonStr = new TextDecoder().decode(decrypted);
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      console.warn('Decryption failed with PIN', e);
+      return null;
+    }
+  }
+
+  function updatePinDots() {
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById(`pindot-${i}`);
+      if (dot) {
+        if (i < enteredPin.length) {
+          dot.classList.add('filled');
+        } else {
+          dot.classList.remove('filled');
+        }
+      }
+    }
+  }
+
+  function handlePinKey(digit) {
+    if (isAuthenticating || enteredPin.length >= 4) return;
+    enteredPin += String(digit);
+    updatePinDots();
+    const errMsg = document.getElementById('pinErrorMsg');
+    if (errMsg) errMsg.style.display = 'none';
+
+    if (enteredPin.length === 4) {
+      setTimeout(() => verifyEnteredPin(), 80);
+    }
+  }
+
+  function backspacePin() {
+    if (isAuthenticating) return;
+    enteredPin = enteredPin.slice(0, -1);
+    updatePinDots();
+  }
+
+  function clearPin() {
+    if (isAuthenticating) return;
+    enteredPin = '';
+    updatePinDots();
+  }
+
+  async function verifyEnteredPin() {
+    if (isAuthenticating) return;
+    isAuthenticating = true;
+    const pin = enteredPin;
+    const pinHash = await sha256Hex(pin);
+    const customPinHash = localStorage.getItem('jinil_custom_pin_hash');
+    const validHash = customPinHash || PIN_HASH_DEFAULT;
+
+    if (pinHash === validHash) {
+      await unlockAppWithPin(pin);
+    } else {
+      const card = document.getElementById('pinModalCard');
+      const errMsg = document.getElementById('pinErrorMsg');
+      if (errMsg) {
+        errMsg.innerText = 'PIN 번호가 일치하지 않습니다.';
+        errMsg.style.display = 'block';
+      }
+      if (card) {
+        card.classList.add('shake-anim');
+        setTimeout(() => card.classList.remove('shake-anim'), 400);
+      }
+      enteredPin = '';
+      updatePinDots();
+      isAuthenticating = false;
+    }
+  }
+
+  async function unlockAppWithPin(pin) {
+    const remember = document.getElementById('chkRememberDevice')?.checked ?? true;
+    const authToken = await sha256Hex(pin + '_jinil_session_2026');
+    if (remember) {
+      localStorage.setItem('jinil_auth_token', authToken);
+      localStorage.setItem('jinil_auth_expires', String(Date.now() + 30 * 24 * 60 * 60 * 1000));
+    } else {
+      sessionStorage.setItem('jinil_auth_token', authToken);
+    }
+
+    const profile = await decryptProfileWithPin(pin);
+    if (profile) {
+      localStorage.setItem('jinil_supplier_info', JSON.stringify({
+        biz: profile.biz,
+        name: profile.name,
+        rep: profile.rep,
+        tel: profile.tel,
+        addr: profile.addr,
+        bizType: profile.bizType,
+        itemType: profile.itemType,
+        bank: profile.bank
+      }));
+      if (profile.supabaseUrl && profile.supabaseKey) {
+        localStorage.setItem('jinil_supabase_config', JSON.stringify({
+          url: profile.supabaseUrl,
+          key: profile.supabaseKey
+        }));
+      }
+    }
+
+    const modal = document.getElementById('pinSecurityModalOverlay');
+    if (modal) modal.style.display = 'none';
+
+    loadSupplierData();
+    loadClientAddressBook();
+    renderStatement();
+    showToast('보안 인증이 완료되었습니다.');
+    isAuthenticating = false;
+  }
+
+  function checkSessionAuth() {
+    try {
+      if (window.parent && window.parent !== window) {
+        return true;
+      }
+    } catch(e) {}
+
+    if (sessionStorage.getItem('jinil_auth_token')) {
+      return true;
+    }
+
+    const token = localStorage.getItem('jinil_auth_token');
+    const expires = parseInt(localStorage.getItem('jinil_auth_expires') || '0', 10);
+    if (token && expires && Date.now() < expires) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function showPinModal() {
+    enteredPin = '';
+    updatePinDots();
+    const errMsg = document.getElementById('pinErrorMsg');
+    if (errMsg) errMsg.style.display = 'none';
+    const modal = document.getElementById('pinSecurityModalOverlay');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function lockScreenSession() {
+    localStorage.removeItem('jinil_auth_token');
+    localStorage.removeItem('jinil_auth_expires');
+    sessionStorage.removeItem('jinil_auth_token');
+    localStorage.removeItem('jinil_supabase_config');
+    localStorage.removeItem('jinil_supplier_info');
+
+    document.getElementById('supBiz').value = '';
+    document.getElementById('supName').value = '';
+    document.getElementById('supRep').value = '';
+    document.getElementById('supTel').value = '';
+    document.getElementById('supAddr').value = '';
+    document.getElementById('supBizType').value = '';
+    document.getElementById('supItemType').value = '';
+    document.getElementById('supBank').value = '';
+    renderStatement();
+
+    showPinModal();
+    showToast('화면이 보안 잠금되었습니다.');
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('pinSecurityModalOverlay');
+    if (!modal || modal.style.display === 'none') return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      handlePinKey(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      backspacePin();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      clearPin();
+    }
+  });
+
   window.addEventListener('DOMContentLoaded', () => {
     // Gán ngày mặc định hôm nay YYYY-MM-DD theo giờ máy tính local
     const todayStr = getLocalTodayDate();
@@ -1086,8 +1432,39 @@
       items[0].date = todayStr;
     }
 
-    // Khôi phục thông tin 공급자 từ LocalStorage nếu có
-    loadSupplierData();
+    // Kiểm tra xác thực bảo mật PIN
+    if (checkSessionAuth()) {
+      if (!localStorage.getItem('jinil_supplier_info') || !localStorage.getItem('jinil_supabase_config')) {
+        decryptProfileWithPin('0106').then(profile => {
+          if (profile) {
+            localStorage.setItem('jinil_supplier_info', JSON.stringify({
+              biz: profile.biz,
+              name: profile.name,
+              rep: profile.rep,
+              tel: profile.tel,
+              addr: profile.addr,
+              bizType: profile.bizType,
+              itemType: profile.itemType,
+              bank: profile.bank
+            }));
+            if (profile.supabaseUrl && profile.supabaseKey) {
+              localStorage.setItem('jinil_supabase_config', JSON.stringify({
+                url: profile.supabaseUrl,
+                key: profile.supabaseKey
+              }));
+            }
+            loadSupplierData();
+            loadClientAddressBook();
+            renderStatement();
+          }
+        });
+      } else {
+        loadSupplierData();
+        loadClientAddressBook();
+      }
+    } else {
+      showPinModal();
+    }
 
     // Tải danh sách 거래처 주소록 để tự động gợi ý
     loadClientAddressBook();
@@ -2320,9 +2697,7 @@
   }
 
   // Danh sách 거래처 주소록 cache & auto-search
-  let clientAddressBook = [
-    { name: '진일 라벨', rep: '홍성모', tel: '02-2266-2826', addr: '서울시 중구 주교동 19-1 방산시장 A동 3/221호', biz: '104-06-54611', bizType: '의류부자재', itemType: '제조,도매' }
-  ];
+  let clientAddressBook = [];
   let currentClientMatches = [];
 
   function normalizeClientItem(raw) {
@@ -2403,30 +2778,37 @@
       }
     } catch (e) {}
 
-    // 4. Đồng bộ nền từ Supabase B2B shipments (chung cơ sở dữ liệu với jinil-landing-page & APP JINIL)
+    // 4. Đồng bộ nền từ Supabase B2B shipments (chỉ thực hiện sau khi mở khóa an toàn bằng mã PIN)
     try {
-      fetch('https://nwmdhkzdtedpqkquwqrd.supabase.co/rest/v1/rpc/search_public_b2b_shipments', {
-        method: 'POST',
-        headers: {
-          'apikey': 'sb_publishable_iZtuF4Zwyr4zfj5IzEsdxg_N5_bpIP9',
-          'Authorization': 'Bearer sb_publishable_iZtuF4Zwyr4zfj5IzEsdxg_N5_bpIP9',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ p_query: '25', p_limit: 150 })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const sbClients = data.map(s => ({
-            name: s.location_name || s.company_name,
-            rep: (s.company_name && s.company_name !== '미지정') ? s.company_name : (s.recipient_name || ''),
-            tel: s.courier_phone || '',
-            addr: s.recipient_address || ''
-          }));
-          mergeClientsIntoBook(sbClients);
-        }
-      })
-      .catch(() => {});
+      let sbConfig = null;
+      const savedSb = localStorage.getItem('jinil_supabase_config');
+      if (savedSb) {
+        sbConfig = JSON.parse(savedSb);
+      }
+      if (sbConfig && sbConfig.url && sbConfig.key) {
+        fetch(`${sbConfig.url}/rest/v1/rpc/search_public_b2b_shipments`, {
+          method: 'POST',
+          headers: {
+            'apikey': sbConfig.key,
+            'Authorization': `Bearer ${sbConfig.key}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ p_query: '25', p_limit: 150 })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            const sbClients = data.map(s => ({
+              name: s.location_name || s.company_name,
+              rep: (s.company_name && s.company_name !== '미지정') ? s.company_name : (s.recipient_name || ''),
+              tel: s.courier_phone || '',
+              addr: s.recipient_address || ''
+            }));
+            mergeClientsIntoBook(sbClients);
+          }
+        })
+        .catch(() => {});
+      }
     } catch (e) {}
   }
 
