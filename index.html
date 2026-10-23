@@ -402,7 +402,7 @@
       color: #1d4ed8;
     }
 
-    /* ─── PIN Security Lock Modal: Cinematic Vault Reveal ─── */
+    /* ─── PIN Security Lock Modal: Apple iOS Spring Dissolve (Ultra Smooth 120fps) ─── */
     #pinSecurityModalOverlay {
       position: fixed;
       inset: 0;
@@ -412,106 +412,52 @@
       justify-content: center;
       padding: 16px;
       overflow: hidden;
-      background: transparent;
-      perspective: 1000px;
+      background: radial-gradient(circle at 50% 40%, #f0f3fb 0%, #e8edf8 55%, #f2ecfa 100%);
+      opacity: 1;
+      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity;
     }
 
-    /* Top and Bottom Horizontal Frosted Glass Shutters */
-    .pin-curtain-half {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 50.5%;
-      background: linear-gradient(135deg, rgba(240, 243, 252, 0.96) 0%, rgba(234, 239, 250, 0.97) 50%, rgba(244, 239, 251, 0.97) 100%);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      z-index: 1;
-      pointer-events: none;
-      transition: transform 0.82s cubic-bezier(0.16, 1, 0.3, 1);
-      will-change: transform;
-    }
-    .pin-curtain-half.top {
-      top: 0;
-      transform: translateY(0);
-      box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.1);
-      border-bottom: 1.5px solid rgba(255, 255, 255, 0.85);
-    }
-    .pin-curtain-half.bottom {
-      bottom: 0;
-      transform: translateY(0);
-      box-shadow: 0 -16px 36px -4px rgba(15, 23, 42, 0.1);
-      border-top: 1.5px solid rgba(255, 255, 255, 0.85);
-    }
-
-    /* Horizontal Splicer Light Flash: Quick brilliant flash that vanishes in 380ms */
-    .pin-split-line {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background: linear-gradient(90deg, transparent 0%, #60a5fa 20%, #ffffff 50%, #c084fc 80%, transparent 100%);
-      z-index: 10;
-      opacity: 0;
-      transform: translateY(-50%) scaleX(0.05);
-      pointer-events: none;
-      filter: blur(0px);
-    }
-
-    /* Splitting animation classes */
-    .pin-curtain-splitting .pin-split-line {
-      animation: horizontalFlareFlash 0.38s ease-out forwards;
-    }
-    @keyframes horizontalFlareFlash {
-      0% {
-        opacity: 0;
-        transform: translateY(-50%) scaleX(0.05) scaleY(1);
-        filter: blur(1px);
-      }
-      25% {
-        opacity: 1;
-        transform: translateY(-50%) scaleX(1) scaleY(2.2);
-        box-shadow: 0 0 24px rgba(255, 255, 255, 0.9), 0 0 16px rgba(139, 92, 246, 0.8);
-        filter: blur(1px);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-50%) scaleX(1.2) scaleY(0.2);
-        filter: blur(6px);
-      }
-    }
-
-    .pin-curtain-splitting .pin-curtain-half.top {
-      transform: translateY(-100%);
-    }
-    .pin-curtain-splitting .pin-curtain-half.bottom {
-      transform: translateY(100%);
-    }
-    .pin-curtain-splitting #pinModalCard {
+    /* When unlocking: smooth Apple Dissolve (Shrinks inward & fades out with ZERO lag) */
+    #pinSecurityModalOverlay.apple-unlocking {
       opacity: 0 !important;
-      transform: scale(0.92) !important;
-      filter: blur(8px) !important;
-      transition: opacity 0.32s ease-out, transform 0.32s ease-out, filter 0.32s ease-out !important;
+      pointer-events: none !important;
     }
 
-    /* Body/Workspace Reveal Zoom */
-    main.container {
-      transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), filter 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease-out;
-      transform-origin: center top;
+    #pinSecurityModalOverlay.apple-unlocking #pinModalCard {
+      transform: scale(0.92) !important;
+      opacity: 0 !important;
     }
-    body.vault-opening main.container {
-      animation: vaultRevealApp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+    /* Card styling matching Apple / Bento design */
+    #pinModalCard {
+      position: relative;
+      background: #ffffff;
+      width: 100%;
+      max-width: 370px;
+      border-radius: 36px;
+      padding: 42px 32px 32px 32px;
+      box-shadow: 0 20px 50px -10px rgba(100, 116, 139, 0.16), 0 0 1px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(241, 245, 249, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transform: scale(1);
+      opacity: 1;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.26s ease-out;
+      will-change: transform, opacity;
+      animation: applePopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    @keyframes vaultRevealApp {
+
+    @keyframes applePopIn {
       0% {
-        opacity: 0.85;
-        transform: scale(0.975);
-        filter: blur(4px);
+        opacity: 0;
+        transform: scale(0.94);
       }
       100% {
         opacity: 1;
         transform: scale(1);
-        filter: blur(0px);
       }
     }
 
@@ -1302,14 +1248,8 @@
 <!-- Toast Alert -->
 <div id="toast">알림</div>
 
-<!-- PIN Security Lock Modal Overlay with Horizontal Cut Reveal -->
+<!-- PIN Security Lock Modal Overlay (Apple iOS Minimal Style) -->
 <div id="pinSecurityModalOverlay" class="no-print">
-  <!-- Top & Bottom Curtain Shutters for Horizontal Cut Effect -->
-  <div id="pinCurtainTop" class="pin-curtain-half top"></div>
-  <div id="pinCurtainBottom" class="pin-curtain-half bottom"></div>
-  <!-- Laser Split Line -->
-  <div id="pinSplitLine" class="pin-split-line"></div>
-
   <!-- PIN Card Dialog -->
   <div id="pinModalCard">
     <!-- Clean Lock Outline Icon -->
@@ -1608,16 +1548,14 @@
     loadClientAddressBook();
     renderStatement();
 
-    // 3. Đợi 120ms để người dùng cảm nhận được khoảnh khắc thành công trước khi rèm kéo mở điện ảnh
+    // 3. Apple iOS Dissolve: Thẻ khẽ thu nhỏ nhẹ và tan biến mờ êm trong 280ms (120fps siêu mượt, không lag)
     setTimeout(() => {
-      document.body.classList.add('vault-opening');
       const modal = document.getElementById('pinSecurityModalOverlay');
       if (modal) {
-        modal.classList.add('pin-curtain-splitting');
+        modal.classList.add('apple-unlocking');
         setTimeout(() => {
           modal.style.display = 'none';
-          modal.classList.remove('pin-curtain-splitting');
-          document.body.classList.remove('vault-opening');
+          modal.classList.remove('apple-unlocking');
 
           // Reset lại icon & chấm PIN cho lần bảo mật sau
           if (lockIcon) {
@@ -1633,20 +1571,14 @@
             const dot = document.getElementById(`pindot-${i}`);
             if (dot) dot.classList.remove('success-unlock', 'filled');
           }
-          const card = document.getElementById('pinModalCard');
-          if (card) {
-            card.style.opacity = '';
-            card.style.transform = '';
-            card.style.filter = '';
-          }
           showToast('보안 인증이 완료되었습니다.');
           isAuthenticating = false;
-        }, 850);
+        }, 280);
       } else {
         showToast('보안 인증이 완료되었습니다.');
         isAuthenticating = false;
       }
-    }, 120);
+    }, 100);
   }
 
   function handlePinForgot() {
@@ -1680,11 +1612,12 @@
     if (errMsg) errMsg.style.display = 'none';
     const modal = document.getElementById('pinSecurityModalOverlay');
     if (modal) {
-      modal.classList.remove('pin-curtain-splitting');
+      modal.classList.remove('apple-unlocking');
+      modal.style.opacity = '1';
       const card = document.getElementById('pinModalCard');
       if (card) {
-        card.style.opacity = '';
-        card.style.transform = '';
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1)';
       }
       modal.style.display = 'flex';
     }
