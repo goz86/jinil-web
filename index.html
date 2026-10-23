@@ -402,28 +402,163 @@
       color: #1d4ed8;
     }
 
-    /* PIN Security Lock Modal Styling */
-    .pin-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      border: 2px solid #cbd5e1;
+    /* ─── PIN Security Lock Modal: Minimal Bento Style with Horizontal Cut Split ─── */
+    #pinSecurityModalOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow: hidden;
       background: transparent;
-      transition: all 0.15s ease;
+    }
+
+    /* Top and Bottom Horizontal Curtain Shutters */
+    .pin-curtain-half {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 50.5%;
+      background: linear-gradient(135deg, #f0f3fa 0%, #e9eff9 50%, #f4effb 100%);
+      z-index: 1;
+      pointer-events: none;
+      transition: transform 0.75s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .pin-curtain-half.top {
+      top: 0;
+      transform: translateY(0);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+    .pin-curtain-half.bottom {
+      bottom: 0;
+      transform: translateY(0);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Horizontal Cutout Glow Line */
+    .pin-split-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 2.5px;
+      background: linear-gradient(90deg, transparent 0%, #60a5fa 25%, #a855f7 50%, #60a5fa 75%, transparent 100%);
+      z-index: 10;
+      opacity: 0;
+      transform: translateY(-50%) scaleX(0);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      pointer-events: none;
+      box-shadow: 0 0 16px rgba(139, 92, 246, 0.8), 0 0 6px rgba(59, 130, 246, 0.9);
+    }
+
+    /* Splitting animation classes */
+    .pin-curtain-splitting .pin-split-line {
+      opacity: 1;
+      transform: translateY(-50%) scaleX(1);
+    }
+    .pin-curtain-splitting .pin-curtain-half.top {
+      transform: translateY(-100%);
+    }
+    .pin-curtain-splitting .pin-curtain-half.bottom {
+      transform: translateY(100%);
+    }
+    .pin-curtain-splitting #pinModalCard {
+      opacity: 0 !important;
+      transform: scale(0.92) !important;
+      transition: opacity 0.35s ease-out, transform 0.35s ease-out !important;
+    }
+
+    /* Card styling matching uploaded design */
+    #pinModalCard {
+      position: relative;
+      z-index: 5;
+      background: #ffffff;
+      width: 100%;
+      max-width: 370px;
+      border-radius: 36px;
+      padding: 42px 32px 32px 32px;
+      box-shadow: 0 25px 65px -10px rgba(100, 116, 139, 0.16), 0 0 1px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(241, 245, 249, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.3s ease;
+      animation: fadeInPop 0.22s ease-out;
+    }
+
+    /* Top Lock Icon */
+    .pin-lock-icon {
+      color: #0f172a;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+    }
+
+    /* Typography */
+    .pin-card-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.02em;
+    }
+    .pin-card-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0 0 26px 0;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* PIN Visual Indicator Dots */
+    .pin-dots-wrap {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+      cursor: pointer;
+    }
+    .pin-dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2px solid #e2e8f0;
+      background: transparent;
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .pin-dot.filled {
-      background: #2563eb;
-      border-color: #2563eb;
+      background: #0f172a;
+      border-color: #0f172a;
       transform: scale(1.15);
-      box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
     }
-    .pin-key-btn {
-      height: 48px;
-      border: 1px solid #e2e8f0;
-      background: #f8fafc;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: 700;
+
+    /* Virtual Keypad Grid (3 Columns) */
+    .pin-keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px 20px;
+      width: 100%;
+      max-width: 270px;
+      justify-items: center;
+      margin-bottom: 14px;
+    }
+
+    /* Circular Keypad Button */
+    .pin-key-circle {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      border: 1px solid #f1f5f9;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      font-size: 23px;
+      font-weight: 500;
       color: #1e293b;
       cursor: pointer;
       display: flex;
@@ -431,26 +566,61 @@
       justify-content: center;
       transition: all 0.12s ease;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    .pin-key-btn:hover {
-      background: #eff6ff;
-      border-color: #93c5fd;
-      color: #2563eb;
-      transform: translateY(-1px);
+    .pin-key-circle:hover {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      transform: translateY(-1.5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     }
-    .pin-key-btn:active {
-      transform: translateY(1px);
-      background: #dbeafe;
+    .pin-key-circle:active {
+      background: #e2e8f0;
+      transform: scale(0.92);
+      box-shadow: none;
     }
-    .pin-key-action {
-      font-size: 13px;
+
+    /* Forgot PIN text button */
+    .pin-key-forgot {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      font-size: 11.5px;
       font-weight: 600;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease;
+      user-select: none;
+    }
+    .pin-key-forgot:hover {
+      color: #2563eb;
+    }
+
+    /* Backspace key icon */
+    .pin-key-back {
       color: #64748b;
     }
+    .pin-key-back svg {
+      width: 22px;
+      height: 22px;
+      transition: transform 0.12s ease;
+    }
+    .pin-key-back:hover svg {
+      color: #0f172a;
+      transform: scale(1.08);
+    }
+
+    /* Error Shake Animation */
     @keyframes pinShake {
       0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-8px); }
-      40%, 80% { transform: translateX(8px); }
+      20%, 60% { transform: translateX(-9px); }
+      40%, 80% { transform: translateX(9px); }
     }
     .shake-anim {
       animation: pinShake 0.35s ease-in-out;
@@ -1074,28 +1244,33 @@
 <!-- Toast Alert -->
 <div id="toast">알림</div>
 
-<!-- PIN Security Lock Modal Overlay -->
-<div id="pinSecurityModalOverlay" class="no-print" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 16px;">
-  <div id="pinModalCard" style="background: #ffffff; width: 100%; max-width: 360px; border-radius: 24px; padding: 28px 24px; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.4); border: 1px solid rgba(226, 232, 240, 0.8); display: flex; flex-direction: column; align-items: center; gap: 16px; animation: fadeInPop 0.18s ease-out; text-align: center;">
-    
-    <!-- Lock Badge Icon -->
-    <div style="width: 56px; height: 56px; border-radius: 18px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #2563eb; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);">
-      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+<!-- PIN Security Lock Modal Overlay with Horizontal Cut Reveal -->
+<div id="pinSecurityModalOverlay" class="no-print">
+  <!-- Top & Bottom Curtain Shutters for Horizontal Cut Effect -->
+  <div id="pinCurtainTop" class="pin-curtain-half top"></div>
+  <div id="pinCurtainBottom" class="pin-curtain-half bottom"></div>
+  <!-- Laser Split Line -->
+  <div id="pinSplitLine" class="pin-split-line"></div>
+
+  <!-- PIN Card Dialog -->
+  <div id="pinModalCard">
+    <!-- Clean Lock Outline Icon -->
+    <div class="pin-lock-icon">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2.5" ry="2.5"/>
         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
     </div>
 
-    <div>
-      <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">진일라벨 보안 인증</h2>
-      <p style="font-size: 12.5px; color: #64748b; margin: 0; line-height: 1.4;">거래명세서 관리자 PIN 4자리를 입력하세요</p>
-    </div>
+    <!-- Title & Subtitle in Korean -->
+    <h2 class="pin-card-title">PIN 번호 입력</h2>
+    <p class="pin-card-subtitle">안전한 거래명세서 관리를 위한 인증</p>
 
     <!-- Hidden native input to capture physical keyboard input easily -->
     <input type="password" id="txtPinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;" autocomplete="off"/>
 
     <!-- PIN Visual Indicator Dots -->
-    <div id="pinDotsContainer" style="display: flex; gap: 14px; margin: 4px 0 6px 0; cursor: pointer;" onclick="document.getElementById('txtPinInput')?.focus()">
+    <div id="pinDotsContainer" class="pin-dots-wrap" onclick="document.getElementById('txtPinInput')?.focus()">
       <div class="pin-dot" id="pindot-0"></div>
       <div class="pin-dot" id="pindot-1"></div>
       <div class="pin-dot" id="pindot-2"></div>
@@ -1103,26 +1278,32 @@
     </div>
 
     <!-- Error message display -->
-    <div id="pinErrorMsg" style="font-size: 12px; color: #ef4444; font-weight: 600; min-height: 18px; display: none;"></div>
+    <div id="pinErrorMsg" style="font-size: 12px; color: #ef4444; font-weight: 600; min-height: 18px; margin-top: -16px; margin-bottom: 12px; display: none;"></div>
 
-    <!-- Virtual Numeric Keypad -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('1')">1</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('2')">2</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('3')">3</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('4')">4</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('5')">5</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('6')">6</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('7')">7</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('8')">8</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('9')">9</button>
-      <button type="button" class="pin-key-btn pin-key-action" onclick="clearPin()">초기화</button>
-      <button type="button" class="pin-key-btn" onclick="handlePinKey('0')">0</button>
-      <button type="button" class="pin-key-btn pin-key-action" onclick="backspacePin()">⌫</button>
+    <!-- Virtual Numeric Keypad (Circular Buttons matching image) -->
+    <div class="pin-keypad-grid">
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('1')">1</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('2')">2</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('3')">3</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('4')">4</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('5')">5</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('6')">6</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('7')">7</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('8')">8</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('9')">9</button>
+      <button type="button" class="pin-key-forgot" onclick="handlePinForgot()">PIN 분실?</button>
+      <button type="button" class="pin-key-circle" onclick="handlePinKey('0')">0</button>
+      <button type="button" class="pin-key-circle pin-key-back" onclick="backspacePin()" title="삭제">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+          <line x1="18" y1="9" x2="12" y2="15"/>
+          <line x1="12" y1="9" x2="18" y2="15"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Remember device checkbox -->
-    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; cursor: pointer; user-select: none; margin-top: 2px;">
+    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; cursor: pointer; user-select: none; margin-top: 6px;">
       <input type="checkbox" id="chkRememberDevice" checked style="accent-color: #2563eb; width: 14px; height: 14px; cursor: pointer;"/>
       <span>이 기기에서 인증 유지 (30일)</span>
     </label>
@@ -1348,14 +1529,33 @@
       }
     }
 
-    const modal = document.getElementById('pinSecurityModalOverlay');
-    if (modal) modal.style.display = 'none';
-
     loadSupplierData();
     loadClientAddressBook();
     renderStatement();
-    showToast('보안 인증이 완료되었습니다.');
-    isAuthenticating = false;
+
+    // ─── HIỆU ỨNG MỞ RỘNG CẮT NGANG KÉO LÊN 2 PHÍA TRÊN & DƯỚI ───
+    const modal = document.getElementById('pinSecurityModalOverlay');
+    if (modal) {
+      modal.classList.add('pin-curtain-splitting');
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('pin-curtain-splitting');
+        const card = document.getElementById('pinModalCard');
+        if (card) {
+          card.style.opacity = '';
+          card.style.transform = '';
+        }
+        showToast('보안 인증이 완료되었습니다.');
+        isAuthenticating = false;
+      }, 750);
+    } else {
+      showToast('보안 인증이 완료되었습니다.');
+      isAuthenticating = false;
+    }
+  }
+
+  function handlePinForgot() {
+    alert('PIN 번호를 분실하셨나요?\n관리자 기본 PIN은 0106 입니다.\n(문의: 02-2266-2826)');
   }
 
   function checkSessionAuth() {
@@ -1384,7 +1584,15 @@
     const errMsg = document.getElementById('pinErrorMsg');
     if (errMsg) errMsg.style.display = 'none';
     const modal = document.getElementById('pinSecurityModalOverlay');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+      modal.classList.remove('pin-curtain-splitting');
+      const card = document.getElementById('pinModalCard');
+      if (card) {
+        card.style.opacity = '';
+        card.style.transform = '';
+      }
+      modal.style.display = 'flex';
+    }
   }
 
   function lockScreenSession() {
