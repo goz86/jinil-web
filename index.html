@@ -3507,21 +3507,91 @@
   }
 
   // Sao chép văn bản tóm tắt cho 카카오톡
+  // Sao chép hình ảnh và văn bản tóm tắt cho 카카오톡 (Ctrl+V dán trực tiếp ảnh vào khung chat)
   async function copyKakaoSummary() {
     saveCurrentToHistory();
-    const toName = document.getElementById('toName').value || '거래처';
-    const includeTax = document.getElementById('chkTax').checked;
+    const docEl = document.getElementById('statementCanvas');
+    const toName = document.getElementById('toName')?.value || '거래처';
+    const includeTax = document.getElementById('chkTax') ? document.getElementById('chkTax').checked : true;
     const subtotal = items.reduce((sum, item) => sum + (Number(item.sub) || 0), 0);
     const tax = includeTax ? Math.round(subtotal * 0.1) : 0;
     const grandTotal = subtotal + tax;
-
     const msg = `${toName} 거래명세서 보내드립니다.\n합계: ${fmt(grandTotal)}원`;
 
+    showToast('카카오톡용 이미지 생성 및 클립보드 복사 중...');
+
+    // Tạm thời reset scale để chụp ảnh độ nét cao chuẩn A4 (2x HD)
+    const prevTransform = docEl.style.transform;
+    const prevMarginBottom = docEl.style.marginBottom;
+    docEl.style.transform = 'none';
+    docEl.style.marginBottom = '0px';
+
     try {
-      await navigator.clipboard.writeText(msg);
-      showToast('카카오톡 공유 문구가 복사되었습니다! Ctrl+V로 붙여넣으세요.');
+      const canvas = await html2canvas(docEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      
+      // Khôi phục lại trạng thái giao diện mobile ngay
+      docEl.style.transform = prevTransform;
+      docEl.style.marginBottom = prevMarginBottom;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          try {
+            await navigator.clipboard.writeText(msg);
+            showToast('카카오톡 문구가 복사되었습니다! Ctrl+V로 붙여넣으세요.');
+          } catch (e) {
+            showToast('클립보드 복사 실패');
+          }
+          return;
+        }
+
+        let copied = false;
+        // 1. Ghi ảnh trực tiếp vào Clipboard (cho phép dán ngay lập tức vào khung chat KakaoTalk)
+        if (navigator.clipboard && window.ClipboardItem) {
+          try {
+            const item = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([item]);
+            copied = true;
+            showToast('✅ 거래명세서 이미지가 복사되었습니다! 카톡 채팅방에 바로 [Ctrl+V] 하세요.');
+          } catch (errImg) {
+            console.warn('Pure image clipboard write failed, trying multi representation:', errImg);
+            try {
+              const textBlob = new Blob([msg], { type: 'text/plain' });
+              const itemMulti = new ClipboardItem({
+                'image/png': blob,
+                'text/plain': textBlob
+              });
+              await navigator.clipboard.write([itemMulti]);
+              copied = true;
+              showToast('✅ 거래명세서 이미지 및 문구가 복사되었습니다! 카톡에 바로 [Ctrl+V] 하세요.');
+            } catch (errMulti) {
+              console.warn('Multi clipboard write failed:', errMulti);
+            }
+          }
+        }
+
+        // 2. Nếu môi trường không cho phép quyền write ảnh (ví dụ webview hạn chế), tự động tải ảnh về máy và copy text
+        if (!copied) {
+          const dateStr = document.getElementById('invDate')?.value || '발행일';
+          saveFileLocally(blob, `거래명세서_${toName}_${dateStr}.png`);
+          try {
+            await navigator.clipboard.writeText(msg);
+            showToast('이미지가 다운로드되고 문구가 복사되었습니다! 카톡에 붙여넣으세요.');
+          } catch (e) {
+            showToast('이미지가 다운로드되었습니다.');
+          }
+        }
+      }, 'image/png');
+
     } catch (e) {
-      showToast('클립보드 복사 완료');
+      docEl.style.transform = prevTransform;
+      docEl.style.marginBottom = prevMarginBottom;
+      console.error('copyKakaoSummary error:', e);
+      try {
+        await navigator.clipboard.writeText(msg);
+        showToast('카카오톡 공유 문구가 복사되었습니다! Ctrl+V로 붙여넣으세요.');
+      } catch (errText) {
+        showToast('이미지 생성 실패');
+      }
     }
   }
 
@@ -3555,17 +3625,28 @@
   async function exportImage() {
     saveCurrentToHistory();
     const docEl = document.getElementById('statementCanvas');
-    const toName = document.getElementById('toName').value || '거래처';
-    const dateStr = document.getElementById('invDate').value || '발행일';
+    const toName = document.getElementById('toName')?.value || '거래처';
+    const dateStr = document.getElementById('invDate')?.value || '발행일';
     const filename = `거래명세서_${toName}_${dateStr}.png`;
 
     showToast('이미지 생성 중...');
+
+    const prevTransform = docEl.style.transform;
+    const prevMarginBottom = docEl.style.marginBottom;
+    docEl.style.transform = 'none';
+    docEl.style.marginBottom = '0px';
+
     try {
-      const canvas = await html2canvas(docEl, { scale: 2, backgroundColor: '#ffffff' });
+      const canvas = await html2canvas(docEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      docEl.style.transform = prevTransform;
+      docEl.style.marginBottom = prevMarginBottom;
+
       canvas.toBlob((blob) => {
         if (blob) saveFileLocally(blob, filename);
       }, 'image/png');
     } catch (e) {
+      docEl.style.transform = prevTransform;
+      docEl.style.marginBottom = prevMarginBottom;
       console.error(e);
       showToast('이미지 저장 실패');
     }
@@ -3575,14 +3656,22 @@
   async function exportPDF() {
     saveCurrentToHistory();
     const docEl = document.getElementById('statementCanvas');
-    const toName = document.getElementById('toName').value || '거래처';
-    const dateStr = document.getElementById('invDate').value || '발행일';
+    const toName = document.getElementById('toName')?.value || '거래처';
+    const dateStr = document.getElementById('invDate')?.value || '발행일';
     const filename = `거래명세서_${toName}_${dateStr}.pdf`;
 
     showToast('PDF 생성 중...');
+
+    const prevTransform = docEl.style.transform;
+    const prevMarginBottom = docEl.style.marginBottom;
+    docEl.style.transform = 'none';
+    docEl.style.marginBottom = '0px';
+
     try {
       const scale = 2;
       const canvas = await html2canvas(docEl, { scale: scale, backgroundColor: '#ffffff', useCORS: true });
+      docEl.style.transform = prevTransform;
+      docEl.style.marginBottom = prevMarginBottom;
       
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
