@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>거래명세서 발행 - 진일라벨</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="shortcut icon" href="favicon.svg">
@@ -45,6 +45,23 @@
       color: var(--slate-900);
       line-height: 1.5;
       padding: 24px 16px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none; /* UI Anti-Theft: Chống bôi đen sao chép giao diện/template */
+    }
+
+    /* Đảm bảo người dùng nhập liệu, chọn chữ, copy/paste tự nhiên 100% trong input & textarea */
+    input, textarea, [contenteditable="true"], .allow-select {
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      user-select: text !important;
+    }
+
+    img, svg {
+      -webkit-user-drag: none;
+      user-drag: none;
     }
 
     main.container {
@@ -791,7 +808,7 @@
       flex-wrap: wrap;
     }
 
-    /* Preview Outer Box */
+    /* Preview Outer Box - Tối ưu chống flexbox overflow clipping trên mobile */
     .preview-outer-box {
       width: 100%;
       max-width: 1020px;
@@ -803,12 +820,17 @@
       display: flex;
       justify-content: center;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
     }
 
     /* Statement Canvas (Single A4 Statement) */
     #statementCanvas {
       width: 960px;
+      min-width: 960px;
       background: #ffffff;
+      transform-origin: top center;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     /* Toast Notification */
@@ -826,12 +848,248 @@
       transform: translateY(100px);
       opacity: 0;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 9999;
+      z-index: 99999;
     }
 
     #toast.show {
       transform: translateY(0);
       opacity: 1;
+    }
+
+    /* =========================================================================
+       SAMSUNG GALAXY Z FOLD 7 & MOBILE RESPONSIVE ENGINE
+       Tối ưu hóa toàn diện cho cả màn hình phụ gập (Cover 344px-412px)
+       và màn hình chính mở rộng (Unfolded 768px-920px tỷ lệ gần vuông)
+       ========================================================================= */
+
+    /* Scroll Hint trên mobile */
+    .mobile-table-scroll-hint {
+      display: none;
+    }
+
+    /* 1. Màn hình phụ Z Fold (Cover Screen: <= 480px, tỷ lệ 22:9 hoặc 23:9 siêu hẹp) */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px 8px 32px 8px !important;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      main.container {
+        gap: 12px !important;
+      }
+
+      section.card {
+        padding: 14px 10px !important;
+        border-radius: 14px !important;
+      }
+
+      /* Chuyển grid 2 cột thành 1 cột */
+      .grid-2col {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+
+      /* Form 수신자 / 공급자: 1 cột để ô nhập không bị ép hẹp */
+      .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      .form-group.full {
+        grid-column: span 1 !important;
+      }
+
+      /* Card Header trên màn hình hẹp */
+      header.card-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        margin-bottom: 12px !important;
+      }
+      header.card-header > div {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-start;
+      }
+
+      /* Các nút trên card header có kích thước chạm chuẩn ngón tay */
+      header.card-header .btn {
+        flex: 1 1 auto;
+        font-size: 11.5px !important;
+        padding: 6px 8px !important;
+        height: 34px !important;
+        min-width: 75px;
+      }
+
+      /* Input form fields */
+      input[type="text"],
+      input[type="date"],
+      input[type="number"],
+      textarea {
+        font-size: 14px !important;
+        padding: 8px 10px !important;
+        min-height: 38px !important;
+        touch-action: manipulation;
+      }
+
+      /* Quick Selection Bar (품목명 / 규격) cuộn ngang mượt mà */
+      .quick-pills-bar {
+        padding: 8px 10px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+      }
+      .quick-pill-group {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+      }
+      .quick-pill-group::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* Table Container */
+      .mobile-table-scroll-hint {
+        display: block !important;
+        text-align: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 6px 8px;
+        border-radius: 6px;
+        margin-top: 4px;
+        margin-bottom: 8px;
+        border: 1px dashed #bfdbfe;
+      }
+      .table-container {
+        max-height: 480px !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+      }
+      table.item-table td input {
+        padding: 8px 6px !important;
+        font-size: 13.5px !important;
+        min-height: 36px !important;
+      }
+
+      /* Summary & Totals */
+      .summary-section {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .totals-box {
+        min-width: 100% !important;
+        align-items: stretch !important;
+      }
+      .total-line, .tax-line, .grand-total-line {
+        text-align: right;
+      }
+      .grand-total-line {
+        font-size: 19px !important;
+      }
+
+      /* Preview Card & Toolbar trên Fold Cover */
+      section.preview-card {
+        padding: 12px 8px !important;
+        border-radius: 14px !important;
+      }
+      header.preview-toolbar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .toolbar-actions {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        width: 100%;
+      }
+      .toolbar-actions .btn {
+        flex: 1;
+        height: 36px !important;
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+        justify-content: center;
+      }
+      .toolbar-actions .btn-primary {
+        grid-column: span 3;
+        height: 40px !important;
+        font-size: 13px !important;
+        font-weight: 700;
+      }
+
+      .preview-outer-box {
+        padding: 10px 4px !important;
+        border-radius: 6px !important;
+      }
+
+      /* Modal lịch sử & PIN trên Z Fold Cover */
+      #historyModalOverlay {
+        padding: 8px !important;
+      }
+      #historyModalOverlay > div {
+        max-height: 94vh !important;
+        border-radius: 16px !important;
+      }
+      #pinModalCard {
+        max-width: 100% !important;
+        padding: 24px 14px 20px 14px !important;
+        border-radius: 24px !important;
+      }
+      .pin-key-circle {
+        width: 58px !important;
+        height: 58px !important;
+        font-size: 20px !important;
+      }
+      .pin-keypad-grid {
+        gap: 12px 14px !important;
+      }
+    }
+
+    /* 2. Màn hình chính Z Fold (Unfolded Main Screen: 481px - 920px tỷ lệ gần vuông 20:18) */
+    @media (min-width: 481px) and (max-width: 920px) {
+      body {
+        padding: 16px 12px !important;
+      }
+      
+      /* Trên màn hình mở rộng Z Fold (800px-900px), 2 cột 공급자/수신자 vừa vặn cân đối */
+      .grid-2col {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 14px !important;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+      }
+
+      /* Toolbar chia đều linh hoạt */
+      .toolbar-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .toolbar-actions .btn {
+        height: 34px !important;
+        font-size: 12px !important;
+      }
+
+      .preview-outer-box {
+        padding: 16px 10px !important;
+      }
+    }
+
+    /* 3. Tương thích Samsung Flex Mode / Hinge Posture */
+    @media (screen-spanning: single-fold-vertical), (horizontal-viewport-segments: 2) {
+      .grid-2col {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 24px !important;
+      }
     }
 
     /* Print Optimization Rules (@media print) */
@@ -842,7 +1100,7 @@
         margin: 0 !important;
       }
 
-      .no-print, header, .card, .preview-toolbar, #toast {
+      .no-print, header, .card, .preview-toolbar, #toast, .mobile-table-scroll-hint {
         display: none !important;
       }
 
@@ -863,6 +1121,9 @@
 
       #statementCanvas {
         width: 100% !important;
+        min-width: 0 !important;
+        transform: none !important;
+        margin-bottom: 0 !important;
       }
 
       @page {
@@ -1007,19 +1268,22 @@
     <div id="tableSuggestPopover" class="table-suggest-popover" style="display: none;"></div>
 
     <!-- Quick Selection Bar (Không icon ⚡, hỗ trợ thêm từ mới) -->
-    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid var(--slate-200); font-size: 12px;">
-      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+    <div class="quick-pills-bar" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid var(--slate-200); font-size: 12px;">
+      <div class="quick-pill-group" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
         <span style="font-weight: 700; color: #1e40af; margin-right: 2px;">품목명:</span>
         <div id="quickItemPills" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px;"></div>
         <button type="button" class="btn-add-tag" onclick="promptAddNewItemName()" title="새 품목명 단어 추가">+ 추가</button>
       </div>
 
-      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+      <div class="quick-pill-group" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
         <span style="font-weight: 700; color: #15803d; margin-right: 2px;">규격:</span>
         <div id="quickSpecPills" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px;"></div>
         <button type="button" class="btn-add-tag" onclick="promptAddNewSpecSize()" title="새 규격/사이즈 단어 추가">+ 추가</button>
       </div>
     </div>
+
+    <!-- Mobile Table Scroll Hint for Samsung Z Fold & Small Screens -->
+    <div class="mobile-table-scroll-hint no-print">⇄ 좌우로 스크롤하여 수량·단가·금액을 확인하세요</div>
 
     <div class="table-container">
       <table class="item-table">
@@ -1119,6 +1383,12 @@
         <button class="btn" onclick="openHistoryModal()" title="발행 내역 목록">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <span>발행 내역</span>
+        </button>
+
+        <!-- Scale Toggle Button for Mobile / Z Fold -->
+        <button id="btnTogglePreviewScale" class="btn" onclick="togglePreviewScale()" title="화면 크기에 맞게 미리보기 축소/원본 전환" style="border-color: #93c5fd; background: #eff6ff; color: #1d4ed8;">
+          <svg id="svgScaleIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+          <span id="lblPreviewScale">화면 맞춤</span>
         </button>
 
         <!-- PDF Button -->
@@ -1347,6 +1617,192 @@
   Xử lý LocalStorage, parse dữ liệu 엑셀 복사/붙여넣기, render 서식 단일 (1 ảnh duy nhất), cho phép sửa thủ công 금액, căn trái 입금 계좌
 -->
 <script>
+  /* =========================================================================
+   * JINIL LABEL B2B ENTERPRISE - RUNTIME SECURITY & ANTI-THEFT SHIELD
+   * =========================================================================
+   * Chống đánh cắp mã nguồn, bảo vệ bản quyền sở hữu trí tuệ, chống dịch ngược
+   * ========================================================================= */
+  (function initRuntimeSecurityShield() {
+    'use strict';
+
+    // 1. Anti-Iframe / Clickjacking Protection
+    if (window.top !== window.self) {
+      try {
+        window.top.location = window.self.location;
+      } catch (e) {
+        document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;"><h3>보안 경고: 비인가 프레임에서 실행이 차단되었습니다.</h3></div>';
+      }
+    }
+
+    // 2. Chặn chuột phải (Context Menu) kèm thông báo bảo mật
+    document.addEventListener('contextmenu', function(e) {
+      const target = e.target;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        return; // Cho phép chuột phải paste tự nhiên trong ô nhập
+      }
+      e.preventDefault();
+      if (typeof showToast === 'function') {
+        showToast('⚠️ 소스 코드 및 지적재산권 보호를 위해 우클릭이 제한됩니다.');
+      }
+      return false;
+    }, true);
+
+    // 3. Chặn các phím tắt DevTools, View Source, Save Page
+    window.addEventListener('keydown', function(e) {
+      // F12 (DevTools)
+      if (e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof showToast === 'function') showToast('🔒 개발자 도구(F12) 접근이 보안 정책에 의해 차단되었습니다.');
+        return false;
+      }
+
+      // Ctrl+Shift+I / Cmd+Option+I (Inspect)
+      // Ctrl+Shift+J / Cmd+Option+J (Console)
+      // Ctrl+Shift+C / Cmd+Option+C (Inspect Element)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c' || e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof showToast === 'function') showToast('🔒 개발자 도구 단축키가 보안 정책에 의해 차단되었습니다.');
+        return false;
+      }
+
+      // Ctrl+U / Cmd+Option+U (View Page Source)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof showToast === 'function') showToast('🔒 소스 보기(Ctrl+U) 기능이 제한되어 있습니다.');
+        return false;
+      }
+
+      // Ctrl+S / Cmd+S (Save Webpage)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'S' || e.key === 's' || e.keyCode === 83)) {
+        const target = e.target;
+        if (!target || (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA')) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof showToast === 'function') showToast('🔒 웹페이지 소스 저장이 제한되어 있습니다.');
+          return false;
+        }
+      }
+    }, true);
+
+    // 4. Chống kéo thả hình ảnh / UI
+    document.addEventListener('dragstart', function(e) {
+      if (e.target && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        return false;
+      }
+    }, true);
+
+    // 5. Console Protection & Warning Banner
+    try {
+      const banner = [
+        "%c=======================================================",
+        "%c🔒 진일라벨 B2B 거래명세서 시스템 - 보안 엔진 활성화 (ENTERPRISE GUARD)",
+        "%c=======================================================",
+        "%c경고 (SECURITY WARNING):",
+        "본 시스템의 모든 소스 코드, 암호화 알고리즘(AES-GCM/PIN), 비즈니스 로직 및",
+        "UI 자산은 대한민국 저작권법 및 부정경쟁방지 및 영업비밀보호에 관한 법률에",
+        "의해 엄격히 보호받고 있습니다.",
+        "",
+        "무단 복제, 디컴파일, 역공학(Reverse Engineering), 변조 및 도용 행위 적발 시",
+        "사전 경고 없이 관련 법령에 의거 민·형사상 법적 조치(손해배상 청구 등)가 진행됩니다.",
+        "%c======================================================="
+      ].join('\\n');
+
+      console.log(
+        banner,
+        'color:#dc2626;font-weight:bold;',
+        'color:#1a6b3a;font-weight:800;font-size:14px;background:#e8f5e8;padding:4px 8px;border-radius:4px;',
+        'color:#dc2626;font-weight:bold;',
+        'color:#b91c1c;font-weight:bold;font-size:12px;',
+        'color:#dc2626;font-weight:bold;'
+      );
+
+      const noop = function() {};
+      window.console.debug = noop;
+      window.console.info = noop;
+    } catch (err) {}
+
+    // 6. DevTools Opening Detection
+    let devToolsOpen = false;
+    const threshold = 160;
+    setInterval(function checkDevTools() {
+      const widthDiff = window.outerWidth - window.innerWidth > threshold;
+      const heightDiff = window.outerHeight - window.innerHeight > threshold;
+      if (widthDiff || heightDiff) {
+        if (!devToolsOpen) {
+          devToolsOpen = true;
+          try { console.clear(); } catch(e){}
+        }
+      } else {
+        devToolsOpen = false;
+      }
+    }, 1000);
+  })();
+
+  /* =========================================================================
+   * SAMSUNG GALAXY Z FOLD 7 & MOBILE RESPONSIVE PREVIEW ENGINE
+   * ========================================================================= */
+  let isPreviewFitMode = true; // Mặc định Fit-to-screen trên mobile / Z Fold
+
+  function togglePreviewScale() {
+    isPreviewFitMode = !isPreviewFitMode;
+    applyPreviewScale();
+    if (typeof showToast === 'function') {
+      showToast(isPreviewFitMode ? '📱 화면에 맞춤 모드로 전환되었습니다.' : '🔍 원본 100% 모드로 전환되었습니다.');
+    }
+  }
+
+  function applyPreviewScale() {
+    const canvas = document.getElementById('statementCanvas');
+    const outerBox = document.querySelector('.preview-outer-box');
+    const btn = document.getElementById('btnTogglePreviewScale');
+    const lbl = document.getElementById('lblPreviewScale');
+    if (!canvas || !outerBox) return;
+
+    const outerWidth = outerBox.clientWidth;
+    const padding = window.innerWidth <= 480 ? 16 : 40;
+    const availableWidth = outerWidth - padding;
+    const baseWidth = 960;
+
+    if (isPreviewFitMode && availableWidth < baseWidth && availableWidth > 50) {
+      const scale = Math.max(0.3, Math.min(1, availableWidth / baseWidth));
+      canvas.style.transform = `scale(${scale})`;
+      canvas.style.transformOrigin = 'top center';
+      const reducedHeight = (1 - scale) * canvas.offsetHeight;
+      canvas.style.marginBottom = `-${reducedHeight}px`;
+      if (lbl) lbl.textContent = '원본 (100%)';
+      if (btn) {
+        btn.title = '원본 100% 크기로 전환';
+        btn.style.background = '#f8fafc';
+        btn.style.color = '#334155';
+        btn.style.borderColor = '#cbd5e1';
+      }
+    } else {
+      canvas.style.transform = 'none';
+      canvas.style.transformOrigin = 'top center';
+      canvas.style.marginBottom = '0px';
+      if (lbl) lbl.textContent = '화면 맞춤';
+      if (btn) {
+        btn.title = '화면 크기에 맞게 미리보기 축소';
+        btn.style.background = '#eff6ff';
+        btn.style.color = '#1d4ed8';
+        btn.style.borderColor = '#93c5fd';
+      }
+    }
+  }
+
+  window.addEventListener('resize', () => {
+    if (isPreviewFitMode && window.innerWidth < 1050) {
+      applyPreviewScale();
+    }
+  });
+  window.addEventListener('orientationchange', () => {
+    setTimeout(applyPreviewScale, 150);
+  });
+
   // App State: supplierLocked mặc định = true để khóa như project gốc
   let supplierLocked = true;
   let customDirHandle = null;
@@ -3054,6 +3510,7 @@
     `;
 
     document.getElementById('statementCanvas').innerHTML = singleStatementHtml;
+    applyPreviewScale();
   }
 
   // Sao chép văn bản tóm tắt cho 카카오톡
