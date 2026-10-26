@@ -224,15 +224,34 @@
       border-bottom: 1px solid #f1f5f9;
     }
 
+    /* Tối ưu hóa padding và ô nhập trong bảng nhập liệu, chống co chữ / mất số */
+    table.item-table td input {
+      padding: 6px 8px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    /* Ẩn hoàn toàn nút mũi tên spin button của input type=number để giải phóng không gian cho số lớn */
+    table.item-table td input[type="number"]::-webkit-outer-spin-button,
+    table.item-table td input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    table.item-table td input[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+      padding: 6px 8px;
+    }
+
     /* Input 날짜 có icon lịch và định dạng chuẩn */
     table.item-table td input[type="date"] {
       text-align: center;
-      padding: 6px 8px;
+      padding: 6px 6px;
       font-size: 13px;
       font-family: inherit;
       color: var(--slate-800);
       cursor: pointer;
-      min-width: 125px;
+      min-width: 120px;
       box-sizing: border-box;
     }
 
@@ -1004,16 +1023,26 @@
 
     <div class="table-container">
       <table class="item-table">
+        <colgroup>
+          <col style="width: 135px;" />
+          <col />
+          <col style="width: 105px;" />
+          <col style="width: 105px;" />
+          <col style="width: 100px;" />
+          <col style="width: 120px;" />
+          <col style="width: 105px;" />
+          <col style="width: 45px;" />
+        </colgroup>
         <thead>
           <tr>
-            <th style="width: 140px; text-align: center;">날짜</th>
-            <th style="width: 270px; text-align: center;">품목명</th>
-            <th style="width: 120px; text-align: center;">규격</th>
-            <th style="width: 80px; text-align: center;">수량</th>
+            <th style="width: 135px; text-align: center;">날짜</th>
+            <th style="text-align: center;">품목명</th>
+            <th style="width: 105px; text-align: center;">규격</th>
+            <th style="width: 105px; text-align: center;">수량</th>
             <th style="width: 100px; text-align: center;">단가</th>
-            <th style="width: 110px; text-align: center;">금액</th>
-            <th style="width: 110px; text-align: center;">비고</th>
-            <th style="width: 50px; text-align: center;">
+            <th style="width: 120px; text-align: center;">금액</th>
+            <th style="width: 105px; text-align: center;">비고</th>
+            <th style="width: 45px; text-align: center;">
               <button class="btn-delete" title="전체 삭제 (모든 품목 삭제)" onclick="removeAllItems()" tabindex="-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
               </button>
@@ -1680,6 +1709,7 @@
     localStorage.removeItem('jinil_auth_token');
     localStorage.removeItem('jinil_auth_expires');
     sessionStorage.removeItem('jinil_auth_token');
+    sessionStorage.removeItem('jinil_active_pin');
     localStorage.removeItem('jinil_supabase_config');
     localStorage.removeItem('jinil_supplier_info');
 
@@ -1773,6 +1803,22 @@
 
     // Render danh sách nút gợi ý nhanh 품목명 & 규격
     renderSuggestionPills();
+
+    // Hỗ trợ bàn phím ảo (Mobile software keyboard) cho ô nhập mã PIN
+    const txtPin = document.getElementById('txtPinInput');
+    if (txtPin) {
+      txtPin.addEventListener('input', () => {
+        const val = txtPin.value;
+        if (val) {
+          for (const char of val) {
+            if (char >= '0' && char <= '9') {
+              handlePinKey(char);
+            }
+          }
+          txtPin.value = '';
+        }
+      });
+    }
 
     // Đóng bảng gợi ý khi click ra ngoài bảng
     document.addEventListener('click', (e) => {
@@ -1955,17 +2001,18 @@
       // Cho phép sửa bằng tay 금액
       const numericVal = parseFloat(String(value).replace(/,/g, '')) || 0;
       items[index].sub = numericVal;
+    } else if (field === 'qty' || field === 'price') {
+      const numericVal = parseFloat(String(value).replace(/,/g, '')) || 0;
+      items[index][field] = numericVal;
+      const q = parseFloat(String(items[index].qty).replace(/,/g, '')) || 0;
+      const p = parseFloat(String(items[index].price).replace(/,/g, '')) || 0;
+      items[index].sub = Math.round(q * p);
+      const subInput = document.getElementById(`sub_${index}`);
+      if (subInput) {
+        subInput.value = (items[index].sub || 0).toLocaleString('ko-KR');
+      }
     } else {
       items[index][field] = value;
-      if (field === 'qty' || field === 'price') {
-        const q = parseFloat(items[index].qty) || 0;
-        const p = parseFloat(items[index].price) || 0;
-        items[index].sub = Math.round(q * p);
-        const subInput = document.getElementById(`sub_${index}`);
-        if (subInput) {
-          subInput.value = items[index].sub;
-        }
-      }
     }
 
     // Cập nhật class row-zero-sub trực tiếp trên <tr> hiện tại mà không re-render lại toàn bộ bảng
@@ -2338,12 +2385,14 @@
     const itemsEls = pop.querySelectorAll('.table-suggest-item');
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      e.stopPropagation();
       if (itemsEls.length > 0) {
         highlightedSuggestIndex = (highlightedSuggestIndex + 1) % itemsEls.length;
         updatePopoverHighlight(itemsEls);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
+      e.stopPropagation();
       if (itemsEls.length > 0) {
         highlightedSuggestIndex = (highlightedSuggestIndex - 1 + itemsEls.length) % itemsEls.length;
         updatePopoverHighlight(itemsEls);
@@ -2351,11 +2400,14 @@
     } else if (e.key === 'Enter' || e.key === 'Tab') {
       if (currentSuggestMatches.length > 0 && highlightedSuggestIndex >= 0 && highlightedSuggestIndex < currentSuggestMatches.length) {
         e.preventDefault();
+        e.stopPropagation();
         selectTableSuggestItem(currentSuggestMatches[highlightedSuggestIndex]);
       } else {
         hideTableSuggest();
       }
     } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       hideTableSuggest();
     }
   }
@@ -2424,6 +2476,103 @@
     showTableSuggest(inputEl, index, 'spec');
   }
 
+  // Định dạng số có dấu phẩy hàng nghìn (1,000) trực tiếp khi người dùng gõ
+  function handleNumberInput(inputEl, index, field) {
+    activeItemRowIndex = index;
+    hideTableSuggest();
+
+    const rawVal = inputEl.value;
+    const cursorPos = inputEl.selectionStart || rawVal.length;
+    // Đếm số lượng chữ số đứng trước vị trí con trỏ hiện tại
+    const digitsBeforeCursor = rawVal.substring(0, cursorPos).replace(/[^0-9]/g, '').length;
+
+    // Chỉ giữ lại chữ số
+    const cleanDigits = rawVal.replace(/[^0-9]/g, '');
+
+    let numericVal = 0;
+    let formattedStr = '';
+
+    if (cleanDigits !== '') {
+      numericVal = parseInt(cleanDigits, 10);
+      formattedStr = numericVal.toLocaleString('ko-KR');
+    }
+
+    inputEl.value = formattedStr;
+
+    // Khôi phục vị trí con trỏ chuẩn xác theo số lượng chữ số trước con trỏ
+    let newCursorPos = 0;
+    let count = 0;
+    while (newCursorPos < formattedStr.length && count < digitsBeforeCursor) {
+      if (formattedStr[newCursorPos] >= '0' && formattedStr[newCursorPos] <= '9') {
+        count++;
+      }
+      newCursorPos++;
+    }
+    inputEl.setSelectionRange(newCursorPos, newCursorPos);
+
+    // Cập nhật giá trị vào mảng items và tính toán thành tiền
+    if (field === 'qty') {
+      items[index].qty = numericVal;
+      items[index].sub = Math.round(numericVal * (parseFloat(String(items[index].price).replace(/,/g, '')) || 0));
+      const subEl = document.getElementById(`sub_${index}`);
+      if (subEl) subEl.value = (items[index].sub || 0).toLocaleString('ko-KR');
+    } else if (field === 'price') {
+      items[index].price = numericVal;
+      items[index].sub = Math.round((parseFloat(String(items[index].qty).replace(/,/g, '')) || 0) * numericVal);
+      const subEl = document.getElementById(`sub_${index}`);
+      if (subEl) subEl.value = (items[index].sub || 0).toLocaleString('ko-KR');
+    } else if (field === 'sub') {
+      items[index].sub = numericVal;
+    }
+
+    // Cập nhật highlight dòng 0 nếu cần
+    const tbody = document.getElementById('itemTableBody');
+    if (tbody && tbody.children[index]) {
+      const tr = tbody.children[index];
+      const item = items[index];
+      const hasContent = Boolean((item.name && item.name.trim()) || (item.date && item.date.trim()) || (item.spec && item.spec.trim()));
+      if (hasContent && Number(item.sub) === 0) {
+        tr.className = 'row-zero-sub';
+      } else {
+        tr.className = '';
+      }
+    }
+
+    renderStatement();
+  }
+
+  function handleNumberBlur(inputEl, index, field) {
+    if (inputEl.value.trim() === '') {
+      if (field === 'qty') {
+        items[index].qty = 1;
+        inputEl.value = '1';
+      } else {
+        items[index][field] = 0;
+        inputEl.value = '0';
+      }
+      const q = parseFloat(String(items[index].qty).replace(/,/g, '')) || 0;
+      const p = parseFloat(String(items[index].price).replace(/,/g, '')) || 0;
+      items[index].sub = Math.round(q * p);
+      const subEl = document.getElementById(`sub_${index}`);
+      if (subEl) subEl.value = (items[index].sub || 0).toLocaleString('ko-KR');
+      renderStatement();
+    }
+  }
+
+  function handleNumberKeydown(e, inputEl) {
+    if (e.key === 'Backspace') {
+      const start = inputEl.selectionStart;
+      const end = inputEl.selectionEnd;
+      if (start === end && start > 0 && inputEl.value[start - 1] === ',') {
+        e.preventDefault();
+        const val = inputEl.value;
+        inputEl.value = val.substring(0, start - 2) + val.substring(start);
+        inputEl.setSelectionRange(start - 2, start - 2);
+        inputEl.dispatchEvent(new Event('input'));
+      }
+    }
+  }
+
   function renderItemTable() {
     const tbody = document.getElementById('itemTableBody');
     tbody.innerHTML = '';
@@ -2440,9 +2589,9 @@
         <td><input type="date" value="${esc(normalizeToDateInput(item.date))}" oninput="updateItem(${index}, 'date', this.value)" onchange="updateItem(${index}, 'date', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
         <td><input type="text" placeholder="품목명" value="${esc(item.name)}" oninput="handleItemNameInput(this, ${index})" onfocus="handleItemNameInput(this, ${index})" onkeydown="handleSuggestKeydown(event, this, ${index}, 'name')" autocomplete="off"></td>
         <td><input type="text" placeholder="사이즈/규격" value="${esc(item.spec)}" oninput="handleSpecInput(this, ${index})" onfocus="handleSpecInput(this, ${index})" onkeydown="handleSuggestKeydown(event, this, ${index}, 'spec')" autocomplete="off"></td>
-        <td><input type="number" style="text-align: right;" value="${item.qty}" oninput="updateItem(${index}, 'qty', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
-        <td><input type="number" style="text-align: right;" value="${item.price}" oninput="updateItem(${index}, 'price', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
-        <td><input type="number" id="sub_${index}" style="text-align: right;" value="${item.sub}" oninput="updateItem(${index}, 'sub', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
+        <td><input type="text" inputmode="numeric" style="text-align: right;" value="${(Number(String(item.qty).replace(/,/g, '')) || 0).toLocaleString('ko-KR')}" oninput="handleNumberInput(this, ${index}, 'qty')" onblur="handleNumberBlur(this, ${index}, 'qty')" onkeydown="handleNumberKeydown(event, this)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest(); this.select();"></td>
+        <td><input type="text" inputmode="numeric" style="text-align: right;" value="${(Number(String(item.price).replace(/,/g, '')) || 0).toLocaleString('ko-KR')}" oninput="handleNumberInput(this, ${index}, 'price')" onblur="handleNumberBlur(this, ${index}, 'price')" onkeydown="handleNumberKeydown(event, this)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest(); this.select();"></td>
+        <td><input type="text" inputmode="numeric" id="sub_${index}" style="text-align: right;" value="${(Number(String(item.sub).replace(/,/g, '')) || 0).toLocaleString('ko-KR')}" oninput="handleNumberInput(this, ${index}, 'sub')" onblur="handleNumberBlur(this, ${index}, 'sub')" onkeydown="handleNumberKeydown(event, this)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest(); this.select();"></td>
         <td><input type="text" placeholder="비고" value="${esc(item.note)}" oninput="updateItem(${index}, 'note', this.value)" onfocus="activeItemRowIndex = ${index}; hideTableSuggest();"></td>
         <td style="text-align: center;">
           <button class="btn-delete" title="삭제" onclick="removeItemRow(${index})" tabindex="-1">
@@ -2538,8 +2687,8 @@
 
     e.preventDefault();
 
-    const dateInputVal = document.getElementById('invDate').value;
-    const currentMonthStr = dateInputVal ? String(new Date(dateInputVal).getMonth() + 1).padStart(2, '0') : String(new Date().getMonth() + 1).padStart(2, '0');
+    const dateInputVal = document.getElementById('invDate')?.value || '';
+    const currentMonthStr = (dateInputVal && dateInputVal.includes('-')) ? dateInputVal.split('-')[1] : String(new Date().getMonth() + 1).padStart(2, '0');
 
     const grid = parseTsv(pastedText);
     const parsedItems = [];
@@ -2709,7 +2858,7 @@
       const taxAmt = includeTax ? Math.round(it.sub * 0.1) : 0;
       return `
         <tr style="min-height: 30px;">
-          <td style="padding:4px 2px;border:1px solid #d4e8d4;text-align:center;font-size:9.5pt;white-space:nowrap;vertical-align:middle;">${esc(it.date)}</td>
+          <td style="padding:4px 2px;border:1px solid #d4e8d4;text-align:center;font-size:9pt;letter-spacing:-0.2px;white-space:nowrap;vertical-align:middle;">${esc(it.date)}</td>
           <td style="padding:4px 6px;border:1px solid #d4e8d4;text-align:left;font-size:10.5pt;line-height:1.3;white-space:normal;word-break:break-all;vertical-align:middle;">${esc(it.name)}</td>
           <td style="padding:4px 6px;border:1px solid #d4e8d4;text-align:center;font-size:10.5pt;line-height:1.3;white-space:normal;word-break:break-all;vertical-align:middle;">${esc(it.spec)}</td>
           <td style="padding:4px 4px;border:1px solid #d4e8d4;text-align:right;font-size:10.5pt;vertical-align:middle;">${fmt(it.qty)}</td>
@@ -2860,14 +3009,14 @@
           <!-- Bảng 품목 List - Tự động bù trừ chiều rộng linh hoạt giữa 품목명 (${dynamicNameWidth}px) và 규격 (${dynamicSpecWidth}px) -->
           <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #1a6b3a; margin-bottom: 6px; table-layout: fixed;">
             <colgroup>
-              <col style="width: 75px;" />
+              <col style="width: 78px;" />
               <col style="width: ${dynamicNameWidth}px;" />
               <col style="width: ${dynamicSpecWidth}px;" />
-              <col style="width: 75px;" />
+              <col style="width: 77px;" />
               <col style="width: 50px;" />
               <col style="width: 90px;" />
               <col style="width: 75px;" />
-              <col style="width: 85px;" />
+              <col style="width: 80px;" />
             </colgroup>
             <thead>
               <tr style="background:#e8f5e8;color:#1a6b3a;font-weight:800;font-size:10.5pt;">
@@ -3363,23 +3512,24 @@
       savedAt: new Date().toLocaleString('ko-KR'),
       supplier: supplier,
       toName: toName,
-      toRep: document.getElementById('toRep').value,
-      toTel: document.getElementById('toTel').value,
-      toAddr: document.getElementById('toAddr').value,
-      toBiz: document.getElementById('toBiz').value,
-      toBizType: document.getElementById('toBizType').value,
-      toItemType: document.getElementById('toItemType').value,
+      toRep: (document.getElementById('toRep')?.value || '').trim(),
+      toTel: (document.getElementById('toTel')?.value || '').trim(),
+      toAddr: (document.getElementById('toAddr')?.value || '').trim(),
+      toBiz: (document.getElementById('toBiz')?.value || '').trim(),
+      toBizType: (document.getElementById('toBizType')?.value || '').trim(),
+      toItemType: (document.getElementById('toItemType')?.value || '').trim(),
       items: JSON.parse(JSON.stringify(items)),
       subtotal: subtotal,
       tax: tax,
       grandTotal: grandTotal,
       includeTax: includeTax,
-      note: document.getElementById('invNote').value
+      note: (document.getElementById('invNote')?.value || '').trim()
     };
 
     let history = getInvoiceHistory();
     const existingIdx = history.findIndex(h => h.toName === toName && h.date === dateStr && h.grandTotal === grandTotal);
     if (existingIdx >= 0) {
+      historyItem.id = history[existingIdx].id;
       history[existingIdx] = historyItem;
     } else {
       history.unshift(historyItem);
@@ -3840,8 +3990,8 @@
     const toAddr = (document.getElementById('toAddr')?.value || '').trim();
     const toBiz = (document.getElementById('toBiz')?.value || '').trim();
     const invDate = document.getElementById('invDate')?.value || getLocalTodayDate();
-    const memo = document.getElementById('memo')?.value || '';
-    const includeTax = document.getElementById('includeTaxCheck')?.checked ?? true;
+    const memo = (document.getElementById('invNote')?.value || '').trim();
+    const includeTax = document.getElementById('chkTax') ? document.getElementById('chkTax').checked : true;
 
     if (!items || items.length === 0) {
       showToast('내보낼 품목이 없습니다.');
@@ -3944,7 +4094,7 @@
           h.toTel || '',
           h.toAddr || '',
           h.toBiz || '',
-          it.date || '',
+          it.date || h.date || '',
           it.name || '',
           it.spec || '',
           Number(it.qty) || 0,
@@ -4096,15 +4246,21 @@
       return;
     }
 
+    // Không can thiệp nếu Modal bảo mật PIN đang mở
+    const pinModal = document.getElementById('pinSecurityModalOverlay');
+    if (pinModal && (pinModal.style.display === 'flex' || (pinModal.style.display !== 'none' && window.getComputedStyle(pinModal).display !== 'none'))) {
+      return;
+    }
+
     if (e.key !== 'Enter') return;
 
     const target = e.target;
     // Bỏ qua nếu không phải thẻ input (ví dụ: textarea giữ nguyên hành vi xuống dòng tự nhiên)
     if (!target || target.tagName !== 'INPUT') return;
 
-    // Bỏ qua checkbox, radio, file, nút bấm, ô tìm kiếm lịch sử hoặc ô nhập thêm từ gợi ý
+    // Bỏ qua checkbox, radio, file, nút bấm, ô tìm kiếm lịch sử, ô nhập thêm từ gợi ý, ô nhập PIN
     const ignoreTypes = ['checkbox', 'radio', 'button', 'submit', 'reset', 'file'];
-    if (ignoreTypes.includes(target.type) || target.id === 'txtHistorySearch' || target.id === 'customWordInput') return;
+    if (ignoreTypes.includes(target.type) || target.id === 'txtHistorySearch' || target.id === 'customWordInput' || target.id === 'txtPinInput') return;
 
     // Đóng dropdown gợi ý 거래처 nếu đang mở
     const clientDropdown = document.getElementById('clientAutocompleteDropdown');
