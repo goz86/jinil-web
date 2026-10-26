@@ -1385,12 +1385,6 @@
           <span>발행 내역</span>
         </button>
 
-        <!-- Scale Toggle Button for Mobile / Z Fold -->
-        <button id="btnTogglePreviewScale" class="btn" onclick="togglePreviewScale()" title="화면 크기에 맞게 미리보기 축소/원본 전환" style="border-color: #93c5fd; background: #eff6ff; color: #1d4ed8;">
-          <svg id="svgScaleIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
-          <span id="lblPreviewScale">화면 맞춤</span>
-        </button>
-
         <!-- PDF Button -->
         <button class="btn btn-primary" onclick="exportPDF()">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
@@ -1743,62 +1737,33 @@
   })();
 
   /* =========================================================================
-   * SAMSUNG GALAXY Z FOLD 7 & MOBILE RESPONSIVE PREVIEW ENGINE
+   * SAMSUNG GALAXY Z FOLD 7 & MOBILE AUTO-FIT RESPONSIVE PREVIEW ENGINE
    * ========================================================================= */
-  let isPreviewFitMode = true; // Mặc định Fit-to-screen trên mobile / Z Fold
-
-  function togglePreviewScale() {
-    isPreviewFitMode = !isPreviewFitMode;
-    applyPreviewScale();
-    if (typeof showToast === 'function') {
-      showToast(isPreviewFitMode ? '📱 화면에 맞춤 모드로 전환되었습니다.' : '🔍 원본 100% 모드로 전환되었습니다.');
-    }
-  }
-
   function applyPreviewScale() {
     const canvas = document.getElementById('statementCanvas');
     const outerBox = document.querySelector('.preview-outer-box');
-    const btn = document.getElementById('btnTogglePreviewScale');
-    const lbl = document.getElementById('lblPreviewScale');
     if (!canvas || !outerBox) return;
 
     const outerWidth = outerBox.clientWidth;
-    const padding = window.innerWidth <= 480 ? 16 : 40;
+    const padding = window.innerWidth <= 480 ? 12 : (window.innerWidth <= 768 ? 24 : 40);
     const availableWidth = outerWidth - padding;
     const baseWidth = 960;
 
-    if (isPreviewFitMode && availableWidth < baseWidth && availableWidth > 50) {
-      const scale = Math.max(0.3, Math.min(1, availableWidth / baseWidth));
+    // Tự động thu nhỏ vừa khít 100% màn hình khi dùng trên mobile / tablet / Z Fold
+    if (availableWidth < baseWidth && availableWidth > 50) {
+      const scale = Math.max(0.25, Math.min(1, availableWidth / baseWidth));
       canvas.style.transform = `scale(${scale})`;
       canvas.style.transformOrigin = 'top center';
       const reducedHeight = (1 - scale) * canvas.offsetHeight;
       canvas.style.marginBottom = `-${reducedHeight}px`;
-      if (lbl) lbl.textContent = '원본 (100%)';
-      if (btn) {
-        btn.title = '원본 100% 크기로 전환';
-        btn.style.background = '#f8fafc';
-        btn.style.color = '#334155';
-        btn.style.borderColor = '#cbd5e1';
-      }
     } else {
       canvas.style.transform = 'none';
       canvas.style.transformOrigin = 'top center';
       canvas.style.marginBottom = '0px';
-      if (lbl) lbl.textContent = '화면 맞춤';
-      if (btn) {
-        btn.title = '화면 크기에 맞게 미리보기 축소';
-        btn.style.background = '#eff6ff';
-        btn.style.color = '#1d4ed8';
-        btn.style.borderColor = '#93c5fd';
-      }
     }
   }
 
-  window.addEventListener('resize', () => {
-    if (isPreviewFitMode && window.innerWidth < 1050) {
-      applyPreviewScale();
-    }
-  });
+  window.addEventListener('resize', applyPreviewScale);
   window.addEventListener('orientationchange', () => {
     setTimeout(applyPreviewScale, 150);
   });
